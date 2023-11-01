@@ -1,0 +1,31 @@
+{
+  "private": true,
+  "name": "@ag-grid-devtools/build-config",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Build tool configuration",
+  "author": "AG Grid <info@ag-grid.com>",
+  "scripts": {
+    "lint": "eslint --ext js,cjs,mjs,ts --max-warnings 0 .",
+    "verify": "pnpm run lint"
+  },
+  "dependencies": {
+    "@types/node": "20.5.9",
+    "@types/react": "18.2.21",
+    "@typescript-eslint/eslint-plugin": "6.6.0",
+    "@typescript-eslint/parser": "6.6.0",
+    "@vitejs/plugin-react-swc": "3.3.2",
+    "@vitest/coverage-v8": "0.34.3",
+    "eslint": "8.48.0",
+    "eslint-config-prettier": "9.0.0",
+    "eslint-plugin-prettier": "5.0.0",
+    "eslint-plugin-react-hooks": "4.6.0",
+    "eslint-plugin-vitest": "0.3.1",
+    "prettier": "3.0.3",
+    "rollup-plugin-preserve-shebang": "1.0.1",
+    "typescript": "5.2.2",
+    "vite": "4.4.9",
+    "vite-plugin-dts": "3.5.3",
+    "vitest": "0.34.3"
+  }
+}

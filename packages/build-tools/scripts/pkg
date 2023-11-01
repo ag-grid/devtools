@@ -1,0 +1,101 @@
+#!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
+const process = require('process');
+
+const [inputPath, outputPath] = process.argv.slice(2);
+
+class ExitError extends Error {
+  code;
+  constructor(code, message) {
+    super(`Error: ${message}`);
+    this.name = ExitError.name;
+    this.code = code;
+  }
+}
+
+try {
+  if (!inputPath) throw new ExitError(1, 'Missing package.json input path');
+  const inputPkgPath =
+    path.basename(inputPath) === 'package.json' ? inputPath : path.join(inputPath, 'package.json');
+  const pkgSource = (() => {
+    try {
+      return fs.readFileSync(inputPkgPath, 'utf-8');
+    } catch (error) {
+      throw new ExitError(1, `Failed to read package.json: ${inputPkgPath} (${error.code})\n`);
+    }
+  })();
+  const pkg = (() => {
+    try {
+      return JSON.parse(pkgSource);
+    } catch {
+      throw new ExitError(1, `Invalid package.json contents: ${inputPkgPath}\n`);
+    }
+  })();
+  const {
+    name,
+    version,
+    license,
+    description,
+    author,
+    repository,
+    keywords,
+    dependencies,
+    pkg: overrides,
+  } = pkg;
+  const json = `${JSON.stringify(
+    {
+      name,
+      version,
+      license,
+      description,
+      author,
+      repository,
+      keywords,
+      ...overrides,
+      dependencies: dependencies
+        ? // This assumes all workspace packages share the same version number
+          fixWorkspaceDependencyVersions(dependencies, version)
+        : undefined,
+    },
+    null,
+    2,
+  )}\n`;
+  if (outputPath) {
+    try {
+      fs.writeFileSync(outputPath, json);
+      exit(0);
+    } catch (error) {
+      throw new ExitError(1, `Failed to write output package.json: ${outputPath} (${error.code})`);
+    }
+  } else {
+    process.stdout.write(json, (error) => {
+      if (error) {
+        exit(1, `Failed to write output JSON: (${error.code})`);
+      } else {
+        exit(0);
+      }
+    });
+  }
+} catch (error) {
+  if (error instanceof ExitError) {
+    exit(error.code, error.message);
+  } else {
+    throw error;
+  }
+}
+
+function fixWorkspaceDependencyVersions(dependencies, workspaceVersion) {
+  return Object.fromEntries(
+    Object.entries(dependencies).map((dependency) => {
+      const [name, version] = dependency;
+      if (version === 'workspace:*') return [name, workspaceVersion];
+      return dependency;
+    }),
+  );
+}
+
+function exit(code, message) {
+  if (typeof message === 'string') process.stderr.write(`${message}\n`);
+  process.exit(code);
+}

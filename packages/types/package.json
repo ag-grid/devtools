@@ -1,0 +1,42 @@
+{
+  "private": true,
+  "name": "@ag-grid-devtools/types",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Shared type definitions",
+  "author": "AG Grid <info@ag-grid.com>",
+  "type": "module",
+  "main": "./lib.ts",
+  "module": "./lib.ts",
+  "scripts": {
+    "build": "pnpm run build:lib && pnpm run build:docs && pnpm run build:pkg",
+    "build:lib": "vite build",
+    "build:docs": "typedoc",
+    "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
+    "lint": "pnpm run '/^lint:.*/'",
+    "lint:eslint": "eslint --ext js,cjs,mjs,ts --max-warnings 0 .",
+    "lint:typescript": "tsc --noEmit",
+    "verify": "pnpm run lint"
+  },
+  "pkg": {
+    "type": "module",
+    "main": "./lib/lib.cjs",
+    "module": "/lib/lib.js",
+    "types": "./lib.d.ts",
+    "exports": {
+      ".": {
+        "import": "./lib/lib.js",
+        "require": "./lib/lib.cjs"
+      }
+    }
+  },
+  "devDependencies": {
+    "@ag-grid-devtools/build-config": "workspace:*"
+  },
+  "peerDependencies": {
+    "eslint": "^8",
+    "typedoc": "^0.25",
+    "typescript": "^5",
+    "vite": "^4"
+  }
+}

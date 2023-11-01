@@ -1,0 +1,6 @@
+{
+  "name": "ag-grid-devtools",
+  "entryPoints": ["packages/*"],
+  "exclude": ["packages/build-config", "packages/build-tools"],
+  "entryPointStrategy": "packages"
+}

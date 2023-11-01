@@ -1,0 +1,16 @@
+{
+  "private": true,
+  "name": "@ag-grid-devtools/build-tools",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Custom build tools",
+  "author": "AG Grid <info@ag-grid.com>",
+  "scripts": {
+    "pkg": "./scripts/pkg",
+    "lint": "eslint --ext cjs --max-warnings 0 .",
+    "verify": "pnpm run lint"
+  },
+  "devDependencies": {
+    "@ag-grid-devtools/build-config": "workspace:*"
+  }
+}
