@@ -1,0 +1,47 @@
+import { expect, test } from 'vitest';
+
+import * as lib from './lib';
+
+test('module exports', () => {
+  expect({ ...lib }).toEqual({
+    AccessorKey: lib.AccessorKey,
+    AccessorReference: lib.AccessorReference,
+    areAccessorKeysEqual: lib.areAccessorKeysEqual,
+    ast: lib.ast,
+    findClassMemberAccessorExpressions: lib.findClassMemberAccessorExpressions,
+    findClassMemberAccessors: lib.findClassMemberAccessors,
+    findNamedClassMemberAccessorExpressions: lib.findNamedClassMemberAccessorExpressions,
+    findNamedModuleImport: lib.findNamedModuleImport,
+    generate: lib.generate,
+    generateUniqueScopeBinding: lib.generateUniqueScopeBinding,
+    getAccessorExpressionPaths: lib.getAccessorExpressionPaths,
+    getAstNodeChildEntries: lib.getAstNodeChildEntries,
+    getFunctionReturnValues: lib.getFunctionReturnValues,
+    getImportSpecifierImportedName: lib.getImportSpecifierImportedName,
+    getLiteralPropertyKey: lib.getLiteralPropertyKey,
+    getModuleRoot: lib.getModuleRoot,
+    getNamedModuleImportExpression: lib.getNamedModuleImportExpression,
+    getNamedPackageNamespaceImportExpression: lib.getNamedPackageNamespaceImportExpression,
+    getNamedObjectLiteralStaticPropertyValue: lib.getNamedObjectLiteralStaticPropertyValue,
+    getNodeChildEntries: lib.getNodeChildEntries,
+    getNodePropertyFieldNames: lib.getNodePropertyFieldNames,
+    getObjectLiteralStaticPropertyValues: lib.getObjectLiteralStaticPropertyValues,
+    getOptionalNodeFieldValue: lib.getOptionalNodeFieldValue,
+    getStaticPropertyKey: lib.getStaticPropertyKey,
+    getNamedObjectLiteralStaticProperty: lib.getNamedObjectLiteralStaticProperty,
+    hasNamedObjectLiteralStaticProperty: lib.hasNamedObjectLiteralStaticProperty,
+    insertNamedModuleImport: lib.insertNamedModuleImport,
+    matchModuleImportName: lib.matchModuleImportName,
+    matchModuleImportPackageName: lib.matchModuleImportPackageName,
+    matchNamedPropertyKeyExpression: lib.matchNamedPropertyKeyExpression,
+    matchNode: lib.matchNode,
+    node: lib.node,
+    parseAst: lib.parseAst,
+    parseStringExpressionValue: lib.parseStringExpressionValue,
+    pattern: lib.pattern,
+    replace: lib.replace,
+    template: lib.template,
+    transformAst: lib.transformAst,
+    traverse: lib.traverse,
+  });
+});

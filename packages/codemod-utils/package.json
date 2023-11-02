@@ -1,0 +1,55 @@
+{
+  "private": true,
+  "name": "@ag-grid-devtools/codemod-utils",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Codemod utility helpers",
+  "author": "AG Grid <info@ag-grid.com>",
+  "type": "module",
+  "main": "./lib.ts",
+  "module": "./lib.ts",
+  "scripts": {
+    "build": "pnpm run build:lib && pnpm run build:docs && pnpm run build:pkg",
+    "build:lib": "vite build",
+    "build:docs": "typedoc",
+    "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
+    "test": "vitest run",
+    "lint": "pnpm run '/^lint:.*/'",
+    "lint:eslint": "eslint --ext js,cjs,mjs,ts --max-warnings 0 .",
+    "lint:typescript": "tsc --noEmit",
+    "verify": "pnpm run '/^(lint|test)$/'",
+    "watch:test": "vitest watch"
+  },
+  "pkg": {
+    "type": "module",
+    "main": "./lib/lib.cjs",
+    "module": "/lib/lib.js",
+    "types": "./lib.d.ts",
+    "exports": {
+      ".": {
+        "import": "./lib/lib.js",
+        "require": "./lib/lib.cjs"
+      }
+    }
+  },
+  "dependencies": {
+    "@ag-grid-devtools/ast": "workspace:*",
+    "@ag-grid-devtools/types": "workspace:*",
+    "@ag-grid-devtools/utils": "workspace:*",
+    "@angular-eslint/template-parser": "17.0.1",
+    "@angular/compiler": "17.0.1",
+    "recast": "0.23.4",
+    "vue-eslint-parser": "9.3.2"
+  },
+  "devDependencies": {
+    "@ag-grid-devtools/build-config": "workspace:*",
+    "memfs": "4.6.0"
+  },
+  "peerDependencies": {
+    "eslint": "^8",
+    "typedoc": "^0.25",
+    "typescript": "^5",
+    "vite": "^4",
+    "vitest": "^0.34"
+  }
+}

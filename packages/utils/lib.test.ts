@@ -1,7 +1,18 @@
-import { test, expect } from 'vitest';
+import { expect, test } from 'vitest';
 
-import lib from './lib';
+import * as lib from './lib';
 
-test('exposes a top-level default export', () => {
-  expect(lib).toBeInstanceOf(Object);
+test('module exports', () => {
+  expect({ ...lib }).toEqual({
+    Enum: lib.Enum,
+    VARIANT: lib.VARIANT,
+    enumConstructor: lib.enumConstructor,
+    enumVariantConstructor: lib.enumVariantConstructor,
+    instantiateEnum: lib.instantiateEnum,
+    isEnumVariant: lib.isEnumVariant,
+    match: lib.match,
+    matchString: lib.matchString,
+    nonNull: lib.nonNull,
+    unreachable: lib.unreachable,
+  });
 });

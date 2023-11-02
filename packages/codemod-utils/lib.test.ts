@@ -1,0 +1,47 @@
+import { expect, test } from 'vitest';
+
+import * as lib from './lib';
+
+test('module exports', () => {
+  expect({ ...lib }).toEqual({
+    AG_GRID_JS_PACKAGE_NAME_PATTERN: lib.AG_GRID_JS_PACKAGE_NAME_PATTERN,
+    AG_GRID_JS_UMD_GLOBAL_NAME: lib.AG_GRID_JS_UMD_GLOBAL_NAME,
+    AngularGridApiBinding: lib.AngularGridApiBinding,
+    GridApiDefinition: lib.GridApiDefinition,
+    createVueAstNode: lib.createVueAstNode,
+    findVueTemplateNodes: lib.findVueTemplateNodes,
+    getAngularColumnApiReferences: lib.getAngularColumnApiReferences,
+    getAngularGridApiReferences: lib.getAngularGridApiReferences,
+    getColumnApiReferences: lib.getColumnApiReferences,
+    getGridApiReferences: lib.getGridApiReferences,
+    getJsGridApiReferences: lib.getJsGridApiReferences,
+    getReactColumnApiReferences: lib.getReactColumnApiReferences,
+    getReactGridApiReferences: lib.getReactGridApiReferences,
+    getVueColumnApiReferences: lib.getVueColumnApiReferences,
+    getVueComponentComponentDeclarations: lib.getVueComponentComponentDeclarations,
+    getVueComponentDataFieldReferences: lib.getVueComponentDataFieldReferences,
+    getVueComponentTemplateProperty: lib.getVueComponentTemplateProperty,
+    getVueComponentTemplateSource: lib.getVueComponentTemplateSource,
+    getVueElementDirectives: lib.getVueElementDirectives,
+    getVueElementEventHandlerDirectiveName: lib.getVueElementEventHandlerDirectiveName,
+    getVueElementEventHandlerDirectives: lib.getVueElementEventHandlerDirectives,
+    getVueGridApiReferences: lib.getVueGridApiReferences,
+    getVueTemplateNodeChild: lib.getVueTemplateNodeChild,
+    isColumnApiReference: lib.isColumnApiReference,
+    isGridApiReference: lib.isGridApiReference,
+    isNamedVueElementBoundAttribute: lib.isNamedVueElementBoundAttribute,
+    isPropertyAccessorNode: lib.isPropertyAccessorNode,
+    isPropertyAssignmentNode: lib.isPropertyAssignmentNode,
+    isPropertyInitializerNode: lib.isPropertyInitializerNode,
+    isVueDirectiveAttribute: lib.isVueDirectiveAttribute,
+    matchVueComponentMethod: lib.matchVueComponentMethod,
+    matchers: lib.matchers,
+    parseVueComponentTemplateSource: lib.parseVueComponentTemplateSource,
+    parseVueSfcComponent: lib.parseVueSfcComponent,
+    printVueTemplate: lib.printVueTemplate,
+    removeVueTemplateNode: lib.removeVueTemplateNode,
+    replaceVueTemplateNode: lib.replaceVueTemplateNode,
+    transformFile: lib.transformFile,
+    visitGridOptionsProperties: lib.visitGridOptionsProperties,
+  });
+});
