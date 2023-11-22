@@ -1,0 +1,45 @@
+{
+  "private": true,
+  "name": "@ag-grid-community/cli",
+  "version": "31.0.0",
+  "license": "MIT",
+  "description": "AG Grid developer toolkit",
+  "author": "AG Grid <info@ag-grid.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ag-grid/devtools.git"
+  },
+  "main": "./index.ts",
+  "scripts": {
+    "build": "pnpm run build:lib && pnpm run build:pkg",
+    "build:lib": "vite build",
+    "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
+    "test": "vitest run",
+    "lint": "pnpm run '/^lint:.*/'",
+    "lint:eslint": "eslint --ext js,cjs,mjs,ts --max-warnings 0 .",
+    "lint:typescript": "tsc --noEmit",
+    "verify": "pnpm run '/^(lint|test)$/'",
+    "watch:test": "vitest watch"
+  },
+  "pkg": {
+    "main": "./index.js",
+    "bin": "./index.js"
+  },
+  "devDependencies": {
+    "@ag-grid-devtools/build-config": "workspace:*",
+    "@ag-grid-devtools/codemods": "workspace:*",
+    "@ag-grid-devtools/types": "workspace:*",
+    "@ag-grid-devtools/utils": "workspace:*",
+    "@types/diff": "5.0.8",
+    "@types/semver": "7.5.6",
+    "diff": "5.1.0",
+    "semver": "7.5.4"
+  },
+  "peerDependencies": {
+    "eslint": "^8",
+    "typedoc": "^0.25",
+    "typescript": "^5",
+    "vite": "^4",
+    "vitest": "^0.34"
+  }
+}
