@@ -18,10 +18,6 @@ import { parse } from '@angular-eslint/template-parser';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export interface TmplAST extends ReturnType<typeof parse> {
-  templateNodes: Array<TmplAstNode>;
-}
-
 type Class = Types.Class;
 type ClassProperty = Types.ClassProperty;
 type Decorator = Types.Decorator;
@@ -29,6 +25,16 @@ type Expression = Types.Expression;
 type ObjectExpression = Types.ObjectExpression;
 type ObjectProperty = Types.ObjectProperty;
 type TemplateLiteral = Types.TemplateLiteral;
+
+export interface TmplAST extends ReturnType<typeof parse> {
+  templateNodes: Array<TmplAstNode>;
+}
+
+export interface AngularComponentTemplate {
+  templateUrl: string | null;
+  source: string;
+  ast: TmplAST;
+}
 
 const ANGULAR_PACKAGE_NAME = '@angular/core';
 const ANGULAR_COMPONENT_DECORATOR_IMPORT_NAME = 'Component';
@@ -39,29 +45,34 @@ const ANGULAR_VIEW_CHILD_DECORATOR_IMPORT_NAME = 'ViewChild';
 export function parseAngularComponentTemplate(
   component: NodePath<Class>,
   context: FileMetadata,
-): TmplAST | null {
-  const { filename: filePath = './component.html' } = context;
+): AngularComponentTemplate | null {
+  const { filename } = context;
   const componentMetadata = getAngularComponentMetadata(component);
   if (!componentMetadata) return null;
-  const templateSource = getAngularComponentMetadataTemplateSource(componentMetadata, context);
-  if (!templateSource) return null;
-  return parse(templateSource, {
-    filePath: filePath,
+  const template = getAngularComponentMetadataTemplateSource(componentMetadata, context);
+  if (!template || !template.source) return null;
+  const ast = parse(template.source, {
+    filePath: filename || 'component.html',
     suppressParseErrors: false,
   });
+  return {
+    templateUrl: template.templateUrl,
+    source: template.source,
+    ast,
+  };
 }
 
 function getAngularComponentMetadataTemplateSource(
   metadata: NodePath<ObjectExpression>,
   context: FileMetadata,
-): string | null {
+): { templateUrl: string | null; source: string | null } | null {
   const templateValue = getAngularComponentMetadataNamedFieldValue(
     metadata,
     ANGULAR_COMPONENT_METADATA_TEMPLATE_FIELD_NAME,
   );
   if (templateValue) {
     const templateSource = getStringExpressionValue(templateValue);
-    return templateSource;
+    return { templateUrl: null, source: templateSource };
   }
   const templateUrlValue = getAngularComponentMetadataNamedFieldValue(
     metadata,
@@ -89,7 +100,7 @@ function getAngularComponentMetadataTemplateSource(
         );
       }
     })();
-    return templateSource;
+    return { templateUrl, source: templateSource };
   }
   // FIXME: warn when unable to parse Angular component template
   return null;

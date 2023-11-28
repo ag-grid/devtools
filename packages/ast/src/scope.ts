@@ -62,7 +62,7 @@ function getMemberExpressionAccessorPaths(
   if (object.isThisExpression()) {
     const classDefinition = getEnclosingClass(object);
     if (!classDefinition) return null;
-    return getClassMemberExpressionAccessorPaths(classDefinition, expression);
+    return getClassFieldAccessorPaths(classDefinition, expression);
   }
   const objectPaths = getAccessorExpressionPaths(object);
   if (!objectPaths) return null;
@@ -74,14 +74,22 @@ function getMemberExpressionAccessorPaths(
   }));
 }
 
-function getClassMemberExpressionAccessorPaths(
+export function getClassFieldAccessorPaths(
   classDefinition: NodePath<Class | ObjectExpression>,
-  accessor: NodePath<MemberExpression>,
+  accessor: NodePath<MemberExpression | Property>,
 ): Array<AccessorPath> | null {
-  const property = accessor.get('property');
-  const computed = accessor.node.computed;
+  const key = accessor.isMemberExpression()
+    ? accessor.get('property')
+    : accessor.isProperty()
+    ? accessor.get('key')
+    : null;
+  const computed =
+    accessor.isMemberExpression() || (accessor.isProperty() && isPublicProperty(accessor))
+      ? accessor.node.computed
+      : false;
+  if (!key) return null;
   // FIXME: avoid unnecessarily recomputing member accessor initializers for each reference
-  const accessors = findClassMemberAccessorExpressions(classDefinition, property, computed);
+  const accessors = findClassMemberAccessorExpressions(classDefinition, key, computed);
   if (!accessors) return null;
   const reference = AccessorReference.Property({ target: classDefinition, accessor });
   const declarations = accessors
@@ -138,24 +146,24 @@ function getClassMemberExpressionAccessorPaths(
     });
 }
 
-export function findClassMemberAccessorExpressions(
+function findClassMemberAccessorExpressions(
   classDefinition: NodePath<Class | ObjectExpression>,
-  property: NodePath<MemberExpression['property']>,
+  key: NodePath<Expression | PrivateName>,
   computed: boolean,
 ): Array<NodePath<Property | MemberExpression>> | null {
-  if (!computed && property.isIdentifier()) {
-    return findNamedClassMemberAccessorExpressions(classDefinition, property.node.name);
+  if (!computed && key.isIdentifier()) {
+    return findNamedClassMemberAccessorExpressions(classDefinition, key.node.name);
   }
-  if (property.isPrivateName()) {
-    return findPrivateClassMemberAccessorExpressions(classDefinition, property);
+  if (key.isPrivateName()) {
+    return findPrivateClassMemberAccessorExpressions(classDefinition, key);
   }
-  if (property.isLiteral()) {
-    return findLiteralClassMemberAccessorExpressions(classDefinition, property);
+  if (key.isLiteral()) {
+    return findLiteralClassMemberAccessorExpressions(classDefinition, key);
   }
   return null;
 }
 
-export function findNamedClassMemberAccessorExpressions(
+function findNamedClassMemberAccessorExpressions(
   classDefinition: NodePath<Class | ObjectExpression>,
   fieldName: string,
 ): Array<NodePath<Property | MemberExpression>> {

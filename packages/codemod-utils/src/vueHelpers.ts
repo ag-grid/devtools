@@ -193,8 +193,7 @@ function getVueComponentDataFieldInitializers(
         if (!value.isObjectExpression()) return null;
         return getVueComponentObjectLiteralDataFieldInitializer(value, fieldName);
       })
-      .filter(nonNull)
-      .flatMap((references) => references || null);
+      .filter(nonNull);
   }
   return null;
 }
@@ -213,11 +212,7 @@ function getVueComponentStateOptionsInstanceMethods(
   const dataReferences = getVueComponentDataOptionInstanceMethods(options);
   const computedReferences = getVueComponentComputedPropertyInstanceMethods(options);
   const methodsReferences = getVueComponentMethodsPropertyInstanceMethods(options);
-  return [
-    ...(dataReferences || []),
-    ...(computedReferences || []),
-    ...(methodsReferences || []),
-  ].flatMap((references) => references || []);
+  return [...(dataReferences || []), ...(computedReferences || []), ...(methodsReferences || [])];
 }
 
 function getVueComponentDataOptionInstanceMethods(
@@ -483,8 +478,9 @@ export function printVueTemplate(ast: VueTemplateNode<VElement>): string | null 
     );
     return formatUpdatedNode(original, path, mutations, template.source);
   });
-  if (!chunkSets.every(Boolean)) return null;
-  return mergeSourceChunks(chunkSets.flatMap((chunks) => chunks || []));
+  const validChunkSets = chunkSets.filter(nonNull);
+  if (validChunkSets.length < chunkSets.length) return null;
+  return mergeSourceChunks(validChunkSets.flat());
 }
 
 type SourceChunk = string | { source: VueTemplateSource['source']; range: Node['range'] };
