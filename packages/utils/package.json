@@ -5,6 +5,10 @@
   "license": "MIT",
   "description": "Utility helpers",
   "author": "AG Grid <info@ag-grid.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ag-grid/devtools.git"
+  },
   "type": "module",
   "main": "./lib.ts",
   "module": "./lib.ts",

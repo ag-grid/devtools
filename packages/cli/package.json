@@ -22,6 +22,9 @@
     "watch:test": "vitest watch"
   },
   "pkg": {
+    "publishConfig": {
+      "access": "public"
+    },
     "main": "./index.js",
     "bin": "./index.js"
   },

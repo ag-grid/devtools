@@ -5,6 +5,10 @@
   "license": "MIT",
   "description": "Build tool configuration",
   "author": "AG Grid <info@ag-grid.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ag-grid/devtools.git"
+  },
   "scripts": {
     "lint": "eslint --ext js,cjs,mjs,ts --max-warnings 0 .",
     "verify": "pnpm run lint"
