@@ -42,7 +42,7 @@ const PackageNamespaceImportBinding = Enum.create<PackageNamespaceImportBinding>
   UmdGlobal: true,
 });
 
-type NamedImportBinding = Enum<{
+export type NamedImportBinding = Enum<{
   Module: {
     declaration: NodePath<ImportDeclaration>;
     accessor: Enum<{
@@ -87,32 +87,40 @@ type NamedImportBinding = Enum<{
   };
 }>;
 
-const NamedImportBinding = Enum.create<NamedImportBinding>({
+export const NamedImportBinding = Enum.create<NamedImportBinding>({
   Module: true,
   CommonJs: true,
   UmdGlobal: true,
 });
 
-const NamedModuleImportBindingAccessor = Enum.create<
-  EnumVariant<NamedImportBinding, 'Module'>['accessor']
->({
+export type NamedModuleImportBindingAccessor = EnumVariant<
+  NamedImportBinding,
+  'Module'
+>['accessor'];
+export const NamedModuleImportBindingAccessor = Enum.create<NamedModuleImportBindingAccessor>({
   Named: true,
   Namespaced: true,
 });
 
-const NamedCommonJsImportBindingAccessor = Enum.create<
-  EnumVariant<NamedImportBinding, 'CommonJs'>['accessor']
->({
+export type NamedCommonJsImportBindingAccessor = EnumVariant<
+  NamedImportBinding,
+  'CommonJs'
+>['accessor'];
+export const NamedCommonJsImportBindingAccessor = Enum.create<NamedCommonJsImportBindingAccessor>({
   Destructured: true,
   Namespaced: true,
 });
 
-const NamedUmdImportBindingAccessor = Enum.create<
-  EnumVariant<NamedImportBinding, 'UmdGlobal'>['accessor']
->({
-  Destructured: true,
-  Namespaced: true,
-});
+export type NamedUmdGlobalImportBindingAccessor = EnumVariant<
+  NamedImportBinding,
+  'UmdGlobal'
+>['accessor'];
+export const NamedUmdGlobalImportBindingAccessor = Enum.create<NamedUmdGlobalImportBindingAccessor>(
+  {
+    Destructured: true,
+    Namespaced: true,
+  },
+);
 
 export function getNamedModuleImportExpression(
   expression: NodePath<Expression | JSXIdentifier>,
@@ -162,7 +170,7 @@ export function getNamedModuleImportExpression(
         }),
       UmdGlobal: ({}) =>
         NamedImportBinding.UmdGlobal({
-          accessor: NamedUmdImportBindingAccessor.Namespaced({
+          accessor: NamedUmdGlobalImportBindingAccessor.Namespaced({
             accessor: expression,
             local: null,
           }),

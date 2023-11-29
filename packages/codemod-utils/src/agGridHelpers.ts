@@ -4,9 +4,12 @@ import {
   AccessorReference,
   areAccessorKeysEqual,
   getAccessorExpressionPaths,
+  getClassFieldAccessorPaths,
   getNamedModuleImportExpression,
+  getNamedObjectLiteralStaticPropertyValue,
   getOptionalNodeFieldValue,
   getStaticPropertyKey,
+  NamedImportBinding,
   node as t,
   type AccessorPath,
   type AstCliContext,
@@ -16,8 +19,6 @@ import {
   type FileMetadata,
   type NodePath,
   type Types,
-  getClassFieldAccessorPaths,
-  getNamedObjectLiteralStaticPropertyValue,
 } from '@ag-grid-devtools/ast';
 import {
   Enum,
@@ -76,8 +77,11 @@ type JSXSpreadAttribute = Types.JSXSpreadAttribute;
 type MemberExpression = Types.MemberExpression;
 type ObjectExpression = Types.ObjectExpression;
 type ObjectMethod = Types.ObjectMethod;
+type ObjectPattern = Types.ObjectPattern;
 type ObjectProperty = Types.ObjectProperty;
 type PrivateName = Types.PrivateName;
+type TSAsExpression = Types.TSAsExpression;
+type TSType = Types.TSType;
 type TSTypeAnnotation = Types.TSTypeAnnotation;
 type VariableDeclaration = Types.VariableDeclaration;
 type VariableDeclarator = Types.VariableDeclarator;
@@ -94,14 +98,12 @@ type VDirectiveKey = AST.VDirectiveKey;
 type VElement = AST.VElement;
 type VIdentifier = AST.VIdentifier;
 
-type BabelPluginOpts<T> = {
-  opts: T;
-};
-
 export const AG_GRID_JS_PACKAGE_NAME_PATTERN =
   /^(?:ag-grid-(?:community|enterprise)|@ag-grid-community\/core)$/;
 export const AG_GRID_JS_UMD_GLOBAL_NAME = 'agGrid';
 const AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME = 'createGrid';
+const AG_GRID_JS_GRID_API_CLASS_NAME = 'GridApi';
+const AG_GRID_JS_COLUMN_API_CLASS_NAME = 'ColumnApi';
 
 const AG_GRID_REACT_PACKAGE_NAME_PATTERN = /^(?:ag-grid-react|@ag-grid-community\/react)$/;
 const AG_GRID_REACT_GRID_COMPONENT_NAME = 'AgGridReact';
@@ -232,6 +234,8 @@ export type GridApiDefinition = Enum<{
     options: NodePath<Expression> | null;
   };
   TypeScript: {
+    typeAnnotation: NodePath<TSTypeAnnotation | TSType>;
+    importedType: NamedImportBinding;
     declaration: Enum<{
       Property: {
         parentClass: NodePath<Class>;
@@ -245,6 +249,9 @@ export type GridApiDefinition = Enum<{
       Param: {
         parentFunction: NodePath<FunctionParent>;
         param: NodePath<FunctionParam>;
+      };
+      Cast: {
+        expression: NodePath<TSAsExpression>;
       };
     }>;
   };
@@ -271,6 +278,12 @@ export const GridApiDefinition = Enum.create<GridApiDefinition>({
   Vue: true,
 });
 
+export type JavaScriptGridApiDefinition = EnumVariant<GridApiDefinition, 'JavaScript'>;
+export type TypeScriptGridApiDefinition = EnumVariant<GridApiDefinition, 'TypeScript'>;
+export type ReactGridApiDefinition = EnumVariant<GridApiDefinition, 'React'>;
+export type AngularGridApiDefinition = EnumVariant<GridApiDefinition, 'Angular'>;
+export type VueGridApiDefinition = EnumVariant<GridApiDefinition, 'Vue'>;
+
 export type TypeScriptGridApiDeclaration = EnumOptions<
   GridApiDefinition,
   'TypeScript'
@@ -280,32 +293,35 @@ export const TypeScriptGridApiDeclaration = Enum.create<TypeScriptGridApiDeclara
   Property: true,
   Variable: true,
   Param: true,
+  Cast: true,
 });
 
 export type GridApiInstance = Enum<{
   JavaScript: {
     definition: JavaScriptGridApiDefinition;
-    references: Array<AccessorPath>;
+    references: Array<Expression>;
   };
   TypeScript: {
     definition: TypeScriptGridApiDefinition;
-    references: Array<AccessorPath>;
+    references: Array<Expression>;
   };
   React: {
     definition: ReactGridApiDefinition;
-    refAccessors: Array<AccessorPath>;
+    refAccessors: Array<NodePath<Expression>>;
+    apiAccessors: Array<StaticPropertyAccessor>;
   };
   Angular: {
     definition: AngularGridApiDefinition;
     bindings: Array<
       Enum<{
         Element: {
-          accessor: AccessorPath;
+          references: Array<NodePath<Expression>>;
+          apiAccessors: Array<StaticPropertyAccessor>;
         };
         Event: {
           output: TmplAstBoundEvent;
           handler: NodePath<ClassMethod>;
-          eventAccessor: AccessorPath;
+          accessors: Array<GridApiEventAccessor>;
         };
       }>
     >;
@@ -315,7 +331,7 @@ export type GridApiInstance = Enum<{
     bindings: Array<{
       directive: VueTemplateNode<VDirective>;
       handler: NodePath<Method>;
-      references: Array<>;
+      references: Array<GridApiEventAccessor>;
     }>;
   };
 }>;
@@ -328,6 +344,30 @@ export const GridApiInstance = Enum.create<GridApiInstance>({
   Vue: true,
 });
 
+export type GridApiEventAccessor = Enum<{
+  Direct: {
+    event: NodePath<Identifier>;
+    references: Array<Expression>;
+    apiAccessors: Array<{
+      accessor: StaticPropertyAccessor;
+      references: Array<NodePath<Expression>>;
+    }>;
+  };
+  Destructured: {
+    event: NodePath<ObjectPattern>;
+    apiAccessors: Array<{
+      key: NodePath<Identifier>;
+      local: NodePath<Identifier>;
+      references: Array<NodePath<Expression>>;
+    }>;
+  };
+}>;
+
+export const GridApiEventAccessor = Enum.create<GridApiEventAccessor>({
+  Direct: true,
+  Destructured: true,
+});
+
 export type AngularGridApiBinding = EnumOptions<GridApiInstance, 'Angular'>['bindings'][number];
 
 export const AngularGridApiBinding = Enum.create<AngularGridApiBinding>({
@@ -335,11 +375,37 @@ export const AngularGridApiBinding = Enum.create<AngularGridApiBinding>({
   Event: true,
 });
 
-export type JavaScriptGridApiDefinition = EnumVariant<GridApiDefinition, 'JavaScript'>;
-export type TypeScriptGridApiDefinition = EnumVariant<GridApiDefinition, 'TypeScript'>;
-export type ReactGridApiDefinition = EnumVariant<GridApiDefinition, 'React'>;
-export type AngularGridApiDefinition = EnumVariant<GridApiDefinition, 'Angular'>;
-export type VueGridApiDefinition = EnumVariant<GridApiDefinition, 'Vue'>;
+export type StaticPropertyAccessor = Enum<{
+  Member: {
+    accessor: NodePath<MemberExpression>;
+    key: NodePath<Identifier>;
+    object: NodePath<Expression>;
+  };
+  Destructured: {
+    accessor: NodePath<ObjectProperty>;
+    key: NodePath<Identifier>;
+    object: StaticPropertyAccessorTarget;
+  };
+}>;
+
+export const StaticPropertyAccessor = Enum.create<StaticPropertyAccessor>({
+  Member: true,
+  Destructured: true,
+});
+
+export type StaticPropertyAccessorTarget = Enum<{
+  Expression: {
+    target: NodePath<Expression>;
+  };
+  Accessor: {
+    target: StaticPropertyAccessor;
+  };
+}>;
+
+export const StaticPropertyAccessorTarget = Enum.create<StaticPropertyAccessorTarget>({
+  Expression: true,
+  Accessor: true,
+});
 
 export type PropertyInitializerNode = ObjectProperty | ObjectMethod;
 export type PropertyAssignmentNode = AssignmentExpression & {
@@ -404,20 +470,20 @@ export function visitGridApiDefinitions<
       const typedClassProperties = getTypedClassPropertyFields(path);
       const gridApiProperties = typedClassProperties
         .map(([property, propertyType]) => {
-          if (!isGridApiTypeAnnotation(propertyType)) return null;
-          return TypeScriptGridApiDeclaration.Property({
-            parentClass: path,
-            property: property,
+          const importedType = getGridApiTypeAnnotation(propertyType);
+          if (!importedType) return null;
+          return GridApiDefinition.TypeScript({
+            typeAnnotation: propertyType,
+            importedType,
+            declaration: TypeScriptGridApiDeclaration.Property({
+              parentClass: path,
+              property: property,
+            }),
           });
         })
         .filter(nonNull);
-      for (const property of gridApiProperties) {
-        visitor(
-          GridApiDefinition.TypeScript({
-            declaration: property,
-          }),
-          context,
-        );
+      for (const gridApiProperty of gridApiProperties) {
+        visitor(gridApiProperty, context);
       }
       const template = parseAngularComponentTemplate(path, context);
       if (!template) return;
@@ -442,15 +508,19 @@ export function visitGridApiDefinitions<
         visitor(GridApiDefinition.Vue({ component: path, template, element }), context);
       }
     },
-    // Match TypeScript variable declarations
+    // Match typed variable declarations
     VariableDeclarator(path, context) {
       if (!path.parentPath.isVariableDeclaration()) return;
       const local = path.get('id');
       if (!local.isIdentifier()) return;
       const typeAnnotation = getOptionalNodeFieldValue(local.get('typeAnnotation'));
-      if (!typeAnnotation || !isGridApiTypeAnnotation(typeAnnotation)) return;
+      if (!typeAnnotation || !typeAnnotation.isTSTypeAnnotation()) return;
+      const importedType = getGridApiTypeAnnotation(typeAnnotation);
+      if (!importedType) return;
       visitor(
         GridApiDefinition.TypeScript({
+          typeAnnotation,
+          importedType,
           declaration: TypeScriptGridApiDeclaration.Variable({
             declaration: path.parentPath,
             declarator: path,
@@ -460,27 +530,41 @@ export function visitGridApiDefinitions<
         context,
       );
     },
-    // Match TypeScript function parameters
+    // Match typed function parameters
     FunctionParent(path, context) {
       const params = getTypedFunctionParams(path);
       if (!params) return;
       const gridApiParams = params
         .map(([param, paramType]) => {
-          if (!isGridApiTypeAnnotation(paramType)) return null;
-          return param;
+          const importedType = getGridApiTypeAnnotation(paramType);
+          if (!importedType) return null;
+          return GridApiDefinition.TypeScript({
+            typeAnnotation: paramType,
+            importedType,
+            declaration: TypeScriptGridApiDeclaration.Param({
+              parentFunction: path,
+              param,
+            }),
+          });
         })
         .filter(nonNull);
       for (const gridApiParam of gridApiParams) {
-        visitor(
-          GridApiDefinition.TypeScript({
-            declaration: TypeScriptGridApiDeclaration.Param({
-              parentFunction: path,
-              param: gridApiParam,
-            }),
-          }),
-          context,
-        );
+        visitor(gridApiParam, context);
       }
+    },
+    // Match type-casted expressions
+    TSAsExpression(path, context) {
+      const type = path.get('typeAnnotation');
+      const importedType = getGridApiType(type);
+      if (!importedType) return;
+      const gridApiCast = GridApiDefinition.TypeScript({
+        typeAnnotation: type,
+        importedType,
+        declaration: TypeScriptGridApiDeclaration.Cast({
+          expression: path,
+        }),
+      });
+      visitor(gridApiCast, context);
     },
   };
 }
@@ -907,6 +991,33 @@ export function visitGridOptionsProperties<
     // FIXME: support traversing array literals
     return [];
   }
+}
+
+function getGridApiTypeAnnotation(
+  typeAnnotation: NodePath<TSTypeAnnotation>,
+): NamedImportBinding | null {
+  return getGridApiType(typeAnnotation.get('typeAnnotation'));
+}
+
+function getGridApiType(type: NodePath<TSType>): NamedImportBinding | null {
+  if (!type.isTSTypeReference()) return null;
+  const typeName = type.get('typeName');
+  if (!typeName.isIdentifier()) return null;
+  const gridApiImport = getNamedModuleImportExpression(
+    typeName,
+    AG_GRID_JS_PACKAGE_NAME_PATTERN,
+    null,
+    AG_GRID_JS_GRID_API_CLASS_NAME,
+  );
+  if (gridApiImport) return gridApiImport;
+  const columnApiImport = getNamedModuleImportExpression(
+    typeName,
+    AG_GRID_JS_PACKAGE_NAME_PATTERN,
+    null,
+    AG_GRID_JS_COLUMN_API_CLASS_NAME,
+  );
+  if (columnApiImport) return columnApiImport;
+  return null;
 }
 
 export function isGridApiReference(
