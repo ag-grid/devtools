@@ -338,6 +338,45 @@ describe(getExpressionReferences, () => {
         expect(actualRef.path.node).toBe(expectedRef.node);
       }
     });
+
+    test.skip('mutually recursive variables', () => {
+      const expression = t.numericLiteral(3);
+      const declaration1 = t.identifier('foo');
+      const declaration2 = t.identifier('bar');
+      const accessor1 = t.identifier('foo');
+      const accessor2 = t.identifier('bar');
+      const assignment1 = t.identifier(declaration1.name);
+      const assignment2 = t.identifier(declaration2.name);
+      const assignment3 = t.identifier(declaration1.name);
+      const usage = t.identifier(declaration1.name);
+      const input = ast.module`
+        'pre';
+        let ${declaration1}, ${declaration2};
+        ${assignment1} = ${accessor2};
+        ${assignment2} = ${accessor1};
+        ${assignment3} = ${expression};
+        ${usage};
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Expression> => path.node === expression,
+      )!;
+      const actual = getExpressionReferences(target);
+      const expected = [
+        { type: 'Value', node: expression },
+        { type: 'Variable', node: declaration1 },
+        { type: 'Variable', node: declaration2 },
+        { type: 'Variable', node: assignment1 },
+        { type: 'Variable', node: assignment2 },
+        { type: 'Variable', node: assignment3 },
+        { type: 'Variable', node: usage },
+      ];
+      expect(stripReferencePaths(actual)).toEqual(expected);
+      for (const [actualRef, expectedRef] of zip(actual, expected)) {
+        expect(actualRef.path.node).toBe(expectedRef.node);
+      }
+    });
   });
 
   describe('object property assignment', () => {
