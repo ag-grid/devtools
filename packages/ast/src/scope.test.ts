@@ -210,8 +210,8 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'Variable', node: assignment },
         { type: 'Variable', node: declaration },
+        { type: 'Variable', node: assignment },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -238,8 +238,8 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'Variable', node: assignment },
         { type: 'Variable', node: declaration },
+        { type: 'Variable', node: assignment },
         { type: 'Variable', node: usage },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
@@ -267,8 +267,8 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'Variable', node: assignment },
         { type: 'Variable', node: declaration },
+        { type: 'Variable', node: assignment },
         { type: 'Variable', node: reassignment },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
@@ -298,8 +298,8 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'Variable', node: assignment },
         { type: 'Variable', node: declaration },
+        { type: 'Variable', node: assignment },
         { type: 'Variable', node: usage1 },
         { type: 'Variable', node: usage2 },
       ];
@@ -464,7 +464,7 @@ describe(getExpressionReferences, () => {
         { type: 'Value', node: expression },
         { type: 'PropertyAccessor', node: assignment },
         { type: 'PropertyInitializer', node: property },
-        { type: 'Variable', node: shorthandPropertyAccessor },
+        { type: 'DestructuringAccessor', node: shorthandPropertyAccessor },
         { type: 'Variable', node: accessor2 },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
@@ -497,7 +497,7 @@ describe(getExpressionReferences, () => {
         { type: 'Value', node: expression },
         { type: 'PropertyAccessor', node: assignment },
         { type: 'PropertyInitializer', node: property },
-        { type: 'Variable', node: accessor1 },
+        { type: 'DestructuringAccessor', node: accessor1 },
         { type: 'Variable', node: accessor2 },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
@@ -533,10 +533,11 @@ describe(getObjectPropertyReferences, () => {
     const property = t.objectProperty(t.identifier('bar'), t.nullLiteral());
     const object = t.objectExpression([property]);
     const assignment = ast.expression`qux.bar`;
+    const updatedValue = t.numericLiteral(3);
     const input = ast.module`
       'pre';
       const qux = ${object};
-      ${assignment} = 3;
+      ${assignment} = ${updatedValue};
       'post';
     `;
     const target = findAstNode(
@@ -547,6 +548,7 @@ describe(getObjectPropertyReferences, () => {
     const expected = [
       { type: 'PropertyInitializer', node: property },
       { type: 'PropertyAccessor', node: assignment },
+      { type: 'Value', node: updatedValue },
     ];
     expect(stripReferencePaths(actual)).toEqual(expected);
     for (const [actualRef, expectedRef] of zip(actual, expected)) {

@@ -64,6 +64,10 @@ export type Reference = Enum<{
   ArrayPattern: {
     path: NodePath<ArrayPattern>;
   };
+  DestructuringAccessor: {
+    path: NodePath<Identifier>;
+    destructuring: Array<[AccessorKey, NodePath<LVal>]>;
+  };
   PropertyAccessor: {
     path: NodePath<MemberExpression | OptionalMemberExpression>;
   };
@@ -82,6 +86,7 @@ export const Reference = Enum.create<Reference>({
   Variable: true,
   ObjectPattern: true,
   ArrayPattern: true,
+  DestructuringAccessor: true,
   PropertyAccessor: true,
   FunctionDeclaration: true,
   Value: true,
@@ -145,7 +150,7 @@ export function getLocalAccessorReferences(
   return getLocalAccessorTargets(expression).flatMap((assignmentTarget) =>
     match(assignmentTarget, {
       // If the local accessor is an alias to a variable, return all the other references to that variable
-      Variable: (ref) => [ref, ...getIdentifierExpressionReferences(ref.path)],
+      Variable: (ref) => getIdentifierExpressionReferences(ref.path),
       // If the local accessor is an alias to an object property, return all the other references to that object property
       PropertyAccessor: (ref) => [ref, ...getPropertyAccessorReferences(ref.path)],
       // If the local accessor is an alias to a hoisted function, return all the other references to that function
@@ -153,6 +158,8 @@ export function getLocalAccessorReferences(
       // If the local accessor is a destructuring pattern, there can be no other references to that variable (only its contents)
       ObjectPattern: (ref) => [ref],
       ArrayPattern: (ref) => [ref],
+      // If the local accessor is an alias to a destructured variable, return all the other references to that variable
+      DestructuringAccessor: (ref) => getIdentifierExpressionReferences(ref.path),
       // References to value initializers will already be covered by the references to the assignment expression's accessor
       Value: (ref) => [ref],
       // References to value initializer properties will already be covered by the references to the assignment expression's accessor
@@ -222,7 +229,7 @@ export function getIdentifierExpressionReferences(target: NodePath<Identifier>):
     ...initializers.map((initializer) => Reference.Value({ path: initializer })),
     ...assignments,
     ...accessors,
-  ].filter((reference) => reference.path.node !== target.node);
+  ];
 }
 
 function getPropertyAccessorReferences(
@@ -300,11 +307,17 @@ export function getObjectPropertyReferences(
       const parent = getTypeErasedParent(objectReference.path);
       if (!parent) return [];
       // If the reference target forms part of a matching property accessor, get a reference to the overall accessor expression
+      // FIXME: clean up
       if (parent.isMemberExpression()) {
         const accessorProperty = stripTypeScriptAnnotations(parent.get('property'));
         const accessorComputed = parent.node.computed;
         const accessorKey = createPropertyKey(accessorProperty, accessorComputed);
         if (!accessorKey || !areAccessorKeysEqual(propertyKey, accessorKey)) return [];
+        const grandparent = getTypeErasedParent(parent);
+        if (grandparent && grandparent.isAssignmentExpression()) {
+          const value = stripTypeScriptAnnotations(grandparent.get('right'));
+          return [Reference.PropertyAccessor({ path: parent }), Reference.Value({ path: value })];
+        }
         return [Reference.PropertyAccessor({ path: parent })];
       }
       // If the reference target forms part of a matching property accessor assignment, get a reference to the overall accessor expression
@@ -315,7 +328,11 @@ export function getObjectPropertyReferences(
         const accessorComputed = assignmentTarget.node.computed;
         const accessorKey = createPropertyKey(accessorProperty, accessorComputed);
         if (!accessorKey || !areAccessorKeysEqual(propertyKey, accessorKey)) return [];
-        return [Reference.PropertyAccessor({ path: assignmentTarget })];
+        const value = stripTypeScriptAnnotations(parent.get('right'));
+        return [
+          Reference.PropertyAccessor({ path: assignmentTarget }),
+          Reference.Value({ path: value }),
+        ];
       }
       // If the reference target is the property of a destructuring pattern, get references to the matching destructured properties
       if (parent.isObjectPattern()) {
@@ -382,7 +399,7 @@ function getBindingTargetReference(
     case 'const':
       if (!binding.path.isVariableDeclarator()) return null;
       const targetVariable = binding.path.get('id');
-      return getBindingAssignmentTargetReference(targetVariable, identifier);
+      return getBindingAssignmentTargetReference(targetVariable, identifier, []);
     case 'module':
       if (binding.path.isImportSpecifier()) {
         return Reference.Variable({ path: binding.path.get('local') });
@@ -407,6 +424,126 @@ function getBindingTargetReference(
       if (binding.path.isIdentifier()) return Reference.Variable({ path: binding.path });
       return null;
   }
+}
+
+function getBindingAssignmentTargetReference(
+  targetVariable: NodePath<LVal>,
+  local: NodePath<Identifier>,
+  parentPath: Array<[AccessorKey, NodePath<PatternLike>]>,
+): Reference | null {
+  if (targetVariable.isIdentifier()) {
+    return getIdentifierBindingAssignmentTargetReference(targetVariable, local, parentPath);
+  }
+  if (targetVariable.isAssignmentPattern()) {
+    return getDefaultedBindingAssignmentTargetReference(targetVariable, local, parentPath);
+  }
+  if (targetVariable.isObjectPattern()) {
+    return getDestructuredObjectBindingAssignmentTargetReference(targetVariable, local, parentPath);
+  }
+  if (targetVariable.isArrayPattern()) {
+    return getDestructuredArrayBindingAssignmentTargetReference(targetVariable, local, parentPath);
+  }
+  if (targetVariable.isRestElement()) {
+    return getDestructuredRestBindingAssignmentTargetReference(targetVariable, local, parentPath);
+  }
+  return null;
+}
+
+function getIdentifierBindingAssignmentTargetReference(
+  targetVariable: NodePath<Identifier>,
+  identifier: NodePath<Identifier>,
+  parentPath: Array<[AccessorKey, NodePath<PatternLike>]>,
+): Reference | null {
+  if (targetVariable.node.name !== identifier.node.name) return null;
+  if (parentPath.length === 0) {
+    return Reference.Variable({ path: targetVariable });
+  } else {
+    return Reference.DestructuringAccessor({
+      path: targetVariable,
+      destructuring: parentPath,
+    });
+  }
+}
+
+function getDefaultedBindingAssignmentTargetReference(
+  targetVariable: NodePath<AssignmentPattern>,
+  identifier: NodePath<Identifier>,
+  parentPath: Array<[AccessorKey, NodePath<PatternLike>]>,
+): Reference | null {
+  return getBindingAssignmentTargetReference(targetVariable.get('left'), identifier, parentPath);
+}
+
+function getDestructuredArrayBindingAssignmentTargetReference(
+  targetVariable: NodePath<ArrayPattern>,
+  identifier: NodePath<Identifier>,
+  parentPath: Array<[AccessorKey, NodePath<PatternLike>]>,
+): Reference | null {
+  return (
+    targetVariable
+      .get('elements')
+      .map((element, index) => {
+        const localAccessor = getOptionalNodeFieldValue(element);
+        if (!localAccessor || !localAccessor.isPatternLike()) return null;
+        if (localAccessor.isRestElement()) {
+          return getBindingAssignmentTargetReference(localAccessor, identifier, [
+            ...parentPath,
+            [AccessorKey.ArrayRest({ startIndex: index }), localAccessor],
+          ]);
+        }
+        return getBindingAssignmentTargetReference(localAccessor, identifier, [
+          ...parentPath,
+          [AccessorKey.Index({ index }), localAccessor],
+        ]);
+      })
+      .find(nonNull) || null
+  );
+}
+
+function getDestructuredObjectBindingAssignmentTargetReference(
+  targetVariable: NodePath<ObjectPattern>,
+  identifier: NodePath<Identifier>,
+  parentPath: Array<[AccessorKey, NodePath<PatternLike>]>,
+): Reference | null {
+  const { namedProperties, restElement } = targetVariable.get('properties').reduce(
+    (state, property) => {
+      if (property.isRestElement()) {
+        state.restElement = property;
+      } else if (property.isObjectProperty()) {
+        const propertyKey = createPropertyKey(property.get('key'), property.node.computed);
+        if (propertyKey) state.namedProperties.push([propertyKey, property]);
+      }
+      return state;
+    },
+    {
+      namedProperties: new Array<[AccessorKey, NodePath<ObjectProperty>]>(),
+      restElement: null as NodePath<RestElement> | null,
+    },
+  );
+  const namedPropertyReference = namedProperties
+    .map(([propertyKey, property]) => {
+      const variableName = property.get('value');
+      if (!variableName.isPatternLike()) return null;
+      return getBindingAssignmentTargetReference(variableName, identifier, [
+        ...parentPath,
+        [propertyKey, variableName],
+      ]);
+    })
+    .find(nonNull);
+  if (namedPropertyReference) return namedPropertyReference;
+  if (!restElement) return null;
+  const namedPropertyKeys = namedProperties.map(([propertyKey]) => propertyKey);
+  return getBindingAssignmentTargetReference(restElement, identifier, [
+    ...parentPath,
+    [AccessorKey.ObjectRest({ excluded: namedPropertyKeys }), restElement],
+  ]);
+}
+
+function getDestructuredRestBindingAssignmentTargetReference(
+  targetVariable: NodePath<RestElement>,
+  local: NodePath<Identifier>,
+  parentPath: Array<[AccessorKey, NodePath<PatternLike>]>,
+): Reference | null {
+  return getBindingAssignmentTargetReference(targetVariable.get('argument'), local, parentPath);
 }
 
 function getBindingInitializers(
@@ -496,86 +633,6 @@ function getDestructuredVariableDeclarationInitializers(
   if (assignmentTarget.isRestElement()) {
   }
   return [];
-}
-
-function getBindingAssignmentTargetReference(
-  targetVariable: NodePath<LVal>,
-  local: NodePath<Identifier>,
-): Reference | null {
-  if (targetVariable.isIdentifier()) {
-    return getIdentifierBindingAssignmentTargetReference(targetVariable, local);
-  }
-  if (targetVariable.isAssignmentPattern()) {
-    return getDefaultedBindingAssignmentTargetReference(targetVariable, local);
-  }
-  if (targetVariable.isObjectPattern()) {
-    return getDestructuredObjectBindingAssignmentTargetReference(targetVariable, local);
-  }
-  if (targetVariable.isArrayPattern()) {
-    return getDestructuredArrayBindingAssignmentTargetReference(targetVariable, local);
-  }
-  if (targetVariable.isRestElement()) {
-    return getDestructuredRestBindingAssignmentTargetReference(targetVariable, local);
-  }
-  return null;
-}
-
-function getIdentifierBindingAssignmentTargetReference(
-  targetVariable: NodePath<Identifier>,
-  local: NodePath<Identifier>,
-): Reference | null {
-  if (targetVariable.node.name !== local.node.name) return null;
-  return Reference.Variable({ path: targetVariable });
-}
-
-function getDefaultedBindingAssignmentTargetReference(
-  targetVariable: NodePath<AssignmentPattern>,
-  local: NodePath<Identifier>,
-): Reference | null {
-  return getBindingAssignmentTargetReference(targetVariable.get('left'), local);
-}
-
-function getDestructuredArrayBindingAssignmentTargetReference(
-  targetVariable: NodePath<ArrayPattern>,
-  local: NodePath<Identifier>,
-): Reference | null {
-  return (
-    targetVariable
-      .get('elements')
-      .map((element) => {
-        const variableName = getOptionalNodeFieldValue(element);
-        if (!variableName) return null;
-        return getBindingAssignmentTargetReference(variableName, local);
-      })
-      .find(nonNull) || null
-  );
-}
-
-function getDestructuredObjectBindingAssignmentTargetReference(
-  targetVariable: NodePath<ObjectPattern>,
-  local: NodePath<Identifier>,
-): Reference | null {
-  return (
-    targetVariable
-      .get('properties')
-      .map((property) => {
-        if (property.isRestElement()) return getBindingAssignmentTargetReference(property, local);
-        if (property.isObjectProperty()) {
-          const variableName = property.get('value');
-          if (!variableName.isPatternLike()) return null;
-          return getBindingAssignmentTargetReference(variableName, local);
-        }
-        return null;
-      })
-      .find(nonNull) || null
-  );
-}
-
-function getDestructuredRestBindingAssignmentTargetReference(
-  targetVariable: NodePath<RestElement>,
-  local: NodePath<Identifier>,
-): Reference | null {
-  return getBindingAssignmentTargetReference(targetVariable.get('argument'), local);
 }
 
 export function getAccessorExpressionPaths(
