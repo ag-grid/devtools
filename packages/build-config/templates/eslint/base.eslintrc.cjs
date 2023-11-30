@@ -12,6 +12,11 @@ module.exports = {
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
+  settings: {
+    'import/resolver': {
+      typescript: {},
+    },
+  },
   overrides: [
     {
       files: ['.eslintrc.cjs'],

@@ -1,14 +1,4 @@
 {
-  "extends": ["../build-config/templates/tsc/tsconfig.json"],
-  "include": [
-    "src",
-    "lib.ts",
-    "lib.test.ts",
-    "*.config.ts",
-    "package.json",
-    "lib.test.ts",
-    "lib.ts",
-    "../utils/src/stringHelpers.test.ts",
-    "../utils/src/stringHelpers.ts"
-  ]
+  "extends": "../build-config/templates/tsc/tsconfig.json",
+  "include": ["src", "lib.ts", "lib.test.ts", "*.config.ts", "package.json"]
 }
