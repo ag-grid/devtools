@@ -2,10 +2,16 @@ import { describe, expect, test } from 'vitest';
 
 import * as ast from './ast';
 import { generate } from './generate';
+import { node as t } from './node';
 import { NodePath, getModuleRoot } from './parse';
-import { generateUniqueScopeBinding, getAccessorExpressionPaths } from './scope';
+import {
+  generateUniqueScopeBinding,
+  getAccessorExpressionPaths,
+  getExpressionReferences,
+} from './scope';
 import { AccessorKey, AccessorReference, type AccessorPath, type Types } from './types';
 import { match, unreachable } from '@ag-grid-devtools/utils';
+import { findAstNode } from './traverse';
 
 type Class = Types.Class;
 type ClassBody = Types.ClassBody;
@@ -16,6 +22,210 @@ type ObjectExpression = Types.ObjectExpression;
 type PrivateName = Types.PrivateName;
 type Property = Types.Property;
 type Statement = Types.Statement;
+
+describe.only(getExpressionReferences, () => {
+  test('no references', () => {
+    const expression = t.numericLiteral(3);
+    const input = ast.module`
+      'pre';
+      ${expression};
+      'post';
+    `;
+    const target = findAstNode(
+      input,
+      (path): path is NodePath<Expression> => path.node === expression,
+    )!;
+    const actual = getExpressionReferences(target);
+    expect(actual).toEqual([]);
+  });
+
+  describe('variable declaration', () => {
+    test('no references', () => {
+      const expression = t.numericLiteral(3);
+      const identifier = t.identifier('foo');
+      const input = ast.module`
+        'pre';
+        const ${identifier} = ${expression};
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Expression> => path.node === expression,
+      )!;
+      const actual = getExpressionReferences(target);
+      expect(actual && actual.map(({ node }) => node)).toEqual([identifier]);
+      expect(actual && actual[0].node).toBe(identifier);
+    });
+
+    test('single reference', () => {
+      const expression = t.numericLiteral(3);
+      const identifier = t.identifier('foo');
+      const usage = t.identifier(identifier.name);
+      const input = ast.module`
+        'pre';
+        const ${identifier} = ${expression};
+        ${usage};
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Expression> => path.node === expression,
+      )!;
+      const actual = getExpressionReferences(target);
+      expect(actual && actual.map(({ node }) => node)).toEqual([identifier, usage]);
+      expect(actual && actual[0].node).toBe(identifier);
+      expect(actual && actual[1].node).toBe(usage);
+    });
+
+    test('multiple references', () => {
+      const expression = t.numericLiteral(3);
+      const identifier = t.identifier('foo');
+      const usage1 = t.identifier(identifier.name);
+      const usage2 = t.identifier(identifier.name);
+      const input = ast.module`
+        'pre';
+        const ${identifier} = ${expression};
+        ${usage1};
+        ${usage2};
+        'post'
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Expression> => path.node === expression,
+      )!;
+      const actual = getExpressionReferences(target);
+      expect(actual && actual.map(({ node }) => node)).toEqual([identifier, usage1, usage2]);
+      expect(actual && actual[0].node).toBe(identifier);
+      expect(actual && actual[1].node).toBe(usage1);
+      expect(actual && actual[2].node).toBe(usage2);
+    });
+
+    test('object destructuring', () => {
+      const expression = ast.expression`({ foo: 3, bar: 4, baz: 5 })`;
+      const pattern = t.objectPattern([
+        t.objectProperty(t.identifier('foo'), t.identifier('foo')),
+        t.objectProperty(
+          t.identifier('bar'),
+          t.assignmentExpression('=', t.identifier('second'), t.numericLiteral(4)),
+        ),
+        t.restElement(t.identifier('qux')),
+      ]);
+      const input = ast.module`
+        'pre';
+        const ${pattern} = ${expression};
+        foo;
+        second;
+        qux;
+        'post'
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Expression> => path.node === expression,
+      )!;
+      const actual = getExpressionReferences(target);
+      expect(actual && actual.map(({ node }) => node)).toEqual([pattern]);
+      expect(actual && actual[0].node).toBe(pattern);
+    });
+  });
+
+  describe('variable assignment', () => {
+    test.only('no references', () => {
+      const expression = t.numericLiteral(3);
+      const declaration = t.identifier('foo');
+      const assignment = t.identifier(declaration.name);
+      const input = ast.module`
+        'pre';
+        let ${declaration};
+        ${assignment} = ${expression};
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Expression> => path.node === expression,
+      )!;
+      const actual = getExpressionReferences(target);
+      expect(actual && actual.map(({ node }) => node)).toEqual([assignment, declaration]);
+      expect(actual && actual[0].node).toBe(assignment);
+      expect(actual && actual[1].node).toBe(declaration);
+    });
+
+    test('single reference', () => {
+      const expression = t.numericLiteral(3);
+      const declaration = t.identifier('foo');
+      const assignment = t.identifier(declaration.name);
+      const usage = t.identifier(declaration.name);
+      const input = ast.module`
+        'pre';
+        let ${declaration}
+        ${assignment} = ${expression};
+        ${usage};
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Expression> => path.node === expression,
+      )!;
+      const actual = getExpressionReferences(target);
+      expect(actual && actual.map(({ node }) => node)).toEqual([assignment, declaration, usage]);
+      expect(actual && actual[0].node).toBe(assignment);
+      expect(actual && actual[1].node).toBe(declaration);
+      expect(actual && actual[2].node).toBe(usage);
+    });
+
+    test('multiple references', () => {
+      const expression = t.numericLiteral(3);
+      const declaration = t.identifier('foo');
+      const assignment = t.identifier(declaration.name);
+      const usage1 = t.identifier(declaration.name);
+      const usage2 = t.identifier(declaration.name);
+      const input = ast.module`
+        'pre';
+        let ${declaration};
+        ${assignment} = ${expression};
+        ${usage1};
+        ${usage2};
+        'post'
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Expression> => path.node === expression,
+      )!;
+      const actual = getExpressionReferences(target);
+      expect(actual && actual.map(({ node }) => node)).toEqual([
+        assignment,
+        declaration,
+        usage1,
+        usage2,
+      ]);
+      expect(actual && actual[0].node).toBe(assignment);
+      expect(actual && actual[1].node).toBe(declaration);
+      expect(actual && actual[2].node).toBe(usage1);
+      expect(actual && actual[3].node).toBe(usage2);
+    });
+
+    test('object destructuring', () => {
+      const identifier = t.identifier('foo');
+      const key = t.identifier('bar');
+      const expression = ast.expression`({ foo: 3, bar: 4, baz: 5 })`;
+      const property = ast.expression`${identifier}.${key}`;
+      const accessor = ast.expression`${identifier}.${key}`;
+      const input = ast.module`
+        'pre';
+        const ${identifier} = { ${key}: null };
+        ${property} = ${expression};
+        ${accessor};
+        'post'
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Expression> => path.node === expression,
+      )!;
+      const actual = getExpressionReferences(target);
+      expect(actual && actual.map(({ node }) => node)).toEqual([property]);
+      expect(actual && actual[0].node).toBe(property);
+    });
+  });
+});
 
 describe(getAccessorExpressionPaths, () => {
   describe('const declarations', () => {
