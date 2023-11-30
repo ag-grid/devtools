@@ -1,12 +1,49 @@
-import { nonNull, unreachable } from '@ag-grid-devtools/utils';
+import { Enum, match, nonNull } from '@ag-grid-devtools/utils';
+import type {
+  TSAsExpression,
+  TSInstantiationExpression,
+  TSNonNullExpression,
+  TSParameterProperty,
+  TSSatisfiesExpression,
+  TSTypeAssertion,
+  ArrayPattern,
+  ArrowFunctionExpression,
+  AssignmentPattern,
+  Class,
+  ClassPrivateProperty,
+  Expression,
+  FunctionDeclaration,
+  FunctionParent,
+  Identifier,
+  Literal,
+  LVal,
+  Method,
+  MemberExpression,
+  ObjectExpression,
+  ObjectMethod,
+  ObjectPattern,
+  OptionalMemberExpression,
+  PatternLike,
+  PrivateName,
+  Property,
+  RestElement,
+  VariableDeclarator,
+  ObjectProperty,
+} from '@babel/types';
 
 import {
+  createPropertyKey,
+  createStaticPropertyKey,
   getLiteralPropertyKey,
+  getNamedObjectLiteralStaticProperty,
+  getNamedObjectLiteralStaticPropertyValue,
+  getNamedObjectPatternStaticPropertyValue,
   getOptionalNodeFieldValue,
   getStaticPropertyKey,
   node as t,
 } from './node';
 import {
+  areAccessorKeysEqual,
   AccessorKey,
   AccessorReference,
   type AccessorPath,
@@ -14,107 +51,156 @@ import {
   type Binding,
   type NodePath,
   type Scope,
-  type Types,
   type Visitor,
 } from './types';
 
-type ArrayPattern = Types.ArrayPattern;
-type ArrowFunctionExpression = Types.ArrowFunctionExpression;
-type AssignmentPattern = Types.AssignmentPattern;
-type Class = Types.Class;
-type ClassPrivateProperty = Types.ClassPrivateProperty;
-type Expression = Types.Expression;
-type FunctionDeclaration = Types.FunctionDeclaration;
-type FunctionParent = Types.FunctionParent;
-type Identifier = Types.Identifier;
-type Literal = Types.Literal;
-type LVal = Types.LVal;
-type Method = Types.Method;
-type MemberExpression = Types.MemberExpression;
-type ObjectExpression = Types.ObjectExpression;
-type ObjectPattern = Types.ObjectPattern;
-type PrivateName = Types.PrivateName;
-type Property = Types.Property;
-type RestElement = Types.RestElement;
-type VariableDeclarator = Types.VariableDeclarator;
+export type Reference = Enum<{
+  Variable: {
+    path: NodePath<Identifier>;
+  };
+  ObjectPattern: {
+    path: NodePath<ObjectPattern>;
+  };
+  ArrayPattern: {
+    path: NodePath<ArrayPattern>;
+  };
+  PropertyAccessor: {
+    path: NodePath<MemberExpression | OptionalMemberExpression>;
+  };
+  FunctionDeclaration: {
+    path: NodePath<FunctionDeclaration>;
+  };
+  Value: {
+    path: NodePath<Expression | ObjectMethod>;
+  };
+  PropertyInitializer: {
+    path: NodePath<ObjectProperty | ObjectMethod>;
+  };
+}>;
 
-type ReferenceNode =
-  | Identifier
-  | ObjectPattern
-  | ArrayPattern
-  | MemberExpression
-  | FunctionDeclaration;
+export const Reference = Enum.create<Reference>({
+  Variable: true,
+  ObjectPattern: true,
+  ArrayPattern: true,
+  PropertyAccessor: true,
+  FunctionDeclaration: true,
+  Value: true,
+  PropertyInitializer: true,
+});
 
 export function generateUniqueScopeBinding(scope: Scope, name: string): Identifier {
   return scope.hasBinding(name) ? scope.generateUidIdentifier(name) : t.identifier(name);
 }
 
-export function getExpressionReferences(
-  target: NodePath<Expression>,
-): Array<NodePath<ReferenceNode>> {
+export function getExpressionReferences(target: NodePath<Expression>): Array<Reference> {
   // Strip away any TypeScript annotations wrapping the expression
-  const desugaredExpression = getDesugaredTypescriptExpression(target);
-  if (desugaredExpression) return getExpressionReferences(desugaredExpression);
-  // If the current expression is an alias to a variable, return all the other references to that variable
-  if (target.isIdentifier()) return getIdentifierExpressionReferences(target);
+  const expression = stripTypeScriptAnnotations(target);
+  if (expression !== target) return getExpressionReferences(expression);
   // If the current expression is being assigned to another variable, return all the references to that variable
-  const assignmentTarget = getExpressionAssignmentTarget(target);
+  const assignmentTarget = getValueAssignmentTarget(expression);
   if (assignmentTarget) {
-    switch (assignmentTarget.node.type) {
-      // If the assignment target is an alias to a variable, return all the references to that variable
-      case 'Identifier':
-        if (!assignmentTarget.isIdentifier()) return [];
-        return [assignmentTarget, ...getIdentifierExpressionReferences(assignmentTarget)];
-      // If the assignment target is a destructuring pattern, return the destructuring pattern
-      case 'ObjectPattern':
-      case 'ArrayPattern':
-        return [assignmentTarget];
-      // If the assignment target is an object property assignment, return the object property
-      case 'MemberExpression':
-        return [assignmentTarget];
-    }
+    return [
+      Reference.Value({ path: expression }),
+      ...getLocalAccessorReferences(assignmentTarget).filter(
+        (reference) => reference.path.node !== expression.node,
+      ),
+    ];
   }
-  return [];
+  // If the current expression is a local accessor, return all the other references to that local accessor
+  if (expression.isOptionalMemberExpression() || expression.isLVal()) {
+    return getLocalAccessorReferences(expression);
+  }
+  return [Reference.Value({ path: expression })];
 }
 
-function getExpressionAssignmentTarget(
+function getValueAssignmentTarget(
   target: NodePath<Expression>,
-): NodePath<ReferenceNode> | null {
-  if (
-    target.parentPath.isVariableDeclarator() &&
-    target.parentPath.get('init').node === target.node
-  ) {
-    const identifier = target.parentPath.get('id');
-    if (identifier.isIdentifier() || identifier.isObjectPattern() || identifier.isArrayPattern()) {
-      return identifier;
-    }
-    return null;
+): NodePath<TypeErased<OptionalMemberExpression | LVal>> | null {
+  const expression = stripTypeScriptAnnotations(target);
+  if (expression !== target) return getValueAssignmentTarget(expression);
+  const parent = getTypeErasedParent(expression);
+  if (parent && parent.isVariableDeclarator()) {
+    const assignedValue = getOptionalNodeFieldValue(parent.get('init'));
+    if (!assignedValue) return null;
+    if (stripTypeScriptAnnotations(assignedValue).node !== expression.node) return null;
+    const localAccessor = stripTypeScriptAnnotations(parent.get('id'));
+    return localAccessor;
   }
-  if (
-    target.parentPath.isAssignmentExpression() &&
-    target.parentPath.get('right').node === target.node
-  ) {
-    const identifier = target.parentPath.get('left');
-    if (identifier.isIdentifier() || identifier.isMemberExpression()) return identifier;
-    return null;
+  if (parent && parent.isAssignmentExpression()) {
+    const assignedValue = stripTypeScriptAnnotations(parent.get('right'));
+    if (stripTypeScriptAnnotations(assignedValue).node !== expression.node) return null;
+    const localAccessor = stripTypeScriptAnnotations(parent.get('left'));
+    return localAccessor;
   }
   return null;
 }
 
-export function getIdentifierExpressionReferences(
-  target: NodePath<Identifier>,
-): Array<NodePath<ReferenceNode>> {
+export function getLocalAccessorReferences(
+  target: NodePath<OptionalMemberExpression | LVal>,
+): Array<Reference> {
+  // Strip away any TypeScript annotations wrapping the expression
+  const expression = stripTypeScriptAnnotations(target);
+  if (expression !== target) return getLocalAccessorReferences(expression);
+  // Parse the local accessor and follow its references
+  return getLocalAccessorTargets(expression).flatMap((assignmentTarget) =>
+    match(assignmentTarget, {
+      // If the local accessor is an alias to a variable, return all the other references to that variable
+      Variable: (ref) => [ref, ...getIdentifierExpressionReferences(ref.path)],
+      // If the local accessor is an alias to an object property, return all the other references to that object property
+      PropertyAccessor: (ref) => [ref, ...getPropertyAccessorReferences(ref.path)],
+      // If the local accessor is an alias to a hoisted function, return all the other references to that function
+      FunctionDeclaration: (ref) => [ref, ...getFunctionDeclarationReferences(ref.path)],
+      // If the local accessor is a destructuring pattern, there can be no other references to that variable (only its contents)
+      ObjectPattern: (ref) => [ref],
+      ArrayPattern: (ref) => [ref],
+      // References to value initializers will already be covered by the references to the assignment expression's accessor
+      Value: (ref) => [ref],
+      // References to value initializer properties will already be covered by the references to the assignment expression's accessor
+      PropertyInitializer: (ref) => [ref],
+    }),
+  );
+}
+
+function getLocalAccessorTargets(
+  target: NodePath<TypeErased<OptionalMemberExpression | LVal>>,
+): Array<Reference> {
+  if (target.isAssignmentPattern()) {
+    const localAssignment = stripTypeScriptAnnotations(target.get('left'));
+    const defaultValue = stripTypeScriptAnnotations(target.get('right'));
+    return [...getLocalAccessorTargets(localAssignment), Reference.Value({ path: defaultValue })];
+  }
+  if (target.isIdentifier()) {
+    return [Reference.Variable({ path: target })];
+  }
+  if (target.isObjectPattern()) {
+    return [Reference.ObjectPattern({ path: target })];
+  }
+  if (target.isArrayPattern()) {
+    return [Reference.ArrayPattern({ path: target })];
+  }
+  if (target.isMemberExpression() || target.isOptionalMemberExpression()) {
+    return [Reference.PropertyAccessor({ path: target })];
+  }
+  if (target.isRestElement()) {
+    // FIXME: support destructured rest elements: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#using_a_binding_pattern_as_the_rest_property
+    return [];
+  }
+  return [];
+}
+
+export function getIdentifierExpressionReferences(target: NodePath<Identifier>): Array<Reference> {
   const binding = target.scope.getBinding(target.node.name);
   if (!binding) return [];
   const declaration = getBindingTargetReference(binding, target);
+  const initializers = getBindingInitializers(binding, target);
   const assignments = binding.constantViolations
     .map((path) => {
       if (!path.isAssignmentExpression()) return null;
-      const assignmentTarget = path.get('left');
-      if (!assignmentTarget.isIdentifier() || assignmentTarget.node.name !== target.node.name) {
-        return null;
+      const assignmentTarget = stripTypeScriptAnnotations(path.get('left'));
+      if (assignmentTarget.isIdentifier() && assignmentTarget.node.name === target.node.name) {
+        return Reference.Variable({ path: assignmentTarget });
       }
-      return assignmentTarget;
+      return null;
     })
     .filter(nonNull);
   const accessors = binding.referencePaths
@@ -123,107 +209,361 @@ export function getIdentifierExpressionReferences(
       if (path.isIdentifier()) return path;
       return null;
     })
-    .filter(nonNull);
-  return [...(declaration ? [declaration] : []), ...assignments, ...accessors].filter(
-    (path) => path.node !== target.node,
+    .filter(nonNull)
+    .flatMap((accessor) => {
+      const assignmentTarget = getValueAssignmentTarget(accessor);
+      return [
+        Reference.Variable({ path: accessor }),
+        ...(assignmentTarget ? getLocalAccessorReferences(assignmentTarget) : []),
+      ];
+    });
+  return [
+    ...(declaration ? [declaration] : []),
+    ...initializers.map((initializer) => Reference.Value({ path: initializer })),
+    ...assignments,
+    ...accessors,
+  ].filter((reference) => reference.path.node !== target.node);
+}
+
+function getPropertyAccessorReferences(
+  target: NodePath<MemberExpression | OptionalMemberExpression>,
+): Array<Reference> {
+  if (target.isMemberExpression()) return getMemberExpressionReferences(target);
+  if (target.isOptionalMemberExpression()) return getOptionalMemberExpressionReferences(target);
+  return [];
+}
+
+export function getMemberExpressionReferences(
+  target: NodePath<MemberExpression>,
+): Array<Reference> {
+  const key = stripTypeScriptAnnotations(target.get('property'));
+  const computed = target.node.computed;
+  const object = stripTypeScriptAnnotations(target.get('object'));
+  return getObjectPropertyReferences(object, key.node, computed).filter(
+    (reference) => reference.path.node !== target.node,
   );
+}
+
+export function getOptionalMemberExpressionReferences(
+  target: NodePath<OptionalMemberExpression>,
+): Array<Reference> {
+  const key = stripTypeScriptAnnotations(target.get('property'));
+  const computed = target.node.computed;
+  const object = stripTypeScriptAnnotations(target.get('object'));
+  return getObjectPropertyReferences(object, key.node, computed).filter(
+    (reference) => reference.path.node !== target.node,
+  );
+}
+
+export function getFunctionDeclarationReferences(
+  target: NodePath<FunctionDeclaration>,
+): Array<Reference> {
+  const functionName = target.node.id;
+  const binding = functionName ? target.scope.getBinding(functionName.name) : null;
+  if (!binding) return [];
+  const accessors = binding.referencePaths
+    .map((path) => {
+      if (path.node === target.node) return null;
+      if (path.isIdentifier()) return Reference.Variable({ path });
+      return null;
+    })
+    .filter(nonNull);
+  return accessors;
+}
+
+export function getObjectPropertyReferences(
+  target: NodePath<Expression>,
+  key: Expression | PrivateName,
+  computed: boolean,
+): Array<Reference> {
+  const propertyKey = createStaticPropertyKey(key, computed);
+  if (!propertyKey) return [];
+  const targetReferences = getExpressionReferences(target);
+  return targetReferences.flatMap((objectReference) => {
+    // If this is an object literal initializer value with a matching key, get a reference to the given property value
+    const literalPropertyInitializer =
+      Reference.Value.is(objectReference) && objectReference.path.isObjectExpression()
+        ? getNamedObjectLiteralStaticProperty(objectReference.path, propertyKey)
+        : null;
+    const literalPropertyInitializerReferences = literalPropertyInitializer
+      ? [Reference.PropertyInitializer({ path: literalPropertyInitializer })]
+      : [];
+    // If this is an object destructuring pattern, get a reference to the child patterns that match the given key
+    const destructuredPropertyPattern = Reference.ObjectPattern.is(objectReference)
+      ? getNamedObjectPatternStaticPropertyValue(objectReference.path, propertyKey)
+      : null;
+    const destructuredPropertyReferences = destructuredPropertyPattern
+      ? getLocalAccessorReferences(destructuredPropertyPattern)
+      : [];
+    // Analyze further references based on the context in which the current node occurs
+    const parentAccessorPropertyReferences = (() => {
+      const parent = getTypeErasedParent(objectReference.path);
+      if (!parent) return [];
+      // If the reference target forms part of a matching property accessor, get a reference to the overall accessor expression
+      if (parent.isMemberExpression()) {
+        const accessorProperty = stripTypeScriptAnnotations(parent.get('property'));
+        const accessorComputed = parent.node.computed;
+        const accessorKey = createPropertyKey(accessorProperty, accessorComputed);
+        if (!accessorKey || !areAccessorKeysEqual(propertyKey, accessorKey)) return [];
+        return [Reference.PropertyAccessor({ path: parent })];
+      }
+      // If the reference target forms part of a matching property accessor assignment, get a reference to the overall accessor expression
+      if (parent.isAssignmentExpression()) {
+        const assignmentTarget = stripTypeScriptAnnotations(parent.get('left'));
+        if (!assignmentTarget.isMemberExpression()) return [];
+        const accessorProperty = stripTypeScriptAnnotations(assignmentTarget.get('property'));
+        const accessorComputed = assignmentTarget.node.computed;
+        const accessorKey = createPropertyKey(accessorProperty, accessorComputed);
+        if (!accessorKey || !areAccessorKeysEqual(propertyKey, accessorKey)) return [];
+        return [Reference.PropertyAccessor({ path: assignmentTarget })];
+      }
+      // If the reference target is the property of a destructuring pattern, get references to the matching destructured properties
+      if (parent.isObjectPattern()) {
+        return parent
+          .get('properties')
+          .filter((property) => {
+            if (property.isRestElement()) return true;
+            if (property.isObjectProperty()) {
+              const accessorKey = createPropertyKey(
+                stripTypeScriptAnnotations(property.get('key')),
+                property.node.computed,
+              );
+              if (!accessorKey) return false;
+              return areAccessorKeysEqual(propertyKey, accessorKey);
+            }
+            return false;
+          })
+          .map((property) => {
+            if (property.isObjectProperty()) {
+              const localAssignment = property.get('value');
+              if (!localAssignment.isPatternLike()) return null;
+              return getLocalAccessorTargets(stripTypeScriptAnnotations(localAssignment));
+            }
+            if (property.isRestElement()) {
+              const localAssignment = property.get('argument');
+              if (localAssignment.isAssignmentPattern()) {
+                const target = localAssignment.get('left');
+                const defaultValue = localAssignment.get('right');
+                const targetReferences = target.isExpression()
+                  ? getObjectPropertyReferences(target, key, computed)
+                  : [];
+                return [
+                  ...targetReferences,
+                  ...getObjectPropertyReferences(defaultValue, key, computed),
+                ];
+              } else if (localAssignment.isIdentifier()) {
+                return getObjectPropertyReferences(localAssignment, key, computed);
+              } else {
+                return null;
+              }
+            }
+            return null;
+          })
+          .filter(nonNull)
+          .flat();
+      }
+      return [];
+    })();
+    return [
+      ...literalPropertyInitializerReferences,
+      ...destructuredPropertyReferences,
+      ...parentAccessorPropertyReferences,
+    ];
+  });
 }
 
 function getBindingTargetReference(
   binding: Binding,
   identifier: NodePath<Identifier>,
-): NodePath<ReferenceNode> | null {
+): Reference | null {
   switch (binding.kind) {
     case 'var':
     case 'let':
     case 'const':
       if (!binding.path.isVariableDeclarator()) return null;
       const targetVariable = binding.path.get('id');
-      return getAssignmentTargetReference(targetVariable, identifier);
+      return getBindingAssignmentTargetReference(targetVariable, identifier);
     case 'module':
-      if (binding.path.isImportSpecifier()) return binding.path.get('local');
-      if (binding.path.isImportDefaultSpecifier()) return binding.path.get('local');
-      if (binding.path.isImportNamespaceSpecifier()) return binding.path.get('local');
+      if (binding.path.isImportSpecifier()) {
+        return Reference.Variable({ path: binding.path.get('local') });
+      }
+      if (binding.path.isImportDefaultSpecifier()) {
+        return Reference.Variable({ path: binding.path.get('local') });
+      }
+      if (binding.path.isImportNamespaceSpecifier()) {
+        return Reference.Variable({ path: binding.path.get('local') });
+      }
       return null;
     case 'param':
     case 'local':
-      if (binding.path.isIdentifier()) return binding.path;
+      if (binding.path.isIdentifier()) return Reference.Variable({ path: binding.path });
       return null;
     case 'hoisted':
-      if (binding.path.isFunctionDeclaration()) return binding.path;
+      if (binding.path.isFunctionDeclaration()) {
+        return Reference.FunctionDeclaration({ path: binding.path });
+      }
       return null;
     case 'unknown':
-      if (binding.path.isIdentifier()) return binding.path;
+      if (binding.path.isIdentifier()) return Reference.Variable({ path: binding.path });
       return null;
   }
 }
 
-function getAssignmentTargetReference(
+function getBindingInitializers(
+  binding: Binding,
+  identifier: NodePath<Identifier>,
+): Array<NodePath<Expression | ObjectMethod>> {
+  switch (binding.kind) {
+    case 'var':
+    case 'let':
+    case 'const':
+      if (!binding.path.isVariableDeclarator()) return [];
+      const assignmentTarget = stripTypeScriptAnnotations(binding.path.get('id'));
+      if (!assignmentTarget.isPatternLike()) return [];
+      const initializer = getOptionalNodeFieldValue(binding.path.get('init'));
+      return getDestructuredVariableDeclarationInitializers(
+        assignmentTarget,
+        identifier,
+        initializer ? [stripTypeScriptAnnotations(initializer)] : [],
+      );
+    case 'module':
+    case 'param':
+      // FIXME: support default parameter initializers
+      return [];
+    case 'local':
+    case 'hoisted':
+    case 'unknown':
+      return [];
+  }
+}
+
+function getDestructuredVariableDeclarationInitializers(
+  assignmentTarget: NodePath<PatternLike>,
+  identifier: NodePath<Identifier>,
+  initializers: Array<NodePath<Expression | ObjectMethod>>,
+): Array<NodePath<Expression | ObjectMethod>> {
+  if (assignmentTarget.isIdentifier()) {
+    if (assignmentTarget.node.name !== identifier.node.name) return [];
+    return initializers;
+  }
+  if (assignmentTarget.isAssignmentPattern()) {
+    const localAccessor = stripTypeScriptAnnotations(assignmentTarget.get('left'));
+    if (!localAccessor.isPatternLike()) return [];
+    const defaultValue = stripTypeScriptAnnotations(assignmentTarget.get('right'));
+    return getDestructuredVariableDeclarationInitializers(localAccessor, identifier, [
+      defaultValue,
+      ...initializers,
+    ]);
+  }
+  if (assignmentTarget.isObjectPattern()) {
+    return assignmentTarget.get('properties').flatMap((property) => {
+      if (property.isObjectProperty()) {
+        const localAccessor = property.get('value');
+        if (!localAccessor.isPatternLike()) return [];
+        const propertyKey = createPropertyKey(
+          stripTypeScriptAnnotations(property.get('key')),
+          property.node.computed,
+        );
+        return getDestructuredVariableDeclarationInitializers(
+          localAccessor,
+          identifier,
+          propertyKey
+            ? initializers
+                .map((initializer) => {
+                  if (!initializer.isObjectExpression()) return null;
+                  return getNamedObjectLiteralStaticPropertyValue(initializer, propertyKey);
+                })
+                .filter(nonNull)
+            : [],
+        );
+      }
+      if (property.isRestElement()) {
+        const localAccessor = property.get('argument');
+        if (!localAccessor.isPatternLike()) return [];
+        return getDestructuredVariableDeclarationInitializers(
+          localAccessor,
+          identifier,
+          initializers,
+        );
+      }
+      return [];
+    });
+  }
+  if (assignmentTarget.isArrayPattern()) {
+    // FIXME: support array destructuring binding initializers
+    return [];
+  }
+  if (assignmentTarget.isRestElement()) {
+  }
+  return [];
+}
+
+function getBindingAssignmentTargetReference(
   targetVariable: NodePath<LVal>,
   local: NodePath<Identifier>,
-): NodePath<ReferenceNode> | null {
+): Reference | null {
   if (targetVariable.isIdentifier()) {
-    return getIdentifierAssignmentTargetReference(targetVariable, local);
+    return getIdentifierBindingAssignmentTargetReference(targetVariable, local);
   }
   if (targetVariable.isAssignmentPattern()) {
-    return getDefaultAssignmentTargetReference(targetVariable, local);
+    return getDefaultedBindingAssignmentTargetReference(targetVariable, local);
   }
   if (targetVariable.isObjectPattern()) {
-    return getDestructuredObjectAssignmentTargetReference(targetVariable, local);
+    return getDestructuredObjectBindingAssignmentTargetReference(targetVariable, local);
   }
   if (targetVariable.isArrayPattern()) {
-    return getDestructuredArrayAssignmentTargetReference(targetVariable, local);
+    return getDestructuredArrayBindingAssignmentTargetReference(targetVariable, local);
   }
   if (targetVariable.isRestElement()) {
-    return getDestructuredRestAssignmentTargetReference(targetVariable, local);
+    return getDestructuredRestBindingAssignmentTargetReference(targetVariable, local);
   }
   return null;
 }
 
-function getIdentifierAssignmentTargetReference(
+function getIdentifierBindingAssignmentTargetReference(
   targetVariable: NodePath<Identifier>,
   local: NodePath<Identifier>,
-): NodePath<ReferenceNode> | null {
+): Reference | null {
   if (targetVariable.node.name !== local.node.name) return null;
-  return targetVariable;
+  return Reference.Variable({ path: targetVariable });
 }
 
-function getDefaultAssignmentTargetReference(
+function getDefaultedBindingAssignmentTargetReference(
   targetVariable: NodePath<AssignmentPattern>,
   local: NodePath<Identifier>,
-): NodePath<ReferenceNode> | null {
-  return getAssignmentTargetReference(targetVariable.get('left'), local);
+): Reference | null {
+  return getBindingAssignmentTargetReference(targetVariable.get('left'), local);
 }
 
-function getDestructuredArrayAssignmentTargetReference(
+function getDestructuredArrayBindingAssignmentTargetReference(
   targetVariable: NodePath<ArrayPattern>,
   local: NodePath<Identifier>,
-): NodePath<ReferenceNode> | null {
+): Reference | null {
   return (
     targetVariable
       .get('elements')
       .map((element) => {
         const variableName = getOptionalNodeFieldValue(element);
         if (!variableName) return null;
-        return getAssignmentTargetReference(variableName, local);
+        return getBindingAssignmentTargetReference(variableName, local);
       })
       .find(nonNull) || null
   );
 }
 
-function getDestructuredObjectAssignmentTargetReference(
+function getDestructuredObjectBindingAssignmentTargetReference(
   targetVariable: NodePath<ObjectPattern>,
   local: NodePath<Identifier>,
-): NodePath<ReferenceNode> | null {
+): Reference | null {
   return (
     targetVariable
       .get('properties')
       .map((property) => {
-        if (property.isRestElement()) return getAssignmentTargetReference(property, local);
+        if (property.isRestElement()) return getBindingAssignmentTargetReference(property, local);
         if (property.isObjectProperty()) {
           const variableName = property.get('value');
           if (!variableName.isPatternLike()) return null;
-          return getAssignmentTargetReference(variableName, local);
+          return getBindingAssignmentTargetReference(variableName, local);
         }
         return null;
       })
@@ -231,23 +571,23 @@ function getDestructuredObjectAssignmentTargetReference(
   );
 }
 
-function getDestructuredRestAssignmentTargetReference(
+function getDestructuredRestBindingAssignmentTargetReference(
   targetVariable: NodePath<RestElement>,
   local: NodePath<Identifier>,
-): NodePath<ReferenceNode> | null {
-  return getAssignmentTargetReference(targetVariable.get('argument'), local);
+): Reference | null {
+  return getBindingAssignmentTargetReference(targetVariable.get('argument'), local);
 }
 
 export function getAccessorExpressionPaths(
   expression: NodePath<Expression>,
 ): Array<AccessorPath> | null {
+  const desugaredExpression = stripTypeScriptAnnotations(expression);
+  if (desugaredExpression !== expression) return getAccessorExpressionPaths(desugaredExpression);
   if (expression.isIdentifier()) return getIdentifierAccessorPaths(expression);
   if (expression.isMemberExpression()) return getMemberExpressionAccessorPaths(expression);
   if (expression.isAssignmentExpression()) {
     return getAccessorExpressionPaths(expression.get('right'));
   }
-  const typescriptExpression = getDesugaredTypescriptExpression(expression);
-  if (typescriptExpression) return getAccessorExpressionPaths(typescriptExpression);
   return [{ root: { target: expression, references: [] }, path: [] }];
 }
 
@@ -264,7 +604,7 @@ function getMemberExpressionAccessorPaths(
   }
   const objectPaths = getAccessorExpressionPaths(object);
   if (!objectPaths) return null;
-  const key = getPropertyKey(property, computed);
+  const key = createPropertyKey(property, computed);
   if (!key) return null;
   return objectPaths.map(({ root, path }) => ({
     root,
@@ -737,7 +1077,7 @@ function getDestructuredObjectPropertyPath(
       if (property.isObjectProperty()) {
         const targetProperty = property.get('key');
         const computed = property.node.computed;
-        const key = getPropertyKey(targetProperty, computed);
+        const key = createPropertyKey(targetProperty, computed);
         if (!key) return acc;
         const variableName = property.get('value');
         // FIXME: Confirm object destructuring syntax restrictions
@@ -756,28 +1096,6 @@ function getDestructuredObjectPropertyPath(
   ).results;
   const accessorPath = matchingAccessorPathsForVariable[0] || null;
   return accessorPath;
-}
-
-function getPropertyKey(
-  property: NodePath<Expression | PrivateName>,
-  computed: boolean,
-): AccessorKey | null {
-  if (property.isIdentifier() && !computed) {
-    return AccessorKey.Property({ name: property.node.name });
-  }
-  if (property.isStringLiteral()) {
-    return AccessorKey.Property({ name: property.node.value });
-  }
-  if (property.isPrivateName()) {
-    return AccessorKey.PrivateField({ name: property.node.id.name });
-  }
-  if (property.isNumericLiteral()) {
-    return AccessorKey.Index({ index: property.node.value });
-  }
-  if (computed && property.isExpression()) {
-    return AccessorKey.Computed({ expression: property });
-  }
-  return null;
 }
 
 function registerAccessorPathReference(
@@ -807,23 +1125,74 @@ function registerAccessorPathReference(
   }
 }
 
-export function getDesugaredTypescriptExpression(
+export type TypeErased<T extends AstNode> = Exclude<
+  T,
+  | TSParameterProperty
+  | TSInstantiationExpression
+  | TSAsExpression
+  | TSSatisfiesExpression
+  | TSTypeAssertion
+  | TSNonNullExpression
+>;
+
+export function stripTypeScriptAnnotations(
+  expression: NodePath<PatternLike>,
+): NodePath<TypeErased<PatternLike>>;
+export function stripTypeScriptAnnotations(expression: NodePath<LVal>): NodePath<TypeErased<LVal>>;
+export function stripTypeScriptAnnotations(
+  expression: NodePath<OptionalMemberExpression | LVal>,
+): NodePath<TypeErased<OptionalMemberExpression | LVal>>;
+export function stripTypeScriptAnnotations(
   expression: NodePath<Expression>,
-): NodePath<Expression> | null {
+): NodePath<TypeErased<Expression>>;
+export function stripTypeScriptAnnotations(
+  expression: NodePath<Expression | PrivateName>,
+): NodePath<TypeErased<Expression | PrivateName>>;
+export function stripTypeScriptAnnotations(
+  expression: NodePath<Expression | PatternLike>,
+): NodePath<TypeErased<Expression | PatternLike>>;
+export function stripTypeScriptAnnotations(
+  expression: NodePath<AstNode>,
+): NodePath<TypeErased<AstNode>> {
+  if (expression.isTSParameterProperty()) {
+    return stripTypeScriptAnnotations(expression.get('parameter'));
+  }
   if (expression.isTSInstantiationExpression()) {
-    return expression.get('expression');
+    return stripTypeScriptAnnotations(expression.get('expression'));
   }
   if (expression.isTSAsExpression()) {
-    return expression.get('expression');
+    return stripTypeScriptAnnotations(expression.get('expression'));
   }
   if (expression.isTSSatisfiesExpression()) {
-    return expression.get('expression');
+    return stripTypeScriptAnnotations(expression.get('expression'));
   }
   if (expression.isTSTypeAssertion()) {
-    return expression.get('expression');
+    return stripTypeScriptAnnotations(expression.get('expression'));
   }
   if (expression.isTSNonNullExpression()) {
-    return expression.get('expression');
+    return stripTypeScriptAnnotations(expression.get('expression'));
   }
-  return null;
+  return expression as NodePath<TypeErased<AstNode>>;
+}
+
+export function getTypeErasedParent(
+  expression: NodePath<AstNode>,
+): NodePath<TypeErased<AstNode>> | null {
+  if (!expression.parentPath) return null;
+  if (expression.parentPath.isTSInstantiationExpression()) {
+    return getTypeErasedParent(expression.parentPath);
+  }
+  if (expression.parentPath.isTSAsExpression()) {
+    return getTypeErasedParent(expression.parentPath);
+  }
+  if (expression.parentPath.isTSSatisfiesExpression()) {
+    return getTypeErasedParent(expression.parentPath);
+  }
+  if (expression.parentPath.isTSTypeAssertion()) {
+    return getTypeErasedParent(expression.parentPath);
+  }
+  if (expression.parentPath.isTSNonNullExpression()) {
+    return getTypeErasedParent(expression.parentPath);
+  }
+  return expression.parentPath as NodePath<TypeErased<AstNode>>;
 }

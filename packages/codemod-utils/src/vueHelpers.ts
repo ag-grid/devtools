@@ -1,15 +1,15 @@
 import {
+  createNamedPropertyKey,
+  findClassMemberAccessors,
   getFunctionReturnValues,
-  getLiteralPropertyKey,
+  getNamedObjectLiteralStaticProperty,
   getNamedObjectLiteralStaticPropertyValue,
   getObjectLiteralStaticPropertyValues,
+  getStaticPropertyKey,
   parseStringExpressionValue,
-  findClassMemberAccessors,
-  getNamedObjectLiteralStaticProperty,
   type AstNode,
   type NodePath,
   type Types,
-  getStaticPropertyKey,
 } from '@ag-grid-devtools/ast';
 import { Enum, VARIANT, nonNull } from '@ag-grid-devtools/utils';
 import { parse } from 'vue-eslint-parser';
@@ -115,7 +115,7 @@ export function getVueComponentTemplateProperty(
   // Get the 'template' property of the component definition object
   const templateProperty = getNamedObjectLiteralStaticProperty(
     component,
-    VUE_COMPONENT_DEFINITION_TEMPLATE_FIELD_NAME,
+    createNamedPropertyKey(VUE_COMPONENT_DEFINITION_TEMPLATE_FIELD_NAME),
   );
   if (!templateProperty || !templateProperty.isObjectProperty()) return null;
   return templateProperty;
@@ -139,7 +139,7 @@ export function getVueComponentComponentDeclarations(
   // Get the 'components' property of the component definition object
   const componentsProperty = getNamedObjectLiteralStaticPropertyValue(
     component,
-    VUE_COMPONENT_DEFINITION_COMPONENTS_FIELD_NAME,
+    createNamedPropertyKey(VUE_COMPONENT_DEFINITION_COMPONENTS_FIELD_NAME),
   );
   if (!componentsProperty || !componentsProperty.isObjectExpression()) return null;
   // Parse components object field values
@@ -202,7 +202,7 @@ function getVueComponentObjectLiteralDataFieldInitializer(
   expression: NodePath<ObjectExpression>,
   fieldName: string,
 ): NodePath<Expression | ObjectMethod> | null {
-  return getNamedObjectLiteralStaticPropertyValue(expression, fieldName);
+  return getNamedObjectLiteralStaticPropertyValue(expression, createNamedPropertyKey(fieldName));
 }
 
 function getVueComponentStateOptionsInstanceMethods(
@@ -236,8 +236,8 @@ function getVueComponentComputedPropertyInstanceMethods(
     .flatMap((initializer) => {
       const [getter, setter] = initializer.isObjectExpression()
         ? [
-            getNamedObjectLiteralStaticPropertyValue(initializer, 'get'),
-            getNamedObjectLiteralStaticPropertyValue(initializer, 'set'),
+            getNamedObjectLiteralStaticPropertyValue(initializer, createNamedPropertyKey('get')),
+            getNamedObjectLiteralStaticPropertyValue(initializer, createNamedPropertyKey('set')),
           ]
         : [initializer, null];
       return [getter, setter]

@@ -7,6 +7,7 @@ import {
   isLiteral,
   isNullLiteral,
   isNumericLiteral,
+  isPrivateName,
   isRegExpLiteral,
   isStringLiteral,
   isTemplateLiteral,
@@ -15,16 +16,20 @@ import {
   type Function,
   type Literal,
   type Expression,
+  type Identifier,
+  type NumericLiteral,
   type ObjectExpression,
   type ObjectMethod,
   type ObjectPattern,
   type ObjectProperty,
+  type PatternLike,
   type PrivateName,
+  type StringLiteral,
   type TemplateElement,
   type TemplateLiteral,
 } from '@babel/types';
 
-import { type AstNode, type NodePath } from './types';
+import { AccessorKey, areAccessorKeysEqual, type AstNode, type NodePath } from './types';
 
 export * as node from '@babel/types';
 
@@ -124,9 +129,36 @@ export function getObjectLiteralStaticPropertyValues(
     }, new Map<string, NodePath<Expression | ObjectMethod>>());
 }
 
+export function hasNamedObjectLiteralStaticProperty(
+  object: NodePath<ObjectExpression>,
+  propertyKey: AccessorKey,
+): boolean {
+  return Boolean(getNamedObjectLiteralStaticProperty(object, propertyKey));
+}
+
+export function getNamedObjectLiteralStaticProperty(
+  object: NodePath<ObjectExpression>,
+  propertyKey: AccessorKey,
+): NodePath<ObjectProperty | ObjectMethod> | null {
+  return getNamedObjectLikeStaticProperty(object, propertyKey);
+}
+
+export function getNamedObjectLiteralStaticPropertyKey(
+  object: NodePath<ObjectExpression>,
+  propertyKey: AccessorKey,
+): NodePath<Identifier | Literal | PrivateName> | null {
+  const property = getNamedObjectLiteralStaticProperty(object, propertyKey);
+  if (!property) return null;
+  const key = property.get('key');
+  const computed = property.node.computed;
+  if (!computed && key.isIdentifier()) return key;
+  if (key.isLiteral()) return key;
+  return null;
+}
+
 export function getNamedObjectLiteralStaticPropertyValue(
   object: NodePath<ObjectExpression>,
-  propertyKey: string,
+  propertyKey: AccessorKey,
 ): NodePath<Expression | ObjectMethod> | null {
   const property = getNamedObjectLiteralStaticProperty(object, propertyKey);
   if (!property) return null;
@@ -140,16 +172,49 @@ export function getNamedObjectLiteralStaticPropertyValue(
   return null;
 }
 
-export function hasNamedObjectLiteralStaticProperty(
-  object: NodePath<ObjectExpression | ObjectPattern>,
-  propertyKey: string,
+export function hasNamedObjectPatternStaticProperty(
+  object: NodePath<ObjectPattern>,
+  propertyKey: AccessorKey,
 ): boolean {
-  return Boolean(getNamedObjectLiteralStaticProperty(object, propertyKey));
+  return Boolean(getNamedObjectPatternStaticProperty(object, propertyKey));
 }
 
-export function getNamedObjectLiteralStaticProperty(
+export function getNamedObjectPatternStaticProperty(
+  object: NodePath<ObjectPattern>,
+  propertyKey: AccessorKey,
+): NodePath<ObjectProperty> | null {
+  const property = getNamedObjectLikeStaticProperty(object, propertyKey);
+  if (!property || !property.isObjectProperty()) return null;
+  return property;
+}
+
+export function getNamedObjectPatternStaticPropertyKey(
+  object: NodePath<ObjectPattern>,
+  propertyKey: AccessorKey,
+): NodePath<Identifier | Literal | PrivateName> | null {
+  const property = getNamedObjectPatternStaticProperty(object, propertyKey);
+  if (!property) return null;
+  const key = property.get('key');
+  const computed = property.node.computed;
+  if (!computed && key.isIdentifier()) return key;
+  if (key.isLiteral()) return key;
+  return null;
+}
+
+export function getNamedObjectPatternStaticPropertyValue(
+  object: NodePath<ObjectPattern>,
+  propertyKey: AccessorKey,
+): NodePath<PatternLike> | null {
+  const property = getNamedObjectPatternStaticProperty(object, propertyKey);
+  if (!property) return null;
+  const value = property.get('value');
+  if (!value.isPatternLike()) return null;
+  return value;
+}
+
+function getNamedObjectLikeStaticProperty(
   object: NodePath<ObjectExpression | ObjectPattern>,
-  propertyKey: string,
+  propertyKey: AccessorKey,
 ): NodePath<ObjectProperty | ObjectMethod> | null {
   const matchedProperties = object
     .get('properties')
@@ -158,11 +223,9 @@ export function getNamedObjectLiteralStaticProperty(
         property.isObjectProperty() || property.isObjectMethod(),
     )
     .filter((property) => {
-      const key = property.get('key');
-      const computed = property.node.computed;
-      if (!computed && key.isIdentifier()) return key.node.name === propertyKey;
-      if (key.isLiteral()) return getLiteralPropertyKey(key.node) === propertyKey;
-      return false;
+      const fieldName = createPropertyKey(property.get('key'), property.node.computed);
+      if (!fieldName) return false;
+      return areAccessorKeysEqual(fieldName, propertyKey);
     });
   if (matchedProperties.length === 0) return null;
   const matchedProperty = matchedProperties[matchedProperties.length - 1];
@@ -212,4 +275,57 @@ function parseTemplateLiteralStringValue(node: NodePath<TemplateLiteral>): strin
 function getTemplateLiteralQuasiSource(literal: TemplateElement): string | null {
   if (typeof literal.value.cooked === 'string') return literal.value.cooked;
   return literal.value.raw;
+}
+
+export function createNamedPropertyKey(name: string): AccessorKey {
+  return AccessorKey.Property({ name });
+}
+
+export function createStaticPropertyKey(property: Identifier, computed: false): AccessorKey;
+export function createStaticPropertyKey(property: StringLiteral, computed: boolean): AccessorKey;
+export function createStaticPropertyKey(property: PrivateName, computed: boolean): AccessorKey;
+export function createStaticPropertyKey(property: NumericLiteral, computed: boolean): AccessorKey;
+export function createStaticPropertyKey(
+  property: Expression | PrivateName,
+  computed: boolean,
+): AccessorKey | null;
+export function createStaticPropertyKey(
+  property: Expression | PrivateName,
+  computed: boolean,
+): AccessorKey | null {
+  if (isIdentifier(property) && !computed) {
+    return AccessorKey.Property({ name: property.name });
+  }
+  if (isStringLiteral(property)) {
+    return AccessorKey.Property({ name: property.value });
+  }
+  if (isPrivateName(property)) {
+    return AccessorKey.PrivateField({ name: property.id.name });
+  }
+  if (isNumericLiteral(property)) {
+    return AccessorKey.Index({ index: property.value });
+  }
+  return null;
+}
+
+export function createPropertyKey(
+  property: NodePath<Expression | PrivateName>,
+  computed: boolean,
+): AccessorKey | null {
+  if (property.isIdentifier() && !computed) {
+    return AccessorKey.Property({ name: property.node.name });
+  }
+  if (property.isStringLiteral()) {
+    return AccessorKey.Property({ name: property.node.value });
+  }
+  if (property.isPrivateName()) {
+    return AccessorKey.PrivateField({ name: property.node.id.name });
+  }
+  if (property.isNumericLiteral()) {
+    return AccessorKey.Index({ index: property.node.value });
+  }
+  if (computed && property.isExpression()) {
+    return AccessorKey.Computed({ expression: property });
+  }
+  return null;
 }

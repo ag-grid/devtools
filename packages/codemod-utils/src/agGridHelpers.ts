@@ -3,6 +3,7 @@ import {
   AccessorKey,
   AccessorReference,
   areAccessorKeysEqual,
+  createStaticPropertyKey,
   getAccessorExpressionPaths,
   getClassFieldAccessorPaths,
   getNamedModuleImportExpression,
@@ -571,7 +572,7 @@ export function visitGridApiDefinitions<
 
 export function findGridApiReferences(
   path: NodePath<AstNode>,
-  context: AstTransformContext<object>,
+  context: AstTransformContext<AstCliContext & VueComponentCliContext>,
 ): Array<GridApiInstance> {
   const gridApiDefinitions = new Array<GridApiDefinition>();
   path.traverse(
@@ -646,7 +647,10 @@ export function findGridApiReferences(
                 if (!expression) return null;
                 // Ignore any outputs that do not invoke method handlers directly
                 if (expression.node.type !== 'Identifier') return null;
-                const methodHandlerName = expression.node.name;
+                const methodHandlerName = createStaticPropertyKey(
+                  t.identifier(expression.node.name),
+                  false,
+                );
                 const methodDefinition = getNamedObjectLiteralStaticPropertyValue(
                   component,
                   methodHandlerName,
