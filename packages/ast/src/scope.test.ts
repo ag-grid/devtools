@@ -34,7 +34,7 @@ type Property = Types.Property;
 type Statement = Types.Statement;
 
 describe(getExpressionReferences, () => {
-  test('no references', () => {
+  test('standalone expressions', () => {
     const expression = t.numericLiteral(3);
     const input = ast.module`
       'pre';
@@ -53,7 +53,7 @@ describe(getExpressionReferences, () => {
     }
   });
 
-  describe('variable declaration value', () => {
+  describe('variable declaration initializer values', () => {
     test('no references', () => {
       const expression = t.numericLiteral(3);
       const identifier = t.identifier('foo');
@@ -69,7 +69,7 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'Variable', node: identifier },
+        { type: 'BindingDeclaration', node: identifier },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -94,8 +94,8 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'Variable', node: identifier },
-        { type: 'Variable', node: usage },
+        { type: 'BindingDeclaration', node: identifier },
+        { type: 'VariableGetter', node: usage },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -122,9 +122,9 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'Variable', node: identifier },
-        { type: 'Variable', node: usage1 },
-        { type: 'Variable', node: usage2 },
+        { type: 'BindingDeclaration', node: identifier },
+        { type: 'VariableGetter', node: usage1 },
+        { type: 'VariableGetter', node: usage2 },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -149,8 +149,8 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'Variable', node: identifier },
-        { type: 'Variable', node: reassignment },
+        { type: 'BindingDeclaration', node: identifier },
+        { type: 'VariableSetter', node: reassignment },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -183,7 +183,7 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'ObjectPattern', node: pattern },
+        { type: 'BindingDeclaration', node: pattern },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -192,7 +192,7 @@ describe(getExpressionReferences, () => {
     });
   });
 
-  describe('variable assignment', () => {
+  describe('variable assigned values', () => {
     test('no references', () => {
       const expression = t.numericLiteral(3);
       const declaration = t.identifier('foo');
@@ -210,8 +210,8 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'Variable', node: declaration },
-        { type: 'Variable', node: assignment },
+        { type: 'BindingDeclaration', node: declaration },
+        { type: 'VariableSetter', node: assignment },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -238,9 +238,9 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'Variable', node: declaration },
-        { type: 'Variable', node: assignment },
-        { type: 'Variable', node: usage },
+        { type: 'BindingDeclaration', node: declaration },
+        { type: 'VariableSetter', node: assignment },
+        { type: 'VariableGetter', node: usage },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -267,9 +267,9 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'Variable', node: declaration },
-        { type: 'Variable', node: assignment },
-        { type: 'Variable', node: reassignment },
+        { type: 'BindingDeclaration', node: declaration },
+        { type: 'VariableSetter', node: assignment },
+        { type: 'VariableSetter', node: reassignment },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -298,10 +298,10 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'Variable', node: declaration },
-        { type: 'Variable', node: assignment },
-        { type: 'Variable', node: usage1 },
-        { type: 'Variable', node: usage2 },
+        { type: 'BindingDeclaration', node: declaration },
+        { type: 'VariableSetter', node: assignment },
+        { type: 'VariableGetter', node: usage1 },
+        { type: 'VariableGetter', node: usage2 },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -329,48 +329,9 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'PropertyAccessor', node: assignment },
+        { type: 'PropertySetter', node: assignment },
         { type: 'PropertyInitializer', node: property },
-        { type: 'PropertyAccessor', node: accessor },
-      ];
-      expect(stripReferencePaths(actual)).toEqual(expected);
-      for (const [actualRef, expectedRef] of zip(actual, expected)) {
-        expect(actualRef.path.node).toBe(expectedRef.node);
-      }
-    });
-
-    test.skip('mutually recursive variables', () => {
-      const expression = t.numericLiteral(3);
-      const declaration1 = t.identifier('foo');
-      const declaration2 = t.identifier('bar');
-      const accessor1 = t.identifier('foo');
-      const accessor2 = t.identifier('bar');
-      const assignment1 = t.identifier(declaration1.name);
-      const assignment2 = t.identifier(declaration2.name);
-      const assignment3 = t.identifier(declaration1.name);
-      const usage = t.identifier(declaration1.name);
-      const input = ast.module`
-        'pre';
-        let ${declaration1}, ${declaration2};
-        ${assignment1} = ${accessor2};
-        ${assignment2} = ${accessor1};
-        ${assignment3} = ${expression};
-        ${usage};
-        'post';
-      `;
-      const target = findAstNode(
-        input,
-        (path): path is NodePath<Expression> => path.node === expression,
-      )!;
-      const actual = getExpressionReferences(target);
-      const expected = [
-        { type: 'Value', node: expression },
-        { type: 'Variable', node: declaration1 },
-        { type: 'Variable', node: declaration2 },
-        { type: 'Variable', node: assignment1 },
-        { type: 'Variable', node: assignment2 },
-        { type: 'Variable', node: assignment3 },
-        { type: 'Variable', node: usage },
+        { type: 'PropertyGetter', node: accessor },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -379,7 +340,7 @@ describe(getExpressionReferences, () => {
     });
   });
 
-  describe('object property assignment', () => {
+  describe('object property assigned values', () => {
     test('no references', () => {
       const expression = t.numericLiteral(3);
       const property = t.objectProperty(t.identifier('bar'), t.nullLiteral());
@@ -398,7 +359,7 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'PropertyAccessor', node: assignment },
+        { type: 'PropertySetter', node: assignment },
         { type: 'PropertyInitializer', node: property },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
@@ -427,9 +388,9 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'PropertyAccessor', node: assignment },
+        { type: 'PropertySetter', node: assignment },
         { type: 'PropertyInitializer', node: property },
-        { type: 'PropertyAccessor', node: accessor },
+        { type: 'PropertyGetter', node: accessor },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -459,10 +420,10 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'PropertyAccessor', node: assignment },
+        { type: 'PropertySetter', node: assignment },
         { type: 'PropertyInitializer', node: property },
-        { type: 'PropertyAccessor', node: accessor1 },
-        { type: 'PropertyAccessor', node: accessor2 },
+        { type: 'PropertyGetter', node: accessor1 },
+        { type: 'PropertyGetter', node: accessor2 },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -501,10 +462,10 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'PropertyAccessor', node: assignment },
+        { type: 'PropertySetter', node: assignment },
         { type: 'PropertyInitializer', node: property },
-        { type: 'DestructuringAccessor', node: shorthandPropertyAccessor },
-        { type: 'Variable', node: accessor2 },
+        { type: 'BindingDeclaration', node: shorthandPropertyAccessor },
+        { type: 'VariableGetter', node: accessor2 },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -534,10 +495,98 @@ describe(getExpressionReferences, () => {
       const actual = getExpressionReferences(target);
       const expected = [
         { type: 'Value', node: expression },
-        { type: 'PropertyAccessor', node: assignment },
+        { type: 'PropertySetter', node: assignment },
         { type: 'PropertyInitializer', node: property },
-        { type: 'DestructuringAccessor', node: accessor1 },
-        { type: 'Variable', node: accessor2 },
+        { type: 'BindingDeclaration', node: accessor1 },
+        { type: 'VariableGetter', node: accessor2 },
+      ];
+      expect(stripReferencePaths(actual)).toEqual(expected);
+      for (const [actualRef, expectedRef] of zip(actual, expected)) {
+        expect(actualRef.path.node).toBe(expectedRef.node);
+      }
+    });
+  });
+
+  describe('references to destructuring patterns', () => {
+    test('shallow destructuring references', () => {
+      const accessor1 = t.identifier('bar');
+      const accessor2 = t.identifier('bar');
+      const input = ast.module`
+        'pre';
+        const foo = { bar: { baz: 3 } };
+        const { bar: ${accessor1} } = foo;
+        ${accessor2}.baz;
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Expression> => path.node === accessor2,
+      )!;
+      const actual = getExpressionReferences(target);
+      const expected = [
+        { type: 'BindingDeclaration', node: accessor1 },
+        { type: 'VariableGetter', node: accessor2 },
+      ];
+      expect(stripReferencePaths(actual)).toEqual(expected);
+      for (const [actualRef, expectedRef] of zip(actual, expected)) {
+        expect(actualRef.path.node).toBe(expectedRef.node);
+      }
+    });
+
+    test('deep destructuring references', () => {
+      const accessor1 = t.identifier('baz');
+      const accessor2 = t.identifier('baz');
+      const input = ast.module`
+        'pre';
+        const foo = { bar: { baz: { qux: 3 } } };
+        const { bar: { baz: ${accessor1} } } = foo;
+        ${accessor2}.qux;
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Expression> => path.node === accessor2,
+      )!;
+      const actual = getExpressionReferences(target);
+      const expected = [
+        { type: 'BindingDeclaration', node: accessor1 },
+        { type: 'VariableGetter', node: accessor2 },
+      ];
+      expect(stripReferencePaths(actual)).toEqual(expected);
+      for (const [actualRef, expectedRef] of zip(actual, expected)) {
+        expect(actualRef.path.node).toBe(expectedRef.node);
+      }
+    });
+  });
+
+  describe('circular references', () => {
+    test.skip('mutually recursive variables', () => {
+      const declaration1 = t.identifier('foo');
+      const declaration2 = t.identifier('bar');
+      const accessor1 = t.identifier('foo');
+      const accessor2 = t.identifier('bar');
+      const assignment1 = t.identifier(declaration1.name);
+      const assignment2 = t.identifier(declaration2.name);
+      const usage = t.identifier(declaration1.name);
+      const input = ast.module`
+        'pre';
+        let ${declaration1}, ${declaration2};
+        ${assignment1} = ${accessor2};
+        ${assignment2} = ${accessor1};
+        ${usage};
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Expression> => path.node === usage,
+      )!;
+      const actual = getExpressionReferences(target);
+      const expected = [
+        { type: 'VariableGetter', node: usage },
+        { type: 'BindingDeclaration', node: declaration1 },
+        { type: 'BindingDeclaration', node: declaration2 },
+        { type: 'VariableSetter', node: assignment1 },
+        { type: 'VariableSetter', node: assignment2 },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -586,7 +635,7 @@ describe(getObjectPropertyReferences, () => {
     const actual = getObjectPropertyReferences(target, t.identifier('bar'), false);
     const expected = [
       { type: 'PropertyInitializer', node: property },
-      { type: 'PropertyAccessor', node: assignment },
+      { type: 'PropertySetter', node: assignment },
       { type: 'Value', node: updatedValue },
     ];
     expect(stripReferencePaths(actual)).toEqual(expected);

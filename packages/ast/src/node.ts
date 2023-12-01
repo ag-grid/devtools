@@ -140,7 +140,10 @@ export function getNamedObjectLiteralStaticProperty(
   object: NodePath<ObjectExpression>,
   propertyKey: AccessorKey,
 ): NodePath<ObjectProperty | ObjectMethod> | null {
-  return getNamedObjectLikeStaticProperty(object, propertyKey);
+  const matchedProperties = getNamedObjectLikeStaticProperties(object, propertyKey);
+  if (matchedProperties.length === 0) return null;
+  const matchedProperty = matchedProperties[matchedProperties.length - 1];
+  return matchedProperty;
 }
 
 export function getNamedObjectLiteralStaticPropertyKey(
@@ -176,47 +179,51 @@ export function hasNamedObjectPatternStaticProperty(
   object: NodePath<ObjectPattern>,
   propertyKey: AccessorKey,
 ): boolean {
-  return Boolean(getNamedObjectPatternStaticProperty(object, propertyKey));
+  return getNamedObjectPatternStaticProperties(object, propertyKey).length > 0;
 }
 
-export function getNamedObjectPatternStaticProperty(
+export function getNamedObjectPatternStaticProperties(
   object: NodePath<ObjectPattern>,
   propertyKey: AccessorKey,
-): NodePath<ObjectProperty> | null {
-  const property = getNamedObjectLikeStaticProperty(object, propertyKey);
-  if (!property || !property.isObjectProperty()) return null;
-  return property;
+): Array<NodePath<ObjectProperty>> {
+  return getNamedObjectLikeStaticProperties(object, propertyKey)
+    .map((property) => (property.isObjectProperty() ? property : null))
+    .filter(nonNull);
 }
 
-export function getNamedObjectPatternStaticPropertyKey(
+export function getNamedObjectPatternStaticPropertyKeys(
   object: NodePath<ObjectPattern>,
   propertyKey: AccessorKey,
-): NodePath<Identifier | Literal | PrivateName> | null {
-  const property = getNamedObjectPatternStaticProperty(object, propertyKey);
-  if (!property) return null;
-  const key = property.get('key');
-  const computed = property.node.computed;
-  if (!computed && key.isIdentifier()) return key;
-  if (key.isLiteral()) return key;
-  return null;
+): Array<NodePath<Identifier | Literal | PrivateName>> {
+  return getNamedObjectPatternStaticProperties(object, propertyKey)
+    .map((property) => {
+      const key = property.get('key');
+      const computed = property.node.computed;
+      if (!computed && key.isIdentifier()) return key;
+      if (key.isLiteral()) return key;
+      return null;
+    })
+    .filter(nonNull);
 }
 
-export function getNamedObjectPatternStaticPropertyValue(
+export function getNamedObjectPatternStaticPropertyValues(
   object: NodePath<ObjectPattern>,
   propertyKey: AccessorKey,
-): NodePath<PatternLike> | null {
-  const property = getNamedObjectPatternStaticProperty(object, propertyKey);
-  if (!property) return null;
-  const value = property.get('value');
-  if (!value.isPatternLike()) return null;
-  return value;
+): Array<NodePath<PatternLike>> {
+  return getNamedObjectPatternStaticProperties(object, propertyKey)
+    .map((property) => {
+      const value = property.get('value');
+      if (value.isPatternLike()) return value;
+      return null;
+    })
+    .filter(nonNull);
 }
 
-function getNamedObjectLikeStaticProperty(
+function getNamedObjectLikeStaticProperties(
   object: NodePath<ObjectExpression | ObjectPattern>,
   propertyKey: AccessorKey,
-): NodePath<ObjectProperty | ObjectMethod> | null {
-  const matchedProperties = object
+): Array<NodePath<ObjectProperty | ObjectMethod>> {
+  return object
     .get('properties')
     .filter(
       (property): property is NodePath<ObjectProperty | ObjectMethod> =>
@@ -227,9 +234,6 @@ function getNamedObjectLikeStaticProperty(
       if (!fieldName) return false;
       return areAccessorKeysEqual(fieldName, propertyKey);
     });
-  if (matchedProperties.length === 0) return null;
-  const matchedProperty = matchedProperties[matchedProperties.length - 1];
-  return matchedProperty;
 }
 
 export function getFunctionReturnValues(node: NodePath<Function>): Array<NodePath<Expression>> {
