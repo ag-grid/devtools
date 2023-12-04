@@ -59,6 +59,8 @@ import {
   type Visitor,
 } from './types';
 
+export type ReferenceNode = TypeErased<LVal> | OptionalMemberExpression;
+
 export type Reference = Enum<{
   BindingDeclaration: {
     path: NodePath<PatternLike>;
@@ -89,12 +91,6 @@ export type Reference = Enum<{
     path: NodePath<MemberExpression | OptionalMemberExpression>;
     assignment: NodePath<AssignmentExpression>;
   };
-  Value: {
-    path: NodePath<Expression | ObjectMethod>;
-  };
-  PropertyInitializer: {
-    path: NodePath<ObjectProperty | ObjectMethod>;
-  };
 }>;
 
 export const Reference = Enum.create<Reference>({
@@ -105,8 +101,6 @@ export const Reference = Enum.create<Reference>({
   ModuleImport: true,
   PropertyGetter: true,
   PropertySetter: true,
-  Value: true,
-  PropertyInitializer: true,
 });
 
 export type BindingDeclarationReference = EnumVariant<Reference, 'BindingDeclaration'>;
@@ -116,8 +110,6 @@ export type FunctionDeclarationReference = EnumVariant<Reference, 'FunctionDecla
 export type ModuleImportReference = EnumVariant<Reference, 'ModuleImport'>;
 export type PropertyGetterReference = EnumVariant<Reference, 'PropertyGetter'>;
 export type PropertySetterReference = EnumVariant<Reference, 'PropertySetter'>;
-export type ValueReference = EnumVariant<Reference, 'Value'>;
-export type PropertyInitializerReference = EnumVariant<Reference, 'PropertyInitializer'>;
 
 type VariableReference = VariableGetterReference | VariableSetterReference;
 
@@ -127,123 +119,69 @@ export function generateUniqueScopeBinding(scope: Scope, name: string): Identifi
   return scope.hasBinding(name) ? scope.generateUidIdentifier(name) : t.identifier(name);
 }
 
-export function getExpressionReferences(target: NodePath<Expression>): Array<Reference> {
-  // Strip away any TypeScript annotations wrapping the expression
-  const expression = stripTypeScriptAnnotations(target);
-  if (expression !== target) return getExpressionReferences(expression);
-  // If the current expression is being assigned to another variable, return all the references to that variable
-  const assignmentTarget = getValueAssignmentTarget(expression);
-  if (assignmentTarget) {
-    // Get all the references to the assignment target
-    const references = getLocalAccessorReferences(assignmentTarget);
-    // Ensure that the assigned value is present in the list of references
-    // (this is necessary for cases where the assignment target is e.g. a destructuring pattern, as opposed to e.g.
-    // a variable that can be referenced directly)
-    const alreadyIncludesValueReference = references
-      .filter(Reference.Value.is)
-      .some((reference) => reference.path.node === expression.node);
-    if (alreadyIncludesValueReference) return references;
-    return [...references, Reference.Value({ path: expression })];
-  }
-  // If the current expression is a local accessor, return all the other references to that local accessor
-  if (expression.isLVal() || expression.isOptionalMemberExpression()) {
-    return getLocalAccessorReferences(expression);
-  }
-  // Otherwise return the current expression as-is
-  return [Reference.Value({ path: expression })];
+export function isReferenceNode(
+  expression: NodePath<AstNode>,
+): expression is NodePath<ReferenceNode> {
+  return expression.isLVal() || expression.isOptionalMemberExpression();
 }
 
-function getValueAssignmentTarget(
-  target: NodePath<Expression>,
-): NodePath<TypeErased<OptionalMemberExpression | LVal>> | null {
-  const expression = stripTypeScriptAnnotations(target);
-  if (expression !== target) return getValueAssignmentTarget(expression);
-  const parent = getTypeErasedParent(expression);
-  if (parent && parent.isVariableDeclarator()) {
-    const assignedValue = getOptionalNodeFieldValue(parent.get('init'));
-    if (!assignedValue) return null;
-    if (stripTypeScriptAnnotations(assignedValue).node !== expression.node) return null;
-    const localAccessor = stripTypeScriptAnnotations(parent.get('id'));
-    return localAccessor;
-  }
-  if (parent && parent.isAssignmentExpression()) {
-    const assignedValue = stripTypeScriptAnnotations(parent.get('right'));
-    if (stripTypeScriptAnnotations(assignedValue).node !== expression.node) return null;
-    const localAccessor = stripTypeScriptAnnotations(parent.get('left'));
-    return localAccessor;
-  }
-  return null;
-}
-
-export function getLocalAccessorReferences(
-  target: NodePath<LVal | OptionalMemberExpression>,
-): Array<Reference> {
+export function findReferences(target: NodePath<ReferenceNode>): Array<Reference> {
   // Strip away any TypeScript annotations wrapping the expression
   const expression = stripTypeScriptAnnotations(target);
-  if (expression !== target) return getLocalAccessorReferences(expression);
   // Parse the local accessor and follow its references
-  const accessorTargets = getLocalAccessorTargets(expression);
-  return accessorTargets.flatMap((accessorTarget) =>
-    match(accessorTarget, {
-      // If the local accessor is a binding declaration, return all the other references to the bound variable
-      BindingDeclaration: (ref) => getBindingDeclarationReferences(ref),
-      // If the local accessor is an alias to a variable, return all the other references to that variable
-      VariableGetter: (ref) => getVariableReferences(ref),
-      VariableSetter: (ref) => getVariableReferences(ref),
-      // If the local accessor is an alias to a hoisted function, return all the other references to that function
-      FunctionDeclaration: (ref) => getFunctionDeclarationReferences(ref),
-      // If the local accessor is an alias to an imported module, return all the other references to that variable
-      ModuleImport: (ref) => getModuleImportReferences(ref),
-      // If the local accessor is an object property accessor, return all the other references to that object property
-      PropertyGetter: (ref) => getPropertyAccessorReferences(ref),
-      PropertySetter: (ref) => getPropertyAccessorReferences(ref),
-      // References to value initializers will already be covered by the references to the assignment expression's accessor
-      Value: (ref) => [ref],
-      // References to value initializer properties will already be covered by the references to the assignment expression's accessor
-      PropertyInitializer: (ref) => [ref],
-    }),
-  );
+  const accessorTarget = getReferenceTarget(expression);
+  if (!accessorTarget) return [];
+  return match(accessorTarget, {
+    // If the local accessor is a binding declaration, return all the other references to the bound variable
+    BindingDeclaration: (ref) => getBindingDeclarationReferences(ref),
+    // If the local accessor is an alias to a variable, return all the other references to that variable
+    VariableGetter: (ref) => getVariableReferences(ref),
+    VariableSetter: (ref) => getVariableReferences(ref),
+    // If the local accessor is an alias to a hoisted function, return all the other references to that function
+    FunctionDeclaration: (ref) => getFunctionDeclarationReferences(ref),
+    // If the local accessor is an alias to an imported module, return all the other references to that variable
+    ModuleImport: (ref) => getModuleImportReferences(ref),
+    // If the local accessor is an object property accessor, return all the other references to that object property
+    PropertyGetter: (ref) => getPropertyAccessorReferences(ref),
+    PropertySetter: (ref) => getPropertyAccessorReferences(ref),
+  });
 }
 
-function getLocalAccessorTargets(
-  target: NodePath<TypeErased<LVal | OptionalMemberExpression>>,
-): Array<Reference> {
+function getReferenceTarget(target: NodePath<ReferenceNode>): Reference | null {
   if (target.isAssignmentPattern()) {
     const localAssignment = stripTypeScriptAnnotations(target.get('left'));
-    const defaultValue = stripTypeScriptAnnotations(target.get('right'));
-    const references = getLocalAccessorTargets(localAssignment);
-    return [...references, Reference.Value({ path: defaultValue })];
+    return getReferenceTarget(localAssignment);
   }
   if (target.isIdentifier()) {
     const parent = getTypeErasedParent(target);
     if (parent && parent.isAssignmentExpression()) {
-      return [Reference.VariableSetter({ path: target, assignment: parent })];
+      // FIXME: support nested assignments
+      return Reference.VariableSetter({ path: target, assignment: parent });
     } else {
-      return [Reference.VariableGetter({ path: target })];
+      return Reference.VariableGetter({ path: target });
     }
-  }
-  if (target.isPatternLike()) {
-    return [
-      Reference.BindingDeclaration({
-        path: target,
-        declaration: null,
-        accessorPath: { root: target, path: [] },
-      }),
-    ];
   }
   if (target.isMemberExpression() || target.isOptionalMemberExpression()) {
     const parent = getTypeErasedParent(target);
     if (parent && parent.isAssignmentExpression()) {
-      return [Reference.PropertySetter({ path: target, assignment: parent })];
+      // FIXME: support nested assignments
+      return Reference.PropertySetter({ path: target, assignment: parent });
     } else {
-      return [Reference.PropertyGetter({ path: target })];
+      return Reference.PropertyGetter({ path: target });
     }
   }
   if (target.isRestElement()) {
     // FIXME: support destructured array rest elements: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#using_a_binding_pattern_as_the_rest_property
-    return [];
+    return null;
   }
-  return [];
+  if (target.isPatternLike()) {
+    return Reference.BindingDeclaration({
+      path: target,
+      declaration: null,
+      accessorPath: { root: target, path: [] },
+    });
+  }
+  return null;
 }
 
 function getVariableReferences(reference: VariableReference): Array<Reference> {
@@ -260,7 +198,6 @@ function getLocalVariableReferences(identifier: NodePath<Identifier>): Array<Ref
   const binding = identifier.scope.getBinding(identifier.node.name);
   if (!binding) return [];
   const declaration = getBindingTargetReference(binding, identifier);
-  const initializers = getBindingInitializers(binding, identifier);
   const assignments = binding.constantViolations
     .map((path) => {
       if (!path.isAssignmentExpression()) return null;
@@ -278,24 +215,35 @@ function getLocalVariableReferences(identifier: NodePath<Identifier>): Array<Ref
       const assignmentTarget = getValueAssignmentTarget(accessor);
       return [
         Reference.VariableGetter({ path: accessor }),
-        ...(assignmentTarget ? getLocalAccessorReferences(assignmentTarget) : []),
+        ...(assignmentTarget ? findReferences(assignmentTarget) : []),
       ];
     });
-  return [
-    ...(declaration ? [declaration] : []),
-    ...initializers.map((initializer) => Reference.Value({ path: initializer })),
-    ...assignments.flatMap((assignment) => {
-      const value = stripTypeScriptAnnotations(assignment.assignment.get('right'));
-      return [assignment, Reference.Value({ path: value })];
-    }),
-    ...accessors,
-  ];
+  return [...(declaration ? [declaration] : []), ...assignments, ...accessors];
+}
+
+function getValueAssignmentTarget(target: NodePath<Expression>): NodePath<ReferenceNode> | null {
+  const expression = stripTypeScriptAnnotations(target);
+  const parent = getTypeErasedParent(expression);
+  if (parent && parent.isVariableDeclarator()) {
+    const assignedValue = getOptionalNodeFieldValue(parent.get('init'));
+    if (!assignedValue) return null;
+    if (stripTypeScriptAnnotations(assignedValue).node !== expression.node) return null;
+    const localAccessor = stripTypeScriptAnnotations(parent.get('id'));
+    return localAccessor;
+  }
+  if (parent && parent.isAssignmentExpression()) {
+    const assignedValue = stripTypeScriptAnnotations(parent.get('right'));
+    if (stripTypeScriptAnnotations(assignedValue).node !== expression.node) return null;
+    const localAccessor = stripTypeScriptAnnotations(parent.get('left'));
+    return localAccessor;
+  }
+  return null;
 }
 
 function getBindingDeclarationReferences(reference: BindingDeclarationReference): Array<Reference> {
   const { path: target } = reference;
   // If this is a fully-specified variable binding, return the declaration and all references to the bound variable
-  if (target.isIdentifier()) return [reference, ...getLocalAccessorReferences(target)];
+  if (target.isIdentifier()) return [reference, ...findReferences(target)];
   // Otherwise if this is only a partial binding declaration (i.e. an intermediate key within a destructuring pattern),
   // there can be no further references to the current stage of the declaration pattern
   return [reference];
@@ -345,7 +293,7 @@ export function getObjectPropertyReferences(
 ): Array<Reference> {
   const propertyKey = createStaticPropertyKey(key, computed);
   if (!propertyKey) return [];
-  const targetReferences = getExpressionReferences(target);
+  const targetReferences = findReferences(target);
   return targetReferences.flatMap((objectReference) => {
     return match(objectReference, {
       // If this is a destructuring pattern, drill into the pattern to retrieve references to the given property
@@ -360,32 +308,8 @@ export function getObjectPropertyReferences(
       FunctionDeclaration: (ref) => [],
       // Module imports cannot be drilled into any further
       ModuleImport: (ref) => [],
-      // If this is an object literal initializer, drill into the value to retrieve a reference to the given property value
-      Value: (ref) => getValuePropertyReferences(ref, propertyKey),
-      // If this is an object property initializer, get a reference to the given property value
-      PropertyInitializer: (ref) => getPropertyInitializerPropertyReferences(ref, propertyKey),
     });
   });
-}
-
-function getValuePropertyReferences(reference: ValueReference, propertyKey: AccessorKey) {
-  const { path: value } = reference;
-  const propertyInitializer = value.isObjectExpression()
-    ? getNamedObjectLiteralStaticProperty(value, propertyKey)
-    : null;
-  return propertyInitializer ? [Reference.PropertyInitializer({ path: propertyInitializer })] : [];
-}
-
-function getPropertyInitializerPropertyReferences(
-  reference: PropertyInitializerReference,
-  propertyKey: AccessorKey,
-) {
-  const targetObject = reference.path.isObjectProperty() ? reference.path.get('value') : null;
-  const propertyInitializer =
-    targetObject && targetObject.isObjectExpression()
-      ? getNamedObjectLiteralStaticProperty(targetObject, propertyKey)
-      : null;
-  return propertyInitializer ? [Reference.PropertyInitializer({ path: propertyInitializer })] : [];
 }
 
 function getAccessorPropertyReferences(
@@ -408,8 +332,7 @@ function getNamedPropertyAccessorReferences(
   const grandparent = getTypeErasedParent(parent);
   if (grandparent && grandparent.isAssignmentExpression()) {
     const assignment = Reference.PropertySetter({ path: parent, assignment: grandparent });
-    const value = stripTypeScriptAnnotations(grandparent.get('right'));
-    return [assignment, Reference.Value({ path: value })];
+    return [assignment];
   }
   return [Reference.PropertyGetter({ path: parent })];
 }
@@ -439,7 +362,7 @@ function getBindingDeclarationPropertyReferences(
       }),
       // If this is a fully-specified variable binding, return all references to the bound variable
       ...(localAccessor.isIdentifier()
-        ? getLocalAccessorReferences(localAccessor)
+        ? findReferences(localAccessor)
             // Filter out the unqualified local variable binding, as this will be covered by the fully-qualified binding declaration
             .filter((reference) => reference.path.node !== localAccessor.node)
         : []),
