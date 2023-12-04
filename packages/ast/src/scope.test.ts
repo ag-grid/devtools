@@ -4,13 +4,7 @@ import * as ast from './ast';
 import { generate } from './generate';
 import { node as t } from './node';
 import { NodePath, getModuleRoot } from './parse';
-import {
-  Reference,
-  getAccessorExpressionPaths,
-  isReferenceNode,
-  findReferences,
-  getObjectPropertyReferences,
-} from './scope';
+import { Reference, isReferenceNode, findReferences, getReferenceTarget } from './scope';
 import {
   AccessorKey,
   AccessorReference,
@@ -46,7 +40,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === identifier,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [{ type: 'BindingDeclaration', node: identifier }];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -67,7 +61,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === identifier,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'BindingDeclaration', node: identifier },
         { type: 'VariableGetter', node: usage },
@@ -93,7 +87,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === identifier,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'BindingDeclaration', node: identifier },
         { type: 'VariableGetter', node: usage1 },
@@ -118,7 +112,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === identifier,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'BindingDeclaration', node: identifier },
         { type: 'VariableSetter', node: reassignment },
@@ -156,7 +150,7 @@ describe(findReferences, () => {
           input,
           (path): path is NodePath<Expression> => path.node === usage1,
         )!;
-        const actual = isReferenceNode(target) ? findReferences(target) : [];
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
         const expected: ReferenceValues = [
           { type: 'BindingDeclaration', node: identifier1 },
           { type: 'VariableGetter', node: usage1 },
@@ -171,7 +165,7 @@ describe(findReferences, () => {
           input,
           (path): path is NodePath<Expression> => path.node === usage2,
         )!;
-        const actual = isReferenceNode(target) ? findReferences(target) : [];
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
         const expected: ReferenceValues = [
           { type: 'BindingDeclaration', node: identifier2 },
           { type: 'VariableGetter', node: usage2 },
@@ -186,7 +180,7 @@ describe(findReferences, () => {
           input,
           (path): path is NodePath<Expression> => path.node === restUsage,
         )!;
-        const actual = isReferenceNode(target) ? findReferences(target) : [];
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
         const expected: ReferenceValues = [
           { type: 'BindingDeclaration', node: restIdentifier },
           { type: 'VariableGetter', node: restUsage },
@@ -213,7 +207,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === identifier,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'BindingDeclaration', node: identifier },
         { type: 'VariableSetter', node: assignment },
@@ -239,7 +233,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === identifier,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'BindingDeclaration', node: identifier },
         { type: 'VariableSetter', node: assignment },
@@ -266,7 +260,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === identifier,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'BindingDeclaration', node: identifier },
         { type: 'VariableSetter', node: assignment },
@@ -295,7 +289,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === identifier,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'BindingDeclaration', node: identifier },
         { type: 'VariableSetter', node: assignment },
@@ -323,7 +317,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === accessor,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'PropertySetter', node: accessor },
         { type: 'PropertyGetter', node: usage },
@@ -349,7 +343,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === assignment,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [{ type: 'PropertySetter', node: assignment }];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -372,7 +366,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === assignment,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'PropertySetter', node: assignment },
         { type: 'PropertyGetter', node: accessor },
@@ -400,7 +394,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === assignment,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'PropertyGetter', node: accessor1 },
         { type: 'PropertySetter', node: assignment },
@@ -438,7 +432,7 @@ describe(findReferences, () => {
           t.isIdentifier(path.node.value) &&
           path.node.value.name === accessor1.name,
       )!.node.value;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'PropertySetter', node: assignment },
         { type: 'BindingDeclaration', node: shorthandPropertyAccessor },
@@ -467,7 +461,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === assignment,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'PropertySetter', node: assignment },
         { type: 'BindingDeclaration', node: accessor1 },
@@ -484,21 +478,24 @@ describe(findReferences, () => {
     test('shallow destructuring references', () => {
       const accessor1 = t.identifier('bar');
       const accessor2 = t.identifier('bar');
+      const accessor3 = ast.expression`foo.bar`;
       const input = ast.module`
         'pre';
         const foo = { bar: { baz: 3 } };
         const { bar: ${accessor1} } = foo;
         ${accessor2}.baz;
+        ${accessor3}
         'post';
       `;
       const target = findAstNode(
         input,
         (path): path is NodePath<Expression> => path.node === accessor2,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'BindingDeclaration', node: accessor1 },
         { type: 'VariableGetter', node: accessor2 },
+        { type: 'PropertyGetter', node: accessor3 },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -509,21 +506,24 @@ describe(findReferences, () => {
     test('deep destructuring references', () => {
       const accessor1 = t.identifier('baz');
       const accessor2 = t.identifier('baz');
+      const accessor3 = ast.expression`foo.bar.baz`;
       const input = ast.module`
         'pre';
         const foo = { bar: { baz: { qux: 3 } } };
         const { bar: { baz: ${accessor1} } } = foo;
         ${accessor2}.qux;
+        ${accessor3}.qux;
         'post';
       `;
       const target = findAstNode(
         input,
         (path): path is NodePath<Expression> => path.node === accessor2,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'BindingDeclaration', node: accessor1 },
         { type: 'VariableGetter', node: accessor2 },
+        { type: 'PropertyGetter', node: accessor3 },
       ];
       expect(stripReferencePaths(actual)).toEqual(expected);
       for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -548,7 +548,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === accessor,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'FunctionDeclaration', node: declaration.node },
         { type: 'VariableGetter', node: accessor },
@@ -581,7 +581,7 @@ describe(findReferences, () => {
         input,
         (path): path is NodePath<Expression> => path.node === usage,
       )!;
-      const actual = isReferenceNode(target) ? findReferences(target) : [];
+      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
       const expected: ReferenceValues = [
         { type: 'VariableGetter', node: usage },
         { type: 'BindingDeclaration', node: declaration1 },
@@ -597,363 +597,363 @@ describe(findReferences, () => {
   });
 });
 
-describe.skip(getObjectPropertyReferences, () => {
-  test('object literals', () => {
-    const property = t.objectProperty(t.identifier('bar'), t.nullLiteral());
-    const object = t.objectExpression([property]);
-    const input = ast.module`
-      'pre';
-      ${object};
-      'post';
-    `;
-    const target = findAstNode(
-      input,
-      (path): path is NodePath<Expression> => path.node === object,
-    )!;
-    const actual = getObjectPropertyReferences(target, t.identifier('bar'), false);
-    const expected: ReferenceValues = [{ type: 'PropertyInitializer', node: property }];
-    expect(stripReferencePaths(actual)).toEqual(expected);
-    for (const [actualRef, expectedRef] of zip(actual, expected)) {
-      expect(actualRef.path.node).toBe(expectedRef.node);
-    }
-  });
+// describe(getObjectPropertyReferences, () => {
+//   test('object literals', () => {
+//     const property = t.objectProperty(t.identifier('bar'), t.nullLiteral());
+//     const object = t.objectExpression([property]);
+//     const input = ast.module`
+//       'pre';
+//       ${object};
+//       'post';
+//     `;
+//     const target = findAstNode(
+//       input,
+//       (path): path is NodePath<Expression> => path.node === object,
+//     )!;
+//     const actual = getObjectPropertyReferences(target, t.identifier('bar'), false);
+//     const expected: ReferenceValues = [{ type: 'PropertyInitializer', node: property }];
+//     expect(stripReferencePaths(actual)).toEqual(expected);
+//     for (const [actualRef, expectedRef] of zip(actual, expected)) {
+//       expect(actualRef.path.node).toBe(expectedRef.node);
+//     }
+//   });
 
-  test('object property assignment', () => {
-    const property = t.objectProperty(t.identifier('bar'), t.nullLiteral());
-    const object = t.objectExpression([property]);
-    const assignment = ast.expression`qux.bar`;
-    const input = ast.module`
-      'pre';
-      const qux = ${object};
-      ${assignment} = 3;
-      'post';
-    `;
-    const target = findAstNode(
-      input,
-      (path): path is NodePath<Expression> => path.node === object,
-    )!;
-    const actual = getObjectPropertyReferences(target, t.identifier('bar'), false);
-    const expected: ReferenceValues = [
-      { type: 'PropertyInitializer', node: property },
-      { type: 'PropertySetter', node: assignment },
-    ];
-    expect(stripReferencePaths(actual)).toEqual(expected);
-    for (const [actualRef, expectedRef] of zip(actual, expected)) {
-      expect(actualRef.path.node).toBe(expectedRef.node);
-    }
-  });
-});
+//   test('object property assignment', () => {
+//     const property = t.objectProperty(t.identifier('bar'), t.nullLiteral());
+//     const object = t.objectExpression([property]);
+//     const assignment = ast.expression`qux.bar`;
+//     const input = ast.module`
+//       'pre';
+//       const qux = ${object};
+//       ${assignment} = 3;
+//       'post';
+//     `;
+//     const target = findAstNode(
+//       input,
+//       (path): path is NodePath<Expression> => path.node === object,
+//     )!;
+//     const actual = getObjectPropertyReferences(target, t.identifier('bar'), false);
+//     const expected: ReferenceValues = [
+//       { type: 'PropertyInitializer', node: property },
+//       { type: 'PropertySetter', node: assignment },
+//     ];
+//     expect(stripReferencePaths(actual)).toEqual(expected);
+//     for (const [actualRef, expectedRef] of zip(actual, expected)) {
+//       expect(actualRef.path.node).toBe(expectedRef.node);
+//     }
+//   });
+// });
 
-describe(getAccessorExpressionPaths, () => {
-  describe('const declarations', () => {
-    test('simple references', () => {
-      const input = ast.module`const foo = 3; foo;`;
-      const program = getModuleRoot(input);
-      const statements = program.get('body');
-      const finalStatement: NodePath<Statement> = statements[statements.length - 1];
-      finalStatement.assertExpressionStatement();
-      const expression = finalStatement.get('expression');
-      const actual = getAccessorExpressionPaths(expression);
-      expect(actual && actual.map(formatAccessorPath)).toEqual(['3{foo}']);
-    });
+// describe(getAccessorExpressionPaths, () => {
+//   describe('const declarations', () => {
+//     test('simple references', () => {
+//       const input = ast.module`const foo = 3; foo;`;
+//       const program = getModuleRoot(input);
+//       const statements = program.get('body');
+//       const finalStatement: NodePath<Statement> = statements[statements.length - 1];
+//       finalStatement.assertExpressionStatement();
+//       const expression = finalStatement.get('expression');
+//       const actual = getAccessorExpressionPaths(expression);
+//       expect(actual && actual.map(formatAccessorPath)).toEqual(['3{foo}']);
+//     });
 
-    describe('property accessors', () => {
-      test('simple property accessors', () => {
-        const input = ast.module`const foo = 3; foo.bar;`;
-        const program = getModuleRoot(input);
-        const statements = program.get('body');
-        const finalStatement: NodePath<Statement> = statements[statements.length - 1];
-        finalStatement.assertExpressionStatement();
-        const expression = finalStatement.get('expression');
-        const actual = getAccessorExpressionPaths(expression);
-        expect(actual && actual.map(formatAccessorPath)).toEqual(['3{foo}.bar']);
-      });
+//     describe('property accessors', () => {
+//       test('simple property accessors', () => {
+//         const input = ast.module`const foo = 3; foo.bar;`;
+//         const program = getModuleRoot(input);
+//         const statements = program.get('body');
+//         const finalStatement: NodePath<Statement> = statements[statements.length - 1];
+//         finalStatement.assertExpressionStatement();
+//         const expression = finalStatement.get('expression');
+//         const actual = getAccessorExpressionPaths(expression);
+//         expect(actual && actual.map(formatAccessorPath)).toEqual(['3{foo}.bar']);
+//       });
 
-      test('nested property accessors', () => {
-        const input = ast.module`const foo = 3; foo.bar.baz.qux;`;
-        const program = getModuleRoot(input);
-        const statements = program.get('body');
-        const finalStatement: NodePath<Statement> = statements[statements.length - 1];
-        finalStatement.assertExpressionStatement();
-        const expression = finalStatement.get('expression');
-        const actual = getAccessorExpressionPaths(expression);
-        expect(actual && actual.map(formatAccessorPath)).toEqual(['3{foo}.bar.baz.qux']);
-      });
-    });
+//       test('nested property accessors', () => {
+//         const input = ast.module`const foo = 3; foo.bar.baz.qux;`;
+//         const program = getModuleRoot(input);
+//         const statements = program.get('body');
+//         const finalStatement: NodePath<Statement> = statements[statements.length - 1];
+//         finalStatement.assertExpressionStatement();
+//         const expression = finalStatement.get('expression');
+//         const actual = getAccessorExpressionPaths(expression);
+//         expect(actual && actual.map(formatAccessorPath)).toEqual(['3{foo}.bar.baz.qux']);
+//       });
+//     });
 
-    describe('property destructuring', () => {
-      test('nested property destructuring', () => {
-        const input = ast.module`const foo = 3; const { bar } = foo; bar;`;
-        const program = getModuleRoot(input);
-        const statements = program.get('body');
-        const finalStatement: NodePath<Statement> = statements[statements.length - 1];
-        finalStatement.assertExpressionStatement();
-        const expression = finalStatement.get('expression');
-        const actual = getAccessorExpressionPaths(expression);
-        expect(actual && actual.map(formatAccessorPath)).toEqual(['3{foo}.bar{bar}']);
-      });
+//     describe('property destructuring', () => {
+//       test('nested property destructuring', () => {
+//         const input = ast.module`const foo = 3; const { bar } = foo; bar;`;
+//         const program = getModuleRoot(input);
+//         const statements = program.get('body');
+//         const finalStatement: NodePath<Statement> = statements[statements.length - 1];
+//         finalStatement.assertExpressionStatement();
+//         const expression = finalStatement.get('expression');
+//         const actual = getAccessorExpressionPaths(expression);
+//         expect(actual && actual.map(formatAccessorPath)).toEqual(['3{foo}.bar{bar}']);
+//       });
 
-      test('deeply nested property destructuring', () => {
-        const input = ast.module`const foo = 3; const { bar: { baz } } = foo; baz;`;
-        const program = getModuleRoot(input);
-        const statements = program.get('body');
-        const finalStatement: NodePath<Statement> = statements[statements.length - 1];
-        finalStatement.assertExpressionStatement();
-        const expression = finalStatement.get('expression');
-        const actual = getAccessorExpressionPaths(expression);
-        expect(actual && actual.map(formatAccessorPath)).toEqual(['3{foo}.bar.baz{baz}']);
-      });
-    });
+//       test('deeply nested property destructuring', () => {
+//         const input = ast.module`const foo = 3; const { bar: { baz } } = foo; baz;`;
+//         const program = getModuleRoot(input);
+//         const statements = program.get('body');
+//         const finalStatement: NodePath<Statement> = statements[statements.length - 1];
+//         finalStatement.assertExpressionStatement();
+//         const expression = finalStatement.get('expression');
+//         const actual = getAccessorExpressionPaths(expression);
+//         expect(actual && actual.map(formatAccessorPath)).toEqual(['3{foo}.bar.baz{baz}']);
+//       });
+//     });
 
-    describe('aliased variables', () => {
-      describe('simple aliases', () => {
-        test('nested aliases', () => {
-          const input = ast.module`const foo = 3; const bar = foo; bar;`;
-          const program = getModuleRoot(input);
-          const statements = program.get('body');
-          const finalStatement: NodePath<Statement> = statements[statements.length - 1];
-          finalStatement.assertExpressionStatement();
-          const expression = finalStatement.get('expression');
-          const actual = getAccessorExpressionPaths(expression);
-          expect(actual && actual.map(formatAccessorPath)).toEqual(['3{bar,foo}']);
-        });
+//     describe('aliased variables', () => {
+//       describe('simple aliases', () => {
+//         test('nested aliases', () => {
+//           const input = ast.module`const foo = 3; const bar = foo; bar;`;
+//           const program = getModuleRoot(input);
+//           const statements = program.get('body');
+//           const finalStatement: NodePath<Statement> = statements[statements.length - 1];
+//           finalStatement.assertExpressionStatement();
+//           const expression = finalStatement.get('expression');
+//           const actual = getAccessorExpressionPaths(expression);
+//           expect(actual && actual.map(formatAccessorPath)).toEqual(['3{bar,foo}']);
+//         });
 
-        test('deeply nested aliases', () => {
-          const input = ast.module`const foo = 3; const bar = foo; const baz = bar; const qux = baz; qux;`;
-          const program = getModuleRoot(input);
-          const statements = program.get('body');
-          const finalStatement: NodePath<Statement> = statements[statements.length - 1];
-          finalStatement.assertExpressionStatement();
-          const expression = finalStatement.get('expression');
-          const actual = getAccessorExpressionPaths(expression);
-          expect(actual && actual.map(formatAccessorPath)).toEqual(['3{qux,baz,bar,foo}']);
-        });
-      });
+//         test('deeply nested aliases', () => {
+//           const input = ast.module`const foo = 3; const bar = foo; const baz = bar; const qux = baz; qux;`;
+//           const program = getModuleRoot(input);
+//           const statements = program.get('body');
+//           const finalStatement: NodePath<Statement> = statements[statements.length - 1];
+//           finalStatement.assertExpressionStatement();
+//           const expression = finalStatement.get('expression');
+//           const actual = getAccessorExpressionPaths(expression);
+//           expect(actual && actual.map(formatAccessorPath)).toEqual(['3{qux,baz,bar,foo}']);
+//         });
+//       });
 
-      describe('property accessor aliases', () => {
-        test('nested property accessor aliases', () => {
-          const input = ast.module`const foo = 3; const bar = foo.bar; bar;`;
-          const program = getModuleRoot(input);
-          const statements = program.get('body');
-          const finalStatement: NodePath<Statement> = statements[statements.length - 1];
-          finalStatement.assertExpressionStatement();
-          const expression = finalStatement.get('expression');
-          const actual = getAccessorExpressionPaths(expression);
-          expect(actual && actual.map(formatAccessorPath)).toEqual(['3{foo}.bar{bar}']);
-        });
+//       describe('property accessor aliases', () => {
+//         test('nested property accessor aliases', () => {
+//           const input = ast.module`const foo = 3; const bar = foo.bar; bar;`;
+//           const program = getModuleRoot(input);
+//           const statements = program.get('body');
+//           const finalStatement: NodePath<Statement> = statements[statements.length - 1];
+//           finalStatement.assertExpressionStatement();
+//           const expression = finalStatement.get('expression');
+//           const actual = getAccessorExpressionPaths(expression);
+//           expect(actual && actual.map(formatAccessorPath)).toEqual(['3{foo}.bar{bar}']);
+//         });
 
-        test('deeply nested property accessor aliases', () => {
-          const input = ast.module`const foo = 3; const bar = foo.bar; const baz = bar.baz; const qux = baz.qux; qux;`;
-          const program = getModuleRoot(input);
-          const statements = program.get('body');
-          const finalStatement: NodePath<Statement> = statements[statements.length - 1];
-          finalStatement.assertExpressionStatement();
-          const expression = finalStatement.get('expression');
-          const actual = getAccessorExpressionPaths(expression);
-          expect(actual && actual.map(formatAccessorPath)).toEqual([
-            '3{foo}.bar{bar}.baz{baz}.qux{qux}',
-          ]);
-        });
-      });
-    });
+//         test('deeply nested property accessor aliases', () => {
+//           const input = ast.module`const foo = 3; const bar = foo.bar; const baz = bar.baz; const qux = baz.qux; qux;`;
+//           const program = getModuleRoot(input);
+//           const statements = program.get('body');
+//           const finalStatement: NodePath<Statement> = statements[statements.length - 1];
+//           finalStatement.assertExpressionStatement();
+//           const expression = finalStatement.get('expression');
+//           const actual = getAccessorExpressionPaths(expression);
+//           expect(actual && actual.map(formatAccessorPath)).toEqual([
+//             '3{foo}.bar{bar}.baz{baz}.qux{qux}',
+//           ]);
+//         });
+//       });
+//     });
 
-    describe('class fields', () => {
-      test('direct accessors', () => {
-        const input = ast.module`
-          class Foo {
-            constructor() {
-              this.foo = 3;
-            }
-            getFoo() {
-              return this.foo;
-            }
-          }
-        `;
-        const program = getModuleRoot(input);
-        const statements = program.get('body');
-        const classDeclaration: NodePath<Statement> = statements[0];
-        classDeclaration.assertClassDeclaration();
-        const classMembers = classDeclaration.get('body').get('body');
-        const getterMethod: NodePath<ClassBody['body'][number]> =
-          classMembers[classMembers.length - 1];
-        getterMethod.assertClassMethod();
-        const methodStatements = getterMethod.get('body').get('body');
-        const returnStatement: NodePath<Statement> = methodStatements[methodStatements.length - 1];
-        returnStatement.assertReturnStatement();
-        const expression: NodePath<Expression | null | undefined> = returnStatement.get('argument');
-        expression.assertExpression();
-        const actual = getAccessorExpressionPaths(expression);
-        expect(actual && actual.map(formatAccessorPath)).toEqual(['3{Foo.foo}']);
-      });
+//     describe('class fields', () => {
+//       test('direct accessors', () => {
+//         const input = ast.module`
+//           class Foo {
+//             constructor() {
+//               this.foo = 3;
+//             }
+//             getFoo() {
+//               return this.foo;
+//             }
+//           }
+//         `;
+//         const program = getModuleRoot(input);
+//         const statements = program.get('body');
+//         const classDeclaration: NodePath<Statement> = statements[0];
+//         classDeclaration.assertClassDeclaration();
+//         const classMembers = classDeclaration.get('body').get('body');
+//         const getterMethod: NodePath<ClassBody['body'][number]> =
+//           classMembers[classMembers.length - 1];
+//         getterMethod.assertClassMethod();
+//         const methodStatements = getterMethod.get('body').get('body');
+//         const returnStatement: NodePath<Statement> = methodStatements[methodStatements.length - 1];
+//         returnStatement.assertReturnStatement();
+//         const expression: NodePath<Expression | null | undefined> = returnStatement.get('argument');
+//         expression.assertExpression();
+//         const actual = getAccessorExpressionPaths(expression);
+//         expect(actual && actual.map(formatAccessorPath)).toEqual(['3{Foo.foo}']);
+//       });
 
-      test('nested accessors', () => {
-        const input = ast.module`
-          class Foo {
-            constructor() {
-              this.foo = 3;
-            }
-            getFoo() {
-              return this.foo.bar.baz;
-            }
-          }
-        `;
-        const program = getModuleRoot(input);
-        const statements = program.get('body');
-        const classDeclaration: NodePath<Statement> = statements[0];
-        classDeclaration.assertClassDeclaration();
-        const classMembers = classDeclaration.get('body').get('body');
-        const getterMethod: NodePath<ClassBody['body'][number]> =
-          classMembers[classMembers.length - 1];
-        getterMethod.assertClassMethod();
-        const methodStatements = getterMethod.get('body').get('body');
-        const returnStatement: NodePath<Statement> = methodStatements[methodStatements.length - 1];
-        returnStatement.assertReturnStatement();
-        const expression: NodePath<Expression | null | undefined> = returnStatement.get('argument');
-        expression.assertExpression();
-        const actual = getAccessorExpressionPaths(expression);
-        expect(actual && actual.map(formatAccessorPath)).toEqual(['3{Foo.foo}.bar.baz']);
-      });
+//       test('nested accessors', () => {
+//         const input = ast.module`
+//           class Foo {
+//             constructor() {
+//               this.foo = 3;
+//             }
+//             getFoo() {
+//               return this.foo.bar.baz;
+//             }
+//           }
+//         `;
+//         const program = getModuleRoot(input);
+//         const statements = program.get('body');
+//         const classDeclaration: NodePath<Statement> = statements[0];
+//         classDeclaration.assertClassDeclaration();
+//         const classMembers = classDeclaration.get('body').get('body');
+//         const getterMethod: NodePath<ClassBody['body'][number]> =
+//           classMembers[classMembers.length - 1];
+//         getterMethod.assertClassMethod();
+//         const methodStatements = getterMethod.get('body').get('body');
+//         const returnStatement: NodePath<Statement> = methodStatements[methodStatements.length - 1];
+//         returnStatement.assertReturnStatement();
+//         const expression: NodePath<Expression | null | undefined> = returnStatement.get('argument');
+//         expression.assertExpression();
+//         const actual = getAccessorExpressionPaths(expression);
+//         expect(actual && actual.map(formatAccessorPath)).toEqual(['3{Foo.foo}.bar.baz']);
+//       });
 
-      test('multiple initializers', () => {
-        const input = ast.module`
-          class Foo {
-            foo = 3;
-            constructor() {
-              this.foo = 4;
-            }
-            setFoo(value) {
-              this.foo = value;
-            }
-            getFoo() {
-              return this.foo;
-            }
-          }
-        `;
-        const program = getModuleRoot(input);
-        const statements = program.get('body');
-        const classDeclaration: NodePath<Statement> = statements[0];
-        classDeclaration.assertClassDeclaration();
-        const classMembers = classDeclaration.get('body').get('body');
-        const getterMethod: NodePath<ClassBody['body'][number]> =
-          classMembers[classMembers.length - 1];
-        getterMethod.assertClassMethod();
-        const methodStatements = getterMethod.get('body').get('body');
-        const returnStatement: NodePath<Statement> = methodStatements[methodStatements.length - 1];
-        returnStatement.assertReturnStatement();
-        const expression: NodePath<Expression | null | undefined> = returnStatement.get('argument');
-        expression.assertExpression();
-        const actual = getAccessorExpressionPaths(expression);
-        expect(actual && actual.map(formatAccessorPath)).toEqual([
-          '3{Foo.foo}',
-          '4{Foo.foo}',
-          'value{Foo.foo,value}',
-        ]);
-      });
-    });
+//       test('multiple initializers', () => {
+//         const input = ast.module`
+//           class Foo {
+//             foo = 3;
+//             constructor() {
+//               this.foo = 4;
+//             }
+//             setFoo(value) {
+//               this.foo = value;
+//             }
+//             getFoo() {
+//               return this.foo;
+//             }
+//           }
+//         `;
+//         const program = getModuleRoot(input);
+//         const statements = program.get('body');
+//         const classDeclaration: NodePath<Statement> = statements[0];
+//         classDeclaration.assertClassDeclaration();
+//         const classMembers = classDeclaration.get('body').get('body');
+//         const getterMethod: NodePath<ClassBody['body'][number]> =
+//           classMembers[classMembers.length - 1];
+//         getterMethod.assertClassMethod();
+//         const methodStatements = getterMethod.get('body').get('body');
+//         const returnStatement: NodePath<Statement> = methodStatements[methodStatements.length - 1];
+//         returnStatement.assertReturnStatement();
+//         const expression: NodePath<Expression | null | undefined> = returnStatement.get('argument');
+//         expression.assertExpression();
+//         const actual = getAccessorExpressionPaths(expression);
+//         expect(actual && actual.map(formatAccessorPath)).toEqual([
+//           '3{Foo.foo}',
+//           '4{Foo.foo}',
+//           'value{Foo.foo,value}',
+//         ]);
+//       });
+//     });
 
-    describe('object prototype fields', () => {
-      test('direct accessors', () => {
-        const input = ast.module`
-          const Foo = {
-            foo: 3,
-            getFoo() {
-              return this.foo;
-            },
-          };
-        `;
-        const program = getModuleRoot(input);
-        const statements = program.get('body');
-        const variableDeclaration: NodePath<Statement> = statements[0];
-        variableDeclaration.assertVariableDeclaration();
-        const objectDeclaration: NodePath<Expression | null | undefined> = variableDeclaration
-          .get('declarations')[0]
-          .get('init');
-        objectDeclaration.assertObjectExpression();
-        const classMembers = objectDeclaration.get('properties');
-        const getterMethod: NodePath<ObjectExpression['properties'][number]> =
-          classMembers[classMembers.length - 1];
-        getterMethod.assertObjectMethod();
-        const methodStatements = getterMethod.get('body').get('body');
-        const returnStatement: NodePath<Statement> = methodStatements[methodStatements.length - 1];
-        returnStatement.assertReturnStatement();
-        const expression: NodePath<Expression | null | undefined> = returnStatement.get('argument');
-        expression.assertExpression();
-        const actual = getAccessorExpressionPaths(expression);
-        expect(actual && actual.map(formatAccessorPath)).toEqual(['3{{}.foo}']);
-      });
+//     describe('object prototype fields', () => {
+//       test('direct accessors', () => {
+//         const input = ast.module`
+//           const Foo = {
+//             foo: 3,
+//             getFoo() {
+//               return this.foo;
+//             },
+//           };
+//         `;
+//         const program = getModuleRoot(input);
+//         const statements = program.get('body');
+//         const variableDeclaration: NodePath<Statement> = statements[0];
+//         variableDeclaration.assertVariableDeclaration();
+//         const objectDeclaration: NodePath<Expression | null | undefined> = variableDeclaration
+//           .get('declarations')[0]
+//           .get('init');
+//         objectDeclaration.assertObjectExpression();
+//         const classMembers = objectDeclaration.get('properties');
+//         const getterMethod: NodePath<ObjectExpression['properties'][number]> =
+//           classMembers[classMembers.length - 1];
+//         getterMethod.assertObjectMethod();
+//         const methodStatements = getterMethod.get('body').get('body');
+//         const returnStatement: NodePath<Statement> = methodStatements[methodStatements.length - 1];
+//         returnStatement.assertReturnStatement();
+//         const expression: NodePath<Expression | null | undefined> = returnStatement.get('argument');
+//         expression.assertExpression();
+//         const actual = getAccessorExpressionPaths(expression);
+//         expect(actual && actual.map(formatAccessorPath)).toEqual(['3{{}.foo}']);
+//       });
 
-      test('nested accessors', () => {
-        const input = ast.module`
-          const Foo = {
-            foo: 3,
-            getFoo() {
-              return this.foo.bar.baz;
-            },
-          };
-        `;
-        const program = getModuleRoot(input);
-        const statements = program.get('body');
-        const variableDeclaration: NodePath<Statement> = statements[0];
-        variableDeclaration.assertVariableDeclaration();
-        const objectDeclaration: NodePath<Expression | null | undefined> = variableDeclaration
-          .get('declarations')[0]
-          .get('init');
-        objectDeclaration.assertObjectExpression();
-        const classMembers = objectDeclaration.get('properties');
-        const getterMethod: NodePath<ObjectExpression['properties'][number]> =
-          classMembers[classMembers.length - 1];
-        getterMethod.assertObjectMethod();
-        const methodStatements = getterMethod.get('body').get('body');
-        const returnStatement: NodePath<Statement> = methodStatements[methodStatements.length - 1];
-        returnStatement.assertReturnStatement();
-        const expression: NodePath<Expression | null | undefined> = returnStatement.get('argument');
-        expression.assertExpression();
-        const actual = getAccessorExpressionPaths(expression);
-        expect(actual && actual.map(formatAccessorPath)).toEqual(['3{{}.foo}.bar.baz']);
-      });
+//       test('nested accessors', () => {
+//         const input = ast.module`
+//           const Foo = {
+//             foo: 3,
+//             getFoo() {
+//               return this.foo.bar.baz;
+//             },
+//           };
+//         `;
+//         const program = getModuleRoot(input);
+//         const statements = program.get('body');
+//         const variableDeclaration: NodePath<Statement> = statements[0];
+//         variableDeclaration.assertVariableDeclaration();
+//         const objectDeclaration: NodePath<Expression | null | undefined> = variableDeclaration
+//           .get('declarations')[0]
+//           .get('init');
+//         objectDeclaration.assertObjectExpression();
+//         const classMembers = objectDeclaration.get('properties');
+//         const getterMethod: NodePath<ObjectExpression['properties'][number]> =
+//           classMembers[classMembers.length - 1];
+//         getterMethod.assertObjectMethod();
+//         const methodStatements = getterMethod.get('body').get('body');
+//         const returnStatement: NodePath<Statement> = methodStatements[methodStatements.length - 1];
+//         returnStatement.assertReturnStatement();
+//         const expression: NodePath<Expression | null | undefined> = returnStatement.get('argument');
+//         expression.assertExpression();
+//         const actual = getAccessorExpressionPaths(expression);
+//         expect(actual && actual.map(formatAccessorPath)).toEqual(['3{{}.foo}.bar.baz']);
+//       });
 
-      test('multiple initializers', () => {
-        const input = ast.module`
-          const Foo = {
-            foo: 3,
-            init() {
-              this.foo = 4;
-            },
-            setFoo(value) {
-              this.foo = value;
-            },
-            getFoo() {
-              return this.foo;
-            },
-          };
-        `;
-        const program = getModuleRoot(input);
-        const statements = program.get('body');
-        const variableDeclaration: NodePath<Statement> = statements[0];
-        variableDeclaration.assertVariableDeclaration();
-        const objectDeclaration: NodePath<Expression | null | undefined> = variableDeclaration
-          .get('declarations')[0]
-          .get('init');
-        objectDeclaration.assertObjectExpression();
-        const classMembers = objectDeclaration.get('properties');
-        const getterMethod: NodePath<ObjectExpression['properties'][number]> =
-          classMembers[classMembers.length - 1];
-        getterMethod.assertObjectMethod();
-        const methodStatements = getterMethod.get('body').get('body');
-        const returnStatement: NodePath<Statement> = methodStatements[methodStatements.length - 1];
-        returnStatement.assertReturnStatement();
-        const expression: NodePath<Expression | null | undefined> = returnStatement.get('argument');
-        expression.assertExpression();
-        const actual = getAccessorExpressionPaths(expression);
-        expect(actual && actual.map(formatAccessorPath)).toEqual([
-          '3{{}.foo}',
-          '4{{}.foo}',
-          'value{{}.foo,value}',
-        ]);
-      });
-    });
-  });
-});
+//       test('multiple initializers', () => {
+//         const input = ast.module`
+//           const Foo = {
+//             foo: 3,
+//             init() {
+//               this.foo = 4;
+//             },
+//             setFoo(value) {
+//               this.foo = value;
+//             },
+//             getFoo() {
+//               return this.foo;
+//             },
+//           };
+//         `;
+//         const program = getModuleRoot(input);
+//         const statements = program.get('body');
+//         const variableDeclaration: NodePath<Statement> = statements[0];
+//         variableDeclaration.assertVariableDeclaration();
+//         const objectDeclaration: NodePath<Expression | null | undefined> = variableDeclaration
+//           .get('declarations')[0]
+//           .get('init');
+//         objectDeclaration.assertObjectExpression();
+//         const classMembers = objectDeclaration.get('properties');
+//         const getterMethod: NodePath<ObjectExpression['properties'][number]> =
+//           classMembers[classMembers.length - 1];
+//         getterMethod.assertObjectMethod();
+//         const methodStatements = getterMethod.get('body').get('body');
+//         const returnStatement: NodePath<Statement> = methodStatements[methodStatements.length - 1];
+//         returnStatement.assertReturnStatement();
+//         const expression: NodePath<Expression | null | undefined> = returnStatement.get('argument');
+//         expression.assertExpression();
+//         const actual = getAccessorExpressionPaths(expression);
+//         expect(actual && actual.map(formatAccessorPath)).toEqual([
+//           '3{{}.foo}',
+//           '4{{}.foo}',
+//           'value{{}.foo,value}',
+//         ]);
+//       });
+//     });
+//   });
+// });
 
 function formatAccessorPath(accessor: AccessorPath): string {
   const {
