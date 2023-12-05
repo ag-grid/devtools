@@ -1,6 +1,5 @@
 import {
   getFunctionReturnValues,
-  getLiteralPropertyKey,
   getNamedObjectLiteralStaticPropertyValue,
   getObjectLiteralStaticPropertyValues,
   parseStringExpressionValue,
@@ -11,9 +10,20 @@ import {
   type Types,
   getStaticPropertyKey,
 } from '@ag-grid-devtools/ast';
-import { Enum, VARIANT, nonNull } from '@ag-grid-devtools/utils';
+import { nonNull } from '@ag-grid-devtools/utils';
 import { parse } from 'vue-eslint-parser';
 import { AST } from 'vue-eslint-parser';
+import {
+  getTemplateNodeChild,
+  type TemplateEngine,
+  type TemplateFormatter,
+  type TemplateMutation,
+  type TemplateNode,
+  type TemplateNodeMatcher,
+  type TemplatePath,
+  type TemplateRange,
+  type TemplateVisitor,
+} from './templateHelpers';
 
 export type { AST } from 'vue-eslint-parser';
 
@@ -29,7 +39,6 @@ type Property = Types.Property;
 type HasLocation = AST.HasLocation;
 type HasParent = AST.HasParent;
 type Node = AST.Node;
-type OffsetRange = AST.OffsetRange;
 type VAttribute = AST.VAttribute;
 type VDirective = AST.VDirective;
 type VElement = AST.VElement;
@@ -66,48 +75,6 @@ const VUE_COMPONENT_DEFINITION_LIFECYCLE_METHODS = new Set([
   'serverPrefetch',
 ]);
 const VUE_COMPONENT_INSTANCE_DATA_FIELD_NAME = '$data';
-
-export interface VueTemplateNode<T extends Node = Node> {
-  node: T;
-  path: VueTemplatePath;
-  template: VueTemplateSource;
-}
-
-export interface VueTemplateSource {
-  source: string;
-  root: VElement;
-  omitRootTag: boolean;
-  mutations: Array<VueTemplateMutation>;
-}
-
-type VueTemplateMutation = Enum<{
-  ReplaceChild: {
-    path: VueTemplatePath;
-    value: Node | null;
-  };
-  RemoveListChild: {
-    path: VueTemplatePath;
-  };
-  ReplaceListChild: {
-    path: VueTemplatePath;
-    value: Node;
-  };
-}>;
-
-const VueTemplateMutation = Enum.create<VueTemplateMutation>({
-  ReplaceChild: true,
-  RemoveListChild: true,
-  ReplaceListChild: true,
-});
-
-export type VueTemplatePath = Array<PropertyKey>;
-
-export interface VueTemplateVisitor {
-  enter(node: VueTemplateNode<Node>): void;
-  leave(node: VueTemplateNode<Node>): void;
-}
-
-export type VueNodeMatcher<T extends Node> = (node: Node, path: VueTemplatePath) => node is T;
 
 export function getVueComponentTemplateProperty(
   component: NodePath<ObjectExpression>,
@@ -418,9 +385,12 @@ export function parseVueComponentTemplateSource(source: string): VueTemplateNode
   const template = component.templateBody!;
   return {
     template: {
+      engine: new VueTemplateEngine(),
       source: componentSource,
-      root: template,
-      omitRootTag: true,
+      root: {
+        element: template,
+        omitRootTag: true,
+      },
       mutations: [],
     },
     node: template,
@@ -428,11 +398,10 @@ export function parseVueComponentTemplateSource(source: string): VueTemplateNode
   };
 }
 
+type VueNodeMetadataKey = 'type' | keyof HasParent | keyof HasLocation;
+
 export function createVueAstNode<T extends Node['type']>(
-  properties: { type: T } & Omit<
-    Extract<Node, { type: T }>,
-    'type' | keyof HasParent | keyof HasLocation
-  >,
+  properties: { type: T } & Omit<Extract<Node, { type: T }>, VueNodeMetadataKey>,
 ): Extract<Node, { type: T }> {
   return {
     parent: null,
@@ -445,194 +414,68 @@ export function createVueAstNode<T extends Node['type']>(
   } as Extract<Node, { type: T }>;
 }
 
-export function replaceVueTemplateNode<T extends Node>(
-  target: VueTemplateNode,
-  replacement: T,
-): VueTemplateNode<T> {
-  const { path, template } = target;
-  template.mutations.push(VueTemplateMutation.ReplaceChild({ path, value: replacement }));
-  return { node: replacement, path, template };
+export interface VueTemplateNode<T extends Node> extends TemplateNode<T, VueTemplateRoot, Node> {}
+
+export interface VueTemplateRoot {
+  element: VElement;
+  omitRootTag: boolean;
 }
 
-export function removeVueTemplateNode(target: VueTemplateNode): void {
-  const { path, template } = target;
-  const key = path.length > 0 ? path[path.length - 1] : null;
-  if (typeof key === 'number') {
-    template.mutations.push(VueTemplateMutation.RemoveListChild({ path }));
-  } else {
-    template.mutations.push(VueTemplateMutation.ReplaceChild({ path, value: null }));
+export type VueTemplateMutation = TemplateMutation<Node>;
+
+export type VueTemplateNodeMatcher<T extends Node> = TemplateNodeMatcher<T, VueTemplateRoot, Node>;
+
+export type VueTemplateVisitor = TemplateVisitor<VueTemplateRoot, Node>;
+
+export class VueTemplateEngine implements TemplateEngine<Node> {
+  getNodeChildKeys(node: Node): ReadonlyArray<PropertyKey> | null {
+    const keys = KEYS[node.type] || getFallbackKeys(node);
+    return keys;
+  }
+  getNodeChild(parent: Node, childKey: PropertyKey): Node | Array<Node> | null {
+    const child = parent[childKey as Exclude<keyof Node, VueNodeMetadataKey>];
+    if (!child) return null;
+    if (Array.isArray(child)) return child;
+    if (isNode(child)) return child;
+    return null;
   }
 }
 
-export function printVueTemplate(ast: VueTemplateNode<VElement>): string | null {
-  const { template, path } = ast;
-  const { omitRootTag } = template;
-  const rootPaths =
-    omitRootTag && path.length === 0
-      ? template.root.children.map((_, index) => ['children', index])
+export class VueTemplateFormatter implements TemplateFormatter<VueTemplateRoot, Node> {
+  getRootNode(root: VueTemplateRoot): Node {
+    return root.element;
+  }
+  getRootPaths(root: VueTemplateRoot, path: TemplatePath): TemplatePath[] {
+    return root.omitRootTag && path.length === 0
+      ? root.element.children.map((_, index) => ['children', index])
       : [path];
-  const chunkSets = rootPaths.map((path) => {
-    const original = path.reduce(
-      (root, childKey) => (root && root[childKey as keyof typeof root]) || null,
-      template.root as Node | Array<Node> | null,
-    );
-    if (!original || Array.isArray(original)) return null;
-    const mutations = path.reduce(
-      (mutations, childKey) => (mutations && mutations.children.get(childKey)) || null,
-      generateMutationTree(template.mutations),
-    );
-    return formatUpdatedNode(original, path, mutations, template.source);
-  });
-  if (!chunkSets.every(Boolean)) return null;
-  return mergeSourceChunks(chunkSets.flatMap((chunks) => chunks || []));
-}
-
-type SourceChunk = string | { source: VueTemplateSource['source']; range: Node['range'] };
-
-function mergeSourceChunks(chunks: Array<SourceChunk>): string {
-  const { completed, pending } = chunks.reduce(
-    (
-      { pending, completed },
-      chunk,
-    ): {
-      completed: Array<string>;
-      pending: { source: VueTemplateSource['source']; range: OffsetRange } | null;
-    } => {
-      if (typeof chunk === 'string') {
-        if (pending) completed.push(pending.source.slice(pending.range[0], pending.range[1]));
-        completed.push(chunk);
-        return { completed, pending: null };
-      } else {
-        if (!pending) {
-          return { completed, pending: chunk };
-        } else if (
-          pending &&
-          pending.source === chunk.source &&
-          pending.range[1] === chunk.range[0]
-        ) {
-          return {
-            completed,
-            pending: { source: pending.source, range: [pending.range[0], chunk.range[1]] },
-          };
-        } else {
-          completed.push(pending.source.slice(pending.range[0], pending.range[1]));
-          return { completed, pending: chunk };
-        }
-      }
-    },
-    {
-      completed: new Array<string>(),
-      pending: null as { source: VueTemplateSource['source']; range: OffsetRange } | null,
-    },
-  );
-  if (pending) completed.push(pending.source.slice(pending.range[0], pending.range[1]));
-  return completed.join('');
-}
-
-interface MutationTree {
-  mutations: Array<VueTemplateMutation>;
-  children: Map<PropertyKey, MutationTree>;
-}
-
-function generateMutationTree(mutations: Array<VueTemplateMutation>): MutationTree | null {
-  if (mutations.length === 0) return null;
-  return mutations.reduce(
-    (tree, mutation) => {
-      const { path } = mutation;
-      const childTree = path.reduce((tree, key) => {
-        const existingChildTree = tree.children.get(key);
-        const childTree: MutationTree = existingChildTree || {
-          mutations: [],
-          children: new Map(),
-        };
-        if (!existingChildTree) tree.children.set(key, childTree);
-        return childTree;
-      }, tree);
-      childTree.mutations.push(mutation);
-      return tree;
-    },
-    {
-      mutations: [],
-      children: new Map(),
-    } as MutationTree,
-  );
-}
-
-function formatUpdatedNode(
-  node: Node,
-  path: VueTemplatePath,
-  pathMutations: MutationTree | null,
-  source: VueTemplateSource['source'],
-): Array<SourceChunk> {
-  const { range } = node;
-  if (!pathMutations) return [{ source, range }];
-  const pathMutation =
-    pathMutations.mutations.length > 0
-      ? pathMutations.mutations[pathMutations.mutations.length - 1]
-      : null;
-  if (pathMutation) {
-    switch (pathMutation[VARIANT]) {
-      case 'ReplaceChild':
-      case 'ReplaceListChild': {
-        const { value } = pathMutation;
-        return value ? [printVueNode(value)] : [];
-      }
-      case 'RemoveListChild':
-        return [];
-    }
   }
-  const childKeys = KEYS[node.type] as
-    | Array<Exclude<keyof Node, 'type' | keyof HasLocation>>
-    | undefined;
-  if (!childKeys) return [{ source, range }];
-  const childSlots = childKeys
-    .flatMap((childKey) => {
-      const originalChild = node[childKey];
-      return Array.isArray(originalChild)
-        ? originalChild.map((child, index) => {
-            const [startIndex, endIndex] = (child as Node).range;
-            return { path: [childKey, index], start: startIndex, end: endIndex };
-          })
-        : isNode(originalChild)
-        ? [{ path: [childKey], start: originalChild.range[0], end: originalChild.range[1] }]
-        : [];
-    })
-    .sort((a, b) => a.start - b.start);
-  if (childSlots.length === 0) return [{ source, range }];
-  const [startOffset, endOffset] = range;
-  const templateElements = childSlots.flatMap(
-    (
-      slot,
-      index,
-      array,
-    ): Array<{ start: OffsetRange[1]; end: OffsetRange[1]; path: Array<PropertyKey> | null }> => {
-      const previousSlot = index === 0 ? null : array[index - 1];
-      const previousLiteral = {
-        start: previousSlot ? previousSlot.end : startOffset,
-        end: slot.start,
-        path: null,
-      };
-      const nextLiteral =
-        index === array.length - 1 ? { start: slot.end, end: endOffset, path: null } : null;
-      return [previousLiteral, slot, ...(nextLiteral ? [nextLiteral] : [])];
-    },
-  );
-  return templateElements.flatMap(({ path: childPath, start, end }): Array<SourceChunk> => {
-    const childMutations = childPath
-      ? childPath.reduce(
-          (mutations, key) => (mutations && mutations.children.get(key)) || null,
-          pathMutations as MutationTree | null,
-        )
-      : null;
-    const child = childPath
-      ? childPath.reduce(
-          (node, key) => (node && node[key as keyof typeof node]) || null,
-          node as Node | Array<Node> | null,
-        )
-      : null;
-    if (!childPath || !child || Array.isArray(child)) return [{ source, range: [start, end] }];
-    return formatUpdatedNode(child, [...path, ...childPath], childMutations, source);
-  });
+  getNodeRange(node: Node): TemplateRange {
+    return { start: node.range[0], end: node.range[1] };
+  }
+  printNode(node: Node): string {
+    return printVueNode(node);
+  }
+}
+
+export function getVueTemplateNodeChild<
+  T extends Node & { [ChildKey in K]: Node | null | Array<Node> },
+  K extends keyof T,
+>(
+  templateNode: VueTemplateNode<T>,
+  key: K,
+): T[K] extends Node
+  ? VueTemplateNode<T[K]>
+  : T[K] extends Node | null
+  ? VueTemplateNode<Extract<T[K], Node>> | null
+  : T[K] extends Array<Node>
+  ? Array<VueTemplateNode<T[K][number]>>
+  : never {
+  return getTemplateNodeChild(templateNode, key) as any;
+}
+
+function isNode(x: any): x is Node {
+  return x !== null && typeof x === 'object' && typeof x.type === 'string';
 }
 
 function printVueNode(node: Node): string {
@@ -681,86 +524,6 @@ export function getVueElementEventHandlerDirectiveName(directive: VDirective): s
   return argument.name;
 }
 
-export function findVueTemplateNodes<T extends Node>(
-  root: VueTemplateNode<any>,
-  predicate: VueNodeMatcher<T>,
-): Array<VueTemplateNode<T>> {
-  const visitor = new TemplateNodeMatcherVisitor(predicate);
-  traverseVueTemplate(root, visitor);
-  return visitor.results;
-}
-
-export function getVueTemplateNodeChild<
-  T extends Node & { [ChildKey in K]: Node | null | Array<Node> },
-  K extends keyof T,
->(
-  templateNode: VueTemplateNode<T>,
-  key: K,
-): T[K] extends Node
-  ? VueTemplateNode<T[K]>
-  : T[K] extends Node | null
-  ? VueTemplateNode<Extract<T[K], Node>> | null
-  : T[K] extends Array<Node>
-  ? Array<VueTemplateNode<T[K][number]>>
-  : never {
-  const { node, path, template } = templateNode;
-  const child = node[key];
-  if (Array.isArray(child)) {
-    return child.map((child, index) => ({
-      node: child,
-      path: [...path, key, index],
-      template,
-    })) as any;
-  } else if (isNode(child)) {
-    return { node: child, path: [...path, key], template } as any;
-  } else {
-    return null as any;
-  }
-}
-
-function traverseVueTemplate(
-  templateNode: VueTemplateNode<Node>,
-  visitor: VueTemplateVisitor,
-): void {
-  /* Based on https://github.com/vuejs/vue-eslint-parser/blob/master/src/ast/traverse.ts */
-
-  visitor.enter(templateNode);
-
-  const { template, node, path } = templateNode;
-  const { type: nodeType } = node;
-  const keys = (KEYS[nodeType] || getFallbackKeys(node)) as Array<keyof typeof node>;
-  keys.forEach((key) => {
-    const child = node[key];
-    if (Array.isArray(child)) {
-      child.forEach((child, index) => {
-        if (isNode(child)) {
-          const childPath = [...path, key, index];
-          traverseVueTemplate({ template, node: child, path: childPath }, visitor);
-        }
-      });
-    } else if (isNode(child)) {
-      const childPath = [...path, key];
-      traverseVueTemplate({ template, node: child, path: childPath }, visitor);
-    }
-  });
-
-  visitor.leave(templateNode);
-}
-
-function isNode(x: any): x is Node {
-  return x !== null && typeof x === 'object' && typeof x.type === 'string';
-}
-
-class TemplateNodeMatcherVisitor<T extends Node> implements VueTemplateVisitor {
-  public results: Array<VueTemplateNode<T>> = [];
-  constructor(private predicate: VueNodeMatcher<T>) {}
-  enter(templateNode: VueTemplateNode): void {
-    const { template, node, path } = templateNode;
-    if (this.predicate(node, path)) this.results.push({ template, node, path });
-  }
-  leave(templateNode: VueTemplateNode): void {}
-}
-
 function parseMemberFieldName(
   key: NodePath<Expression | PrivateName>,
   computed: boolean,
@@ -776,28 +539,28 @@ export const matchers = {
   text,
 };
 
-function element(predicate?: (element: VElement) => boolean): VueNodeMatcher<VElement> {
-  return (node: Node): node is VElement => {
-    if (node.type !== 'VElement') return false;
+function element(predicate?: (element: VElement) => boolean): VueTemplateNodeMatcher<VElement> {
+  return (node: VueTemplateNode<Node>): node is VueTemplateNode<VElement> => {
+    if (node.node.type !== 'VElement') return false;
     if (!predicate) return true;
-    return predicate(node);
+    return predicate(node.node);
   };
 }
 
 function expression(
   predicate?: (expression: VExpressionContainer) => boolean,
-): VueNodeMatcher<VExpressionContainer> {
-  return (node: Node): node is VExpressionContainer => {
-    if (node.type !== 'VExpressionContainer') return false;
+): VueTemplateNodeMatcher<VExpressionContainer> {
+  return (node: VueTemplateNode<Node>): node is VueTemplateNode<VExpressionContainer> => {
+    if (node.node.type !== 'VExpressionContainer') return false;
     if (!predicate) return true;
-    return predicate(node);
+    return predicate(node.node);
   };
 }
 
-function text(predicate?: (text: VText) => boolean): VueNodeMatcher<VText> {
-  return (node: Node): node is VText => {
-    if (node.type !== 'VText') return false;
+function text(predicate?: (text: VText) => boolean): VueTemplateNodeMatcher<VText> {
+  return (node: VueTemplateNode<Node>): node is VueTemplateNode<VText> => {
+    if (node.node.type !== 'VText') return false;
     if (!predicate) return true;
-    return predicate(node);
+    return predicate(node.node);
   };
 }

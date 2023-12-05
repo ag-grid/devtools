@@ -34,8 +34,8 @@ import {
 } from './angularHelpers';
 import { Events } from './eventKeys';
 import { REACT_REF_VALUE_ACCESSOR_NAME, getReactBoundElementRef } from './reactHelpers';
+import { findTemplateNodes, printTemplate } from './templateHelpers';
 import {
-  findVueTemplateNodes,
   getVueComponentComponentDeclarations,
   getVueComponentDataFieldReferences,
   getVueComponentTemplateProperty,
@@ -45,9 +45,9 @@ import {
   getVueTemplateNodeChild,
   matchVueComponentMethod,
   parseVueComponentTemplateSource,
-  printVueTemplate,
   type AST,
   type VueTemplateNode,
+  VueTemplateFormatter,
 } from './vueHelpers';
 import { VueComponentCliContext } from './transform';
 
@@ -215,7 +215,7 @@ export interface ObjectPropertyVisitor<S> {
   initNamedProperty(accessor: AccessorKey, value: NodePath<AstNode>, context: S): void;
   jsxAttribute(path: NodePath<JSXAttribute>, context: S): void;
   vueAttribute(
-    templateNode: VueTemplateNode<VAttribute | VDirective>,
+    attributeNode: VueTemplateNode<VAttribute | VDirective>,
     component: NodePath<ObjectExpression>,
     context: S,
   ): void;
@@ -289,10 +289,10 @@ export function visitGridOptionsProperties<
         'Vue components are not yet fully supported via codemods and may require manual fixes',
       );
       const gridElementNamesLookup = new Set(gridElementNames);
-      const gridElements = findVueTemplateNodes(
+      const gridElements = findTemplateNodes(
         template,
-        (node): node is VElement =>
-          node.type === 'VElement' && gridElementNamesLookup.has(node.name),
+        (node): node is VueTemplateNode<VElement> =>
+          node.node.type === 'VElement' && gridElementNamesLookup.has(node.node.name),
       );
       if (gridElements.length === 0) return;
       gridElements.forEach((element) => {
@@ -322,6 +322,7 @@ export function visitGridOptionsProperties<
             });
           } else {
             // Determine the corresponding component data field
+            // FIXME: handle all Vue component binding types
             const boundFieldName =
               node.directive &&
               node.value &&
@@ -1044,9 +1045,10 @@ function getVuePublicApiReferences(
           const template = getVueComponentTemplate(component, context);
           if (!template) return null;
           const gridElementNames = new Set(gridComponentElementNames);
-          const gridElements = findVueTemplateNodes(
+          const gridElements = findTemplateNodes(
             template,
-            (node): node is VElement => node.type === 'VElement' && gridElementNames.has(node.name),
+            (node): node is VueTemplateNode<VElement> =>
+              node.node.type === 'VElement' && gridElementNames.has(node.node.name),
           );
           if (gridElements.length === 0) return null;
           return [component, { template: template.node, gridElements }];
@@ -1126,7 +1128,7 @@ function updateVueComponentTemplate(
   // Otherwise attempt to locate a template property defined on the component definition properties
   const templateProperty = getVueComponentTemplateProperty(component);
   if (!templateProperty) return;
-  const templateSource = printVueTemplate(template);
+  const templateSource = printTemplate(template, new VueTemplateFormatter());
   if (!templateSource) return;
   const value = templateProperty.get('value');
   if (value.isStringLiteral() && !templateSource.includes('\n')) {
@@ -1154,7 +1156,7 @@ function isAgGridVueElementBoundGridOptionsAttribute(
   return isNamedVueElementBoundAttribute(attribute, AG_GRID_VUE_GRID_OPTIONS_ATTRIBUTE_NAME);
 }
 
-export function isNamedVueElementBoundAttribute<T extends string>(
+function isNamedVueElementBoundAttribute<T extends string>(
   attribute: VDirective | VAttribute,
   key: T,
 ): attribute is VBindDirective<T> {
