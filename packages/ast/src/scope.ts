@@ -336,12 +336,33 @@ export function findReferences(target: Reference): Array<Reference> {
 }
 
 function getBindingDeclarationReferences(reference: BindingDeclarationReference): Array<Reference> {
-  const { path: target } = reference;
+  const { path: target, accessorPath } = reference;
   // If this is a fully-specified variable binding, return the declaration and all references to the bound variable
-  if (target.isIdentifier()) return getLocalVariableReferences(target);
-  // Otherwise if this is only a partial binding declaration (i.e. an intermediate key within a destructuring pattern),
-  // there can be no further references to the current stage of the declaration pattern
-  return [reference];
+  const variableReferences = target.isIdentifier()
+    ? getLocalVariableReferences(target)
+    : [reference];
+  if (accessorPath.path.length === 0) return variableReferences;
+  return [...variableReferences, ...getBindingPatternReferences(reference)];
+}
+
+function getBindingPatternReferences(reference: BindingDeclarationReference): Array<Reference> {
+  const { declaration, accessorPath } = reference;
+  const initValue = declaration && getOptionalNodeFieldValue(declaration.get('init'));
+  if (!initValue) return [];
+  const initializer = stripTypeScriptAnnotations(initValue);
+  const initializerReference = isReferenceNode(initializer)
+    ? getReferenceTarget(initializer)
+    : null;
+  if (!initializerReference) return [];
+  return [
+    ...accessorPath.path.reduce(
+      (parentReferences, accessor) =>
+        parentReferences.flatMap((parentReference) =>
+          getReferencePropertyReferences(parentReference, accessor.key),
+        ),
+      findReferences(initializerReference),
+    ),
+  ];
 }
 
 function getVariableReferences(reference: VariableReference): Array<Reference> {
@@ -657,19 +678,11 @@ function getPropertyAccessorReferences(reference: PropertyReference): Array<Refe
   const object = stripTypeScriptAnnotations(target.get('object'));
   const key = stripTypeScriptAnnotations(target.get('property'));
   const computed = target.node.computed;
-  return getObjectPropertyReferences(object, key.node, computed);
-}
-
-export function getObjectPropertyReferences(
-  target: NodePath<Expression>,
-  key: Expression | PrivateName,
-  computed: boolean,
-): Array<Reference> {
-  const propertyKey = createStaticPropertyKey(key, computed);
+  const propertyKey = createPropertyKey(key, computed);
   if (!propertyKey) return [];
-  const targetReference = isReferenceNode(target) ? getReferenceTarget(target) : null;
-  if (!targetReference) return [];
-  return getReferencePropertyReferences(targetReference, propertyKey);
+  const objectReference = isReferenceNode(object) ? getReferenceTarget(object) : null;
+  if (!objectReference) return [];
+  return getReferencePropertyReferences(objectReference, propertyKey);
 }
 
 function getReferencePropertyReferences(reference: Reference, propertyKey: AccessorKey) {
@@ -695,25 +708,25 @@ function getAccessorPropertyReferences(
   reference: VariableReference | PropertyReference,
   propertyKey: AccessorKey,
 ): Array<Reference> {
-  return getNamedPropertyAccessorReferences(reference.path, propertyKey);
-}
-
-function getNamedPropertyAccessorReferences(
-  expression: NodePath<Expression>,
-  propertyKey: AccessorKey,
-): Array<Reference> {
+  const { path: expression } = reference;
   const parent = getTypeErasedParent(expression);
-  if (!parent || !parent.isMemberExpression()) return [];
-  const accessorProperty = stripTypeScriptAnnotations(parent.get('property'));
-  const accessorComputed = parent.node.computed;
-  const accessorKey = createPropertyKey(accessorProperty, accessorComputed);
-  if (!accessorKey || !areAccessorKeysEqual(propertyKey, accessorKey)) return [];
-  const grandparent = getTypeErasedParent(parent);
-  if (grandparent && grandparent.isAssignmentExpression()) {
-    const assignment = Reference.PropertySetter({ path: parent, assignment: grandparent });
-    return [assignment];
+  if (!parent) return [];
+  if (parent.isMemberExpression()) {
+    const accessorProperty = stripTypeScriptAnnotations(parent.get('property'));
+    const accessorComputed = parent.node.computed;
+    const accessorKey = createPropertyKey(accessorProperty, accessorComputed);
+    if (!accessorKey || !areAccessorKeysEqual(propertyKey, accessorKey)) return [];
+    const grandparent = getTypeErasedParent(parent);
+    if (grandparent && grandparent.isAssignmentExpression()) {
+      const assignment = Reference.PropertySetter({ path: parent, assignment: grandparent });
+      return [assignment];
+    }
+    return [Reference.PropertyGetter({ path: parent })];
   }
-  return [Reference.PropertyGetter({ path: parent })];
+  const assignmentTarget = getValueAssignmentTarget(expression);
+  const assignmentReference = assignmentTarget && getReferenceTarget(assignmentTarget);
+  if (assignmentReference) return getReferencePropertyReferences(assignmentReference, propertyKey);
+  return [];
 }
 
 function getBindingDeclarationPropertyReferences(

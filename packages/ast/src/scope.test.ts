@@ -959,8 +959,8 @@ describe(findReferences, () => {
       const accessor2 = t.identifier('bar');
       const input = ast.module`
         'pre';
-        const foo = { baz: null };
-        ${assignment} = 3;
+        const foo = { bar: { baz: null } };
+        ${assignment} = { baz: 3 };
         const { ${accessor1} } = foo;
         ${accessor2}.baz;
         'post';
@@ -1030,8 +1030,8 @@ describe(findReferences, () => {
       const accessor2 = t.identifier('bar');
       const input = ast.module`
         'pre';
-        const foo = { bar: null };
-        ${assignment} = 3;
+        const foo = { bar: { baz: null } };
+        ${assignment} = { baz: 3 };
         const { bar: ${accessor1} } = foo;
         ${accessor2}.baz;
         'post';
@@ -1137,12 +1137,13 @@ describe(findReferences, () => {
     test('deep destructuring references', () => {
       const accessor1 = t.identifier('baz');
       const accessor2 = t.identifier('baz');
-      const accessor3 = ast.expression`foo.bar`;
+      const accessor3 = ast.expression`foo.bar.baz`;
       const input = ast.module`
         'pre';
         const foo = { bar: { baz: { qux: 3 } } };
         const { bar: { baz: ${accessor1} } } = foo;
         ${accessor2}.qux;
+        ${accessor3};
         'post';
       `;
       {
