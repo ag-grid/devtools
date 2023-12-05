@@ -8,22 +8,21 @@ import { IOlympicData } from './interfaces';
 
 @Component({
   selector: 'my-app',
-  template: `<div>
-      <ag-grid-angular
-        [columnDefs]="columnDefs"
-        [rowData]="rowData"
-        
-        (gridReady)="onGridReady($event)"
-      ></ag-grid-angular>
-    </div>
-  `,
+  templateUrl: './input.component.html',
 })
 export class AppComponent {
   @ViewChild(AgGridAngular) private grid!: AgGridAngular;
   public columnDefs: (ColDef | ColGroupDef)[] = [];
   public rowData!: IOlympicData[];
+  public advancedFilterModel: any;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    this.advancedFilterModel = {
+      filterType: 'join',
+      type: 'AND',
+      conditions: [],
+    };
+  }
 
   onGridReady(params: GridReadyEvent<IOlympicData>) {
     this.http

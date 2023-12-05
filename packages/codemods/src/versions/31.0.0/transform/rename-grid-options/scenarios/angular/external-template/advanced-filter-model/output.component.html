@@ -2,7 +2,7 @@
   <ag-grid-angular
     [columnDefs]="columnDefs"
     [rowData]="rowData"
-    rowDataChangeDetectionStrategy="DeepValueCheck"
+    [initialState]="advancedFilterModel"
     (gridReady)="onGridReady($event)"
   ></ag-grid-angular>
 </div>

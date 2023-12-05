@@ -453,7 +453,7 @@ export class VueTemplateFormatter implements TemplateFormatter<VueTemplateRoot, 
   getNodeRange(node: Node): TemplateRange {
     return { start: node.range[0], end: node.range[1] };
   }
-  printNode(node: Node): string {
+  printNode(node: Node, previous: Node | null, templateSource: string): string {
     return printVueNode(node);
   }
 }

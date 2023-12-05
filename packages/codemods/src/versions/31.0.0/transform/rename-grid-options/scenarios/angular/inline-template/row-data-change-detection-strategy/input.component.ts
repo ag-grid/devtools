@@ -13,7 +13,7 @@ import { IOlympicData } from './interfaces';
       <ag-grid-angular
         [columnDefs]="columnDefs"
         [rowData]="rowData"
-        [rowDataChangeDetectionStrategy]="DeepValueCheck"
+        rowDataChangeDetectionStrategy="DeepValueCheck"
         (gridReady)="onGridReady($event)"
       ></ag-grid-angular>
     </div>
