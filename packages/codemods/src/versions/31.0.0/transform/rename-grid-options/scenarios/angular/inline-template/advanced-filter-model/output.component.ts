@@ -12,7 +12,7 @@ import { IOlympicData } from './interfaces';
       <ag-grid-angular
         [columnDefs]="columnDefs"
         [rowData]="rowData"
-        
+        [initialState]="advancedFilterModel"
         (gridReady)="onGridReady($event)"
       ></ag-grid-angular>
     </div>
@@ -22,8 +22,19 @@ export class AppComponent {
   @ViewChild(AgGridAngular) private grid!: AgGridAngular;
   public columnDefs: (ColDef | ColGroupDef)[] = [];
   public rowData!: IOlympicData[];
+  public advancedFilterModel: any;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    this.advancedFilterModel = {
+      filter: {
+        advancedFilterModel: {
+          filterType: 'join',
+          type: 'AND',
+          conditions: []
+        }
+      }
+    };
+  }
 
   onGridReady(params: GridReadyEvent<IOlympicData>) {
     this.http

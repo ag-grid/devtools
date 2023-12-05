@@ -24,7 +24,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       });
 
       test('unspecified', () => {
@@ -38,7 +41,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       });
     });
 
@@ -53,7 +59,10 @@ describe('transforms input files correctly', () => {
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
-      expect(actual).toEqual({ source: expected, errors: [] });
+      expect(actual).toEqual({
+        source: expected === input ? null : expected,
+        errors: [],
+      });
     });
 
     describe('enableChartToolPanelsButton', () => {
@@ -71,7 +80,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       });
 
       test('dynamic value', () => {
@@ -88,7 +100,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       });
     });
 
@@ -103,7 +118,10 @@ describe('transforms input files correctly', () => {
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
-      expect(actual).toEqual({ source: expected, errors: [] });
+      expect(actual).toEqual({
+        source: expected === input ? null : expected,
+        errors: [],
+      });
     });
 
     test('excludeHiddenColumnsFromQuickFilter', () => {
@@ -120,7 +138,10 @@ describe('transforms input files correctly', () => {
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
-      expect(actual).toEqual({ source: expected, errors: [] });
+      expect(actual).toEqual({
+        source: expected === input ? null : expected,
+        errors: [],
+      });
     });
 
     test('functionsPassive', () => {
@@ -154,7 +175,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       }
     });
 
@@ -169,7 +193,10 @@ describe('transforms input files correctly', () => {
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
-      expect(actual).toEqual({ source: expected, errors: [] });
+      expect(actual).toEqual({
+        source: expected === input ? null : expected,
+        errors: [],
+      });
     });
 
     test('onColumnChangeRequest', () => {
@@ -227,7 +254,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       }
     });
 
@@ -242,7 +272,10 @@ describe('transforms input files correctly', () => {
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
-      expect(actual).toEqual({ source: expected, errors: [] });
+      expect(actual).toEqual({
+        source: expected === input ? null : expected,
+        errors: [],
+      });
     });
 
     test('processSecondaryColDef', () => {
@@ -256,7 +289,10 @@ describe('transforms input files correctly', () => {
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
-      expect(actual).toEqual({ source: expected, errors: [] });
+      expect(actual).toEqual({
+        source: expected === input ? null : expected,
+        errors: [],
+      });
     });
 
     test('processSecondaryColGroupDef', () => {
@@ -270,7 +306,10 @@ describe('transforms input files correctly', () => {
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
-      expect(actual).toEqual({ source: expected, errors: [] });
+      expect(actual).toEqual({
+        source: expected === input ? null : expected,
+        errors: [],
+      });
     });
 
     test('rememberGroupStateWhenNewData', () => {
@@ -304,7 +343,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       }
     });
 
@@ -339,7 +381,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       }
     });
 
@@ -358,7 +403,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       });
 
       test('dynamic value', () => {
@@ -375,7 +423,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       });
     });
 
@@ -390,7 +441,10 @@ describe('transforms input files correctly', () => {
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
-      expect(actual).toEqual({ source: expected, errors: [] });
+      expect(actual).toEqual({
+        source: expected === input ? null : expected,
+        errors: [],
+      });
     });
 
     test('serverSideSortingAlwaysResets', () => {
@@ -404,7 +458,10 @@ describe('transforms input files correctly', () => {
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
-      expect(actual).toEqual({ source: expected, errors: [] });
+      expect(actual).toEqual({
+        source: expected === input ? null : expected,
+        errors: [],
+      });
     });
 
     describe('serverSideStoreType', () => {
@@ -423,7 +480,10 @@ describe('transforms input files correctly', () => {
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
-          expect(actual).toEqual({ source: expected, errors: [] });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors: [],
+          });
         });
 
         test('dynamic value', () => {
@@ -440,7 +500,10 @@ describe('transforms input files correctly', () => {
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
-          expect(actual).toEqual({ source: expected, errors: [] });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors: [],
+          });
         });
       });
 
@@ -459,7 +522,10 @@ describe('transforms input files correctly', () => {
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
-          expect(actual).toEqual({ source: expected, errors: [] });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors: [],
+          });
         });
 
         test('dynamic value', () => {
@@ -476,7 +542,10 @@ describe('transforms input files correctly', () => {
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
-          expect(actual).toEqual({ source: expected, errors: [] });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors: [],
+          });
         });
       });
     });
@@ -496,7 +565,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       });
 
       test('dynamic value', () => {
@@ -513,7 +585,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       });
     });
 
@@ -548,7 +623,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       }
     });
 
@@ -583,7 +661,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       }
     });
   });
@@ -601,7 +682,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       });
 
       test('aliased', () => {
@@ -615,7 +699,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       });
     });
 
@@ -651,7 +738,10 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
       }
     });
 
@@ -688,7 +778,10 @@ describe('transforms input files correctly', () => {
             applyDangerousEdits: true,
             fs: createFsHelpers(memfs),
           });
-          expect(actual).toEqual({ source: expected, errors: [] });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors: [],
+          });
         }
       });
 
@@ -724,7 +817,10 @@ describe('transforms input files correctly', () => {
             applyDangerousEdits: true,
             fs: createFsHelpers(memfs),
           });
-          expect(actual).toEqual({ source: expected, errors: [] });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors: [],
+          });
         }
       });
     });
@@ -732,52 +828,10 @@ describe('transforms input files correctly', () => {
 
   describe('Angular', () => {
     describe('Inline template', () => {
-      describe('Deprecation warning', () => {
-        test('Unrelated components', () => {
-          const scenarioPath = join(
-            __dirname,
-            './scenarios/angular/inline-template/unrelated-components',
-          );
-          const inputPath = join(scenarioPath, 'input.component.ts');
-          const input = readFileSync(inputPath, 'utf-8');
-          const actual = transformFile(input, [renameGridOptions], {
-            filename: inputPath,
-            applyDangerousEdits: false,
-            fs: createFsHelpers(memfs),
-          });
-          expect(actual).toEqual({
-            source: null,
-            errors: [],
-          });
-        });
-
-        test('Grid component', () => {
-          const scenarioPath = join(
-            __dirname,
-            './scenarios/angular/inline-template/grid-component',
-          );
-          const inputPath = join(scenarioPath, 'input.component.ts');
-          const input = readFileSync(inputPath, 'utf-8');
-          const actual = transformFile(input, [renameGridOptions], {
-            filename: inputPath,
-            applyDangerousEdits: false,
-            fs: createFsHelpers(memfs),
-          });
-          expect(actual).toEqual({
-            source: null,
-            errors: [
-              new SyntaxError(
-                'Angular components are not yet fully supported via codemods and may require manual fixes',
-              ),
-            ],
-          });
-        });
-      });
-
-      test.skip('rowDataChangeDetectionStrategy', () => {
+      test('advancedFilterModel', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/angular/inline-template/row-data-change-detection-strategy',
+          './scenarios/angular/inline-template/advanced-filter-model',
         );
         const inputPath = join(scenarioPath, 'input.component.ts');
         const outputPath = join(scenarioPath, 'output.component.ts');
@@ -788,58 +842,26 @@ describe('transforms input files correctly', () => {
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
-      });
-    });
-
-    describe('External template file', () => {
-      afterEach(() => {
-        vol.reset();
-      });
-
-      describe('Deprecation warning', () => {
-        test('Unrelated components', () => {
-          const scenarioPath = join(
-            __dirname,
-            './scenarios/angular/external-template/unrelated-components',
-          );
-          const inputPath = join(scenarioPath, 'input.component.ts');
-          const inputTemplatePath = join(scenarioPath, 'input.component.html');
-          const outputTemplatePath = join(scenarioPath, 'output.component.html');
-          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
-          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
-          vol.fromJSON({
-            [inputTemplatePath]: inputTemplate,
-          });
-          const input = readFileSync(inputPath, 'utf-8');
-          const actual = transformFile(input, [renameGridOptions], {
-            filename: inputPath,
-            applyDangerousEdits: false,
-            fs: createFsHelpers(memfs),
-          });
-          expect(actual).toEqual({
-            source: null,
-            errors: [],
-          });
-          expect(vol.toJSON()).toEqual({
-            [inputTemplatePath]: outputTemplate,
-          });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [
+            new SyntaxError(
+              'Angular components are not yet fully supported via codemods and may require manual fixes',
+            ),
+          ],
         });
+      });
 
-        test('Grid component', () => {
-          const scenarioPath = join(
-            __dirname,
-            './scenarios/angular/external-template/grid-component',
-          );
-          const inputPath = join(scenarioPath, 'input.component.ts');
-          const inputTemplatePath = join(scenarioPath, 'input.component.html');
-          const outputTemplatePath = join(scenarioPath, 'output.component.html');
-          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
-          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
-          vol.fromJSON({
-            [inputTemplatePath]: inputTemplate,
-          });
-          const input = readFileSync(inputPath, 'utf-8');
+      test('rowDataChangeDetectionStrategy', () => {
+        const scenarioPath = join(
+          __dirname,
+          './scenarios/angular/inline-template/row-data-change-detection-strategy',
+        );
+        const inputPath = join(scenarioPath, 'input.component.ts');
+        const outputPath = join(scenarioPath, 'output.component.ts');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        {
           const actual = transformFile(input, [renameGridOptions], {
             filename: inputPath,
             applyDangerousEdits: false,
@@ -851,18 +873,39 @@ describe('transforms input files correctly', () => {
               new SyntaxError(
                 'Angular components are not yet fully supported via codemods and may require manual fixes',
               ),
+              new SyntaxError(
+                'The grid option "rowDataChangeDetectionStrategy" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/',
+              ),
             ],
           });
-          expect(vol.toJSON()).toEqual({
-            [inputTemplatePath]: outputTemplate,
+        }
+        {
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: true,
+            fs: createFsHelpers(memfs),
           });
-        });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors: [
+              new SyntaxError(
+                'Angular components are not yet fully supported via codemods and may require manual fixes',
+              ),
+            ],
+          });
+        }
+      });
+    });
+
+    describe('External template file', () => {
+      afterEach(() => {
+        vol.reset();
       });
 
-      test.skip('rowDataChangeDetectionStrategy', () => {
+      test('advancedFilterModel', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/angular/external-template/row-data-change-detection-strategy',
+          './scenarios/angular/external-template/advanced-filter-model',
         );
         const inputPath = join(scenarioPath, 'input.component.ts');
         const outputPath = join(scenarioPath, 'output.component.ts');
@@ -881,12 +924,73 @@ describe('transforms input files correctly', () => {
           fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({
-          source: expected,
-          errors: [],
-          files: {
-            'input.component.html': outputTemplate,
-          },
+          source: expected === input ? null : expected,
+          errors: [
+            new SyntaxError(
+              'Angular components are not yet fully supported via codemods and may require manual fixes',
+            ),
+          ],
         });
+        expect(vol.toJSON()).toEqual({
+          [inputTemplatePath]: outputTemplate,
+        });
+      });
+
+      test('rowDataChangeDetectionStrategy', () => {
+        const scenarioPath = join(
+          __dirname,
+          './scenarios/angular/external-template/row-data-change-detection-strategy',
+        );
+        const inputPath = join(scenarioPath, 'input.component.ts');
+        const outputPath = join(scenarioPath, 'output.component.ts');
+        const inputTemplatePath = join(scenarioPath, 'input.component.html');
+        const outputTemplatePath = join(scenarioPath, 'output.component.html');
+        const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+        const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+        vol.fromJSON({
+          [inputTemplatePath]: inputTemplate,
+        });
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        {
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: null,
+            errors: [
+              new SyntaxError(
+                'Angular components are not yet fully supported via codemods and may require manual fixes',
+              ),
+              new SyntaxError(
+                'The grid option "rowDataChangeDetectionStrategy" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/',
+              ),
+            ],
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: inputTemplate,
+          });
+        }
+        {
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: true,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors: [
+              new SyntaxError(
+                'Angular components are not yet fully supported via codemods and may require manual fixes',
+              ),
+            ],
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        }
       });
     });
   });
@@ -909,7 +1013,7 @@ describe('transforms input files correctly', () => {
             fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({
-            source: expected,
+            source: expected === input ? null : expected,
             errors: [
               new SyntaxError(
                 'Vue components are not yet fully supported via codemods and may require manual fixes',
@@ -937,7 +1041,7 @@ describe('transforms input files correctly', () => {
             fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({
-            source: expected,
+            source: expected === input ? null : expected,
             errors: [
               new SyntaxError(
                 'Vue components are not yet fully supported via codemods and may require manual fixes',
@@ -997,7 +1101,7 @@ describe('transforms input files correctly', () => {
             fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({
-            source: expected,
+            source: expected === input ? null : expected,
             errors: [
               new SyntaxError(
                 'Vue components are not yet fully supported via codemods and may require manual fixes',

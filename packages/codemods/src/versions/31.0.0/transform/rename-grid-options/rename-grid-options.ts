@@ -12,11 +12,13 @@ import {
   AstCliContext,
 } from '@ag-grid-devtools/ast';
 import {
+  Angular,
   createVueAstNode,
   getFrameworkEventNames,
   getVueTemplateNodeChild,
   isPropertyAssignmentNode,
   isPropertyInitializerNode,
+  isTypedAngularTemplateNode,
   isVueDirectiveAttribute,
   removeTemplateNode,
   replaceTemplateNode,
@@ -26,10 +28,12 @@ import {
   type PropertyAssignmentNode,
   type PropertyInitializerNode,
   type VueTemplateNode,
+  type AngularTemplateNode,
 } from '@ag-grid-devtools/codemod-utils';
 import { match, nonNull, unreachable } from '@ag-grid-devtools/utils';
 
 type AssignmentExpression = Types.AssignmentExpression;
+type Class = Types.Class;
 type Expression = Types.Expression;
 type Identifier = Types.Identifier;
 type JSXAttribute = Types.JSXAttribute;
@@ -241,6 +245,17 @@ const transform: AstTransform<AstCliContext> = {
         break;
       }
     },
+    angularAttribute(attributeNode, component, context) {
+      const accessor = parseAngularAttributeAccessor(attributeNode);
+      // Iterate over each of the replacements until a match is found
+      for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
+        // Skip over any properties that do not match any of the defined replacement patterns
+        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+        transform.angularAttribute(attributeNode, component, context);
+        // Skip all other replacements
+        break;
+      }
+    },
     vueAttribute(attributeNode, component, context) {
       const accessor = parseGridOptionVueAttributeAccessor(attributeNode.node);
       if (!accessor) return;
@@ -269,7 +284,15 @@ type PropertyTransformer<S> = {
   set(node: NodePath<PropertyAssignmentNode>, context: S): void;
   jsxAttribute(node: NodePath<JSXAttribute>, context: S): void;
   value(node: NodePath<PropertyValueNode>, context: S): void;
+  angularAttribute(
+    attributeNode: AngularTemplateNode<
+      Angular.TmplAstTextAttribute | Angular.TmplAstBoundAttribute | Angular.TmplAstBoundEvent
+    >,
+    component: NodePath<Class>,
+    context: S,
+  ): void;
   vueAttribute(
+    // FIXME: Support alternative attribute types when renaming Vue element attributes
     templateNode: VueTemplateNode<VAttribute | VDirective>,
     component: NodePath<ObjectExpression>,
     context: S,
@@ -407,6 +430,9 @@ function transformPropertyValue<AstTransformContext>(
     jsxAttribute(path, context) {
       return;
     },
+    angularAttribute(attributeNode, component, context) {
+      return;
+    },
     vueAttribute(attributeNode, component, context) {
       return;
     },
@@ -488,6 +514,56 @@ function migrateProperty<AstTransformContext>(
       }
       path.skip();
     },
+    angularAttribute(attributeNode, component, context) {
+      // Rewrite the element attribute name
+      const staticAttributeName =
+        !targetAccessor.computed && targetAccessor.key.type === 'Identifier'
+          ? targetAccessor.key.name
+          : null;
+      // TODO: Consider supporting dynamic attribute names when renaming Angular element attributes
+      if (!staticAttributeName) return;
+      const name = staticAttributeName;
+      if (isTypedAngularTemplateNode(Angular.TmplAstTextAttribute, attributeNode)) {
+        const { value, sourceSpan, keySpan, valueSpan, i18n } = attributeNode.node;
+        replaceTemplateNode(
+          attributeNode,
+          new Angular.TmplAstTextAttribute(name, value, sourceSpan, keySpan, valueSpan, i18n),
+        );
+      } else if (isTypedAngularTemplateNode(Angular.TmplAstBoundAttribute, attributeNode)) {
+        const { type, securityContext, value, unit, sourceSpan, keySpan, valueSpan, i18n } =
+          attributeNode.node;
+        replaceTemplateNode(
+          attributeNode,
+          new Angular.TmplAstBoundAttribute(
+            name,
+            type,
+            securityContext,
+            value,
+            unit,
+            sourceSpan,
+            keySpan,
+            valueSpan,
+            i18n,
+          ),
+        );
+      } else if (isTypedAngularTemplateNode(Angular.TmplAstBoundEvent, attributeNode)) {
+        const { type, handler, target, phase, sourceSpan, handlerSpan, keySpan } =
+          attributeNode.node;
+        replaceTemplateNode(
+          attributeNode,
+          new Angular.TmplAstBoundEvent(
+            name,
+            type,
+            handler,
+            target,
+            phase,
+            sourceSpan,
+            handlerSpan,
+            keySpan,
+          ),
+        );
+      }
+    },
     vueAttribute(attributeNode, component, context) {
       if (!isVueDirectiveAttribute(attributeNode)) return;
       // Rewrite the element attribute name
@@ -564,6 +640,14 @@ function removeProperty(
       }
       path.remove();
       path.skip();
+    },
+    angularAttribute(attributeNode, component, context) {
+      if (!context.opts.applyDangerousEdits) {
+        // FIXME: show Angular template element location in deprecation warnings
+        context.opts.warn(null, deprecationWarning);
+        return;
+      }
+      removeTemplateNode(attributeNode);
     },
     vueAttribute(attributeNode, component, context) {
       if (!context.opts.applyDangerousEdits) {
@@ -706,6 +790,14 @@ function formatJsxAttributeAccessor(attribute: PropertyAccessor): JSXAttribute['
     );
   }
   return null;
+}
+
+function parseAngularAttributeAccessor(
+  attribute: AngularTemplateNode<
+    Angular.TmplAstTextAttribute | Angular.TmplAstBoundAttribute | Angular.TmplAstBoundEvent
+  >,
+): PropertyAccessor {
+  return { key: t.identifier(attribute.node.name), computed: false };
 }
 
 function getDynamicPropertyAssignmentTarget(

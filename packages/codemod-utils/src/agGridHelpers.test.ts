@@ -833,10 +833,10 @@ describe(getGridApiReferences, () => {
               GridApiDefinition.Angular.is(gridApi)
                 ? {
                     component: formatAngularComponentName(gridApi.component),
-                    templateRoots: getAngularTemplateRootElements(gridApi.template).map(
+                    templateRoots: getAngularTemplateRootElements(gridApi.template.node).map(
                       (element) => element.name,
                     ),
-                    element: gridApi.element.name,
+                    element: gridApi.element.node.name,
                     binding: formatAngularGridBinding(gridApi.binding),
                   }
                 : null,
@@ -912,10 +912,10 @@ describe(getGridApiReferences, () => {
               GridApiDefinition.Angular.is(gridApi)
                 ? {
                     component: formatAngularComponentName(gridApi.component),
-                    templateRoots: getAngularTemplateRootElements(gridApi.template).map(
+                    templateRoots: getAngularTemplateRootElements(gridApi.template.node).map(
                       (element) => element.name,
                     ),
-                    element: gridApi.element.name,
+                    element: gridApi.element.node.name,
                     binding: formatAngularGridBinding(gridApi.binding),
                   }
                 : null,
@@ -1003,10 +1003,10 @@ describe(getGridApiReferences, () => {
               GridApiDefinition.Angular.is(gridApi)
                 ? {
                     component: formatAngularComponentName(gridApi.component),
-                    templateRoots: getAngularTemplateRootElements(gridApi.template).map(
+                    templateRoots: getAngularTemplateRootElements(gridApi.template.node).map(
                       (element) => element.name,
                     ),
-                    element: gridApi.element.name,
+                    element: gridApi.element.node.name,
                     binding: formatAngularGridBinding(gridApi.binding),
                   }
                 : null,
@@ -1080,10 +1080,10 @@ describe(getGridApiReferences, () => {
               GridApiDefinition.Angular.is(gridApi)
                 ? {
                     component: formatAngularComponentName(gridApi.component),
-                    templateRoots: getAngularTemplateRootElements(gridApi.template).map(
+                    templateRoots: getAngularTemplateRootElements(gridApi.template.node).map(
                       (element) => element.name,
                     ),
-                    element: gridApi.element.name,
+                    element: gridApi.element.node.name,
                     binding: formatAngularGridBinding(gridApi.binding),
                   }
                 : null,
@@ -1155,10 +1155,10 @@ describe(getGridApiReferences, () => {
               GridApiDefinition.Angular.is(gridApi)
                 ? {
                     component: formatAngularComponentName(gridApi.component),
-                    templateRoots: getAngularTemplateRootElements(gridApi.template).map(
+                    templateRoots: getAngularTemplateRootElements(gridApi.template.node).map(
                       (element) => element.name,
                     ),
-                    element: gridApi.element.name,
+                    element: gridApi.element.node.name,
                     binding: formatAngularGridBinding(gridApi.binding),
                   }
                 : null,
@@ -1231,10 +1231,10 @@ describe(getGridApiReferences, () => {
               GridApiDefinition.Angular.is(gridApi)
                 ? {
                     component: formatAngularComponentName(gridApi.component),
-                    templateRoots: getAngularTemplateRootElements(gridApi.template).map(
+                    templateRoots: getAngularTemplateRootElements(gridApi.template.node).map(
                       (element) => element.name,
                     ),
-                    element: gridApi.element.name,
+                    element: gridApi.element.node.name,
                     binding: formatAngularGridBinding(gridApi.binding),
                   }
                 : null,
@@ -1307,10 +1307,10 @@ describe(getGridApiReferences, () => {
               GridApiDefinition.Angular.is(gridApi)
                 ? {
                     component: formatAngularComponentName(gridApi.component),
-                    templateRoots: getAngularTemplateRootElements(gridApi.template).map(
+                    templateRoots: getAngularTemplateRootElements(gridApi.template.node).map(
                       (element) => element.name,
                     ),
-                    element: gridApi.element.name,
+                    element: gridApi.element.node.name,
                     binding: formatAngularGridBinding(gridApi.binding),
                   }
                 : null,
@@ -1383,10 +1383,10 @@ describe(getGridApiReferences, () => {
               GridApiDefinition.Angular.is(gridApi)
                 ? {
                     component: formatAngularComponentName(gridApi.component),
-                    templateRoots: getAngularTemplateRootElements(gridApi.template).map(
+                    templateRoots: getAngularTemplateRootElements(gridApi.template.node).map(
                       (element) => element.name,
                     ),
-                    element: gridApi.element.name,
+                    element: gridApi.element.node.name,
                     binding: formatAngularGridBinding(gridApi.binding),
                   }
                 : null,
@@ -1459,10 +1459,10 @@ describe(getGridApiReferences, () => {
               GridApiDefinition.Angular.is(gridApi)
                 ? {
                     component: formatAngularComponentName(gridApi.component),
-                    templateRoots: getAngularTemplateRootElements(gridApi.template).map(
+                    templateRoots: getAngularTemplateRootElements(gridApi.template.node).map(
                       (element) => element.name,
                     ),
-                    element: gridApi.element.name,
+                    element: gridApi.element.node.name,
                     binding: formatAngularGridBinding(gridApi.binding),
                   }
                 : null,
@@ -1541,10 +1541,10 @@ describe(getGridApiReferences, () => {
               GridApiDefinition.Angular.is(gridApi)
                 ? {
                     component: formatAngularComponentName(gridApi.component),
-                    templateRoots: getAngularTemplateRootElements(gridApi.template).map(
+                    templateRoots: getAngularTemplateRootElements(gridApi.template.node).map(
                       (element) => element.name,
                     ),
-                    element: gridApi.element.name,
+                    element: gridApi.element.node.name,
                     binding: formatAngularGridBinding(gridApi.binding),
                   }
                 : null,
@@ -1901,7 +1901,7 @@ function formatAngularGridBinding(binding: AngularGridApiBinding): Record<string
   if (AngularGridApiBinding.Event.is(binding)) {
     return {
       type: 'event',
-      output: binding.output.name,
+      output: binding.output.node.name,
       handler: formatAngularComponentMethodName(binding.handler),
       eventAccessor: formatAccessorPath(binding.eventAccessor),
     };
