@@ -18,8 +18,8 @@ import {
   isPropertyAssignmentNode,
   isPropertyInitializerNode,
   isVueDirectiveAttribute,
-  removeVueTemplateNode,
-  replaceVueTemplateNode,
+  removeTemplateNode,
+  replaceTemplateNode,
   visitGridOptionsProperties,
   type AST,
   type PropertyAccessorNode,
@@ -241,14 +241,14 @@ const transform: AstTransform<AstCliContext> = {
         break;
       }
     },
-    vueAttribute(templateNode, component, context) {
-      const accessor = parseGridOptionVueAttributeAccessor(templateNode.node);
+    vueAttribute(attributeNode, component, context) {
+      const accessor = parseGridOptionVueAttributeAccessor(attributeNode.node);
       if (!accessor) return;
       // Iterate over each of the replacements until a match is found
       for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
         // Skip over any properties that do not match any of the defined replacement patterns
         if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-        transform.vueAttribute(templateNode, component, context);
+        transform.vueAttribute(attributeNode, component, context);
         // Skip all other replacements
         break;
       }
@@ -407,7 +407,7 @@ function transformPropertyValue<AstTransformContext>(
     jsxAttribute(path, context) {
       return;
     },
-    vueAttribute(templateNode, component, context) {
+    vueAttribute(attributeNode, component, context) {
       return;
     },
   };
@@ -488,15 +488,15 @@ function migrateProperty<AstTransformContext>(
       }
       path.skip();
     },
-    vueAttribute(templateNode, component, context) {
-      if (!isVueDirectiveAttribute(templateNode)) return;
+    vueAttribute(attributeNode, component, context) {
+      if (!isVueDirectiveAttribute(attributeNode)) return;
       // Rewrite the element attribute name
-      const attributeKey = getVueTemplateNodeChild(templateNode, 'key');
+      const attributeKey = getVueTemplateNodeChild(attributeNode, 'key');
       const attributeKeyName = getVueTemplateNodeChild(attributeKey, 'argument');
       if (!attributeKeyName || attributeKeyName.node.type !== 'VIdentifier') return;
       // TODO: Support complex target attribute names when renaming Vue element attributes
       if (!targetAccessor.computed && targetAccessor.key.type === 'Identifier') {
-        replaceVueTemplateNode(
+        replaceTemplateNode(
           attributeKeyName,
           createVueAstNode({
             type: 'VIdentifier',
@@ -565,13 +565,13 @@ function removeProperty(
       path.remove();
       path.skip();
     },
-    vueAttribute(templateNode, component, context) {
+    vueAttribute(attributeNode, component, context) {
       if (!context.opts.applyDangerousEdits) {
         // FIXME: show Vue template element location in deprecation warnings
         context.opts.warn(null, deprecationWarning);
         return;
       }
-      removeVueTemplateNode(templateNode);
+      removeTemplateNode(attributeNode);
     },
   };
 }

@@ -2,14 +2,18 @@ import { nonNull } from '@ag-grid-devtools/utils';
 import { describe, expect, test } from 'vitest';
 
 import {
+  findTemplateNodes,
+  printTemplate,
+  removeTemplateNode,
+  replaceTemplateNode,
+} from './templateHelpers';
+import {
   createVueAstNode,
-  findVueTemplateNodes,
   matchers as v,
   parseVueComponentTemplateSource,
-  printVueTemplate,
-  removeVueTemplateNode,
-  replaceVueTemplateNode,
   type AST,
+  VueTemplateFormatter,
+  VueTemplateNode,
 } from './vueHelpers';
 
 type VAttribute = AST.VAttribute;
@@ -24,13 +28,13 @@ test(parseVueComponentTemplateSource, () => {
   expect(root && root.type === 'VElement' ? getElementId(root) : null).toBe('foo');
 });
 
-describe(findVueTemplateNodes, () => {
+describe(findTemplateNodes, () => {
   test('locates template nodes', () => {
     const input = `<div><span id="foo"></span><div id="bar"></div><span id="baz"></span></div>`;
     const ast = parseVueComponentTemplateSource(input);
     const actual =
       ast &&
-      findVueTemplateNodes(
+      findTemplateNodes(
         ast,
         v.element((element) => element.name === 'span'),
       );
@@ -57,7 +61,7 @@ describe(findVueTemplateNodes, () => {
     const ast = parseVueComponentTemplateSource(input);
     const actual =
       ast &&
-      findVueTemplateNodes(
+      findTemplateNodes(
         ast,
         v.element((element) => {
           if (element.name !== 'ag-grid-vue') return false;
@@ -84,22 +88,23 @@ describe(findVueTemplateNodes, () => {
   });
 });
 
-describe(printVueTemplate, () => {
+describe(printTemplate, () => {
   test('no modifications', () => {
     const source = `<div id="foo"></div>`;
     const template = parseVueComponentTemplateSource(source);
-    const actual = template && printVueTemplate(template);
+    const actual = template && printTemplate(template, new VueTemplateFormatter());
     expect(actual).toBe(`<div id="foo"></div>`);
   });
 
   test('update root node attribute name', () => {
     const source = `<div before="hi" foo="bar" after="bye"></div>`;
     const template = parseVueComponentTemplateSource(source);
-    const [attributeNameNode] = findVueTemplateNodes(
+    const [attributeNameNode] = findTemplateNodes(
       template,
-      (node): node is VIdentifier => node.type === 'VIdentifier' && node.name === 'foo',
+      (node): node is VueTemplateNode<VIdentifier> =>
+        node.node.type === 'VIdentifier' && node.node.name === 'foo',
     );
-    const updated = replaceVueTemplateNode(
+    const updated = replaceTemplateNode(
       attributeNameNode,
       createVueAstNode({
         type: 'VIdentifier',
@@ -108,20 +113,20 @@ describe(printVueTemplate, () => {
       }),
     );
     expect(updated.path).toEqual(['children', 0, 'startTag', 'attributes', 1, 'key']);
-    const actual = template && printVueTemplate(template);
+    const actual = template && printTemplate(template, new VueTemplateFormatter());
     expect(actual).toBe(`<div before="hi" id="bar" after="bye"></div>`);
   });
 
   test('remove root node attribute', () => {
     const source = `<div before="hi" foo="bar" after="bye"></div>`;
     const template = parseVueComponentTemplateSource(source);
-    const [attributeNameNode] = findVueTemplateNodes(
+    const [attributeNameNode] = findTemplateNodes(
       template,
-      (node): node is VAttribute =>
-        node.type === 'VAttribute' && !node.directive && node.key.name === 'foo',
+      (node): node is VueTemplateNode<VAttribute> =>
+        node.node.type === 'VAttribute' && !node.node.directive && node.node.key.name === 'foo',
     );
-    removeVueTemplateNode(attributeNameNode);
-    const actual = template && printVueTemplate(template);
+    removeTemplateNode(attributeNameNode);
+    const actual = template && printTemplate(template, new VueTemplateFormatter());
     expect(actual).toBe(`<div before="hi"  after="bye"></div>`);
   });
 
@@ -134,11 +139,12 @@ describe(printVueTemplate, () => {
       </ul>
     `;
     const template = parseVueComponentTemplateSource(source);
-    const [attributeNameNode] = findVueTemplateNodes(
+    const [attributeNameNode] = findTemplateNodes(
       template,
-      (node): node is VIdentifier => node.type === 'VIdentifier' && node.name === 'foo',
+      (node): node is VueTemplateNode<VIdentifier> =>
+        node.node.type === 'VIdentifier' && node.node.name === 'foo',
     );
-    const updated = replaceVueTemplateNode(
+    const updated = replaceTemplateNode(
       attributeNameNode,
       createVueAstNode({
         type: 'VIdentifier',
@@ -158,7 +164,7 @@ describe(printVueTemplate, () => {
       0,
       'key',
     ]);
-    const actual = template && printVueTemplate(template);
+    const actual = template && printTemplate(template, new VueTemplateFormatter());
     expect(actual).toBe(`
       <ul>
         <li><span></span></li>
