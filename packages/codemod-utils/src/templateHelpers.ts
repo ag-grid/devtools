@@ -58,7 +58,7 @@ export interface TemplateFormatter<TRoot, TNode> {
   getRootNode(root: TRoot): TNode;
   getRootPaths?(root: TRoot, path: TemplatePath): Array<TemplatePath>;
   getNodeRange(node: TNode): TemplateRange;
-  printNode(node: TNode): string;
+  printNode(node: TNode, previous: TNode | null, templateSource: string): string;
 }
 
 export function getTemplateNodeChild<T extends TNode, TNode, TRoot>(
@@ -110,7 +110,7 @@ function traverseTemplate<TRoot, TNode>(
   const { engine } = template;
   const keys = engine.getNodeChildKeys(node);
   if (keys) {
-    keys.forEach((key) => {
+    for (const key of keys) {
       const child = engine.getNodeChild(node, key);
       if (Array.isArray(child)) {
         child.forEach((child, index) => {
@@ -119,7 +119,7 @@ function traverseTemplate<TRoot, TNode>(
       } else if (child) {
         traverseTemplate({ template, node: child, path: [...path, key] }, visitor);
       }
-    });
+    }
   }
   visitor.leave(templateNode);
 }
@@ -273,7 +273,7 @@ function formatUpdatedNode<TRoot, TNode>(
       case 'ReplaceChild':
       case 'ReplaceListChild': {
         const { value } = pathMutation;
-        return value ? [formatter.printNode(value)] : [];
+        return value ? [formatter.printNode(value, node, source)] : [];
       }
       case 'RemoveListChild':
         return [];

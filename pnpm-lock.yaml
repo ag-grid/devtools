@@ -208,6 +208,9 @@ importers:
       '@angular/compiler':
         specifier: 17.0.1
         version: 17.0.1
+      '@typescript-eslint/types':
+        specifier: 6.6.0
+        version: 6.6.0
       eslint:
         specifier: ^8
         version: 8.48.0
