@@ -8,11 +8,13 @@ import {
 import { type AstTransformJsOptions, type AstTransformOptions } from '../types';
 import {
   parseVueSfcComponent,
-  printVueTemplate,
+  VueTemplateEngine,
+  VueTemplateFormatter,
   type AST,
   type VueTemplateNode,
 } from '../vueHelpers';
 import { transformJsFile } from './js';
+import { printTemplate } from '../templateHelpers';
 
 type VElement = AST.VElement;
 
@@ -41,9 +43,12 @@ export function transformVueSfcFile(
     node: templateRoot,
     path: [],
     template: {
+      engine: new VueTemplateEngine(),
       source,
-      root: templateRoot,
-      omitRootTag: false,
+      root: {
+        element: templateRoot,
+        omitRootTag: false,
+      },
       mutations: [],
     },
   };
@@ -73,7 +78,7 @@ export function transformVueSfcFile(
     updatedTemplate !== template ||
     (updatedTemplate && updatedTemplate.template.mutations.length > 0)
       ? updatedTemplate
-        ? printVueTemplate(updatedTemplate)
+        ? printTemplate(updatedTemplate, new VueTemplateFormatter())
         : ''
       : null;
   // If there were no changes, bail out
