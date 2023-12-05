@@ -3,29 +3,527 @@ import { describe, expect, test } from 'vitest';
 import * as ast from './ast';
 import { generate } from './generate';
 import { node as t } from './node';
-import { NodePath, getModuleRoot } from './parse';
-import { Reference, isReferenceNode, findReferences, getReferenceTarget } from './scope';
+import { getModuleRoot } from './parse';
+import {
+  Reference,
+  isReferenceNode,
+  findReferences,
+  getReferenceTarget,
+  DestructuringAccessor,
+  ObjectDestructuringAccessor,
+} from './scope';
 import {
   AccessorKey,
   AccessorReference,
   type AccessorPath,
   type Types,
   type AstNode,
+  NodePath,
 } from './types';
 import { EnumDiscriminant, VARIANT, match } from '@ag-grid-devtools/utils';
 import { findAstNode } from './traverse';
+import {
+  AssignmentExpression,
+  ImportDefaultSpecifier,
+  ImportNamespaceSpecifier,
+  ImportSpecifier,
+  ObjectPattern,
+  OptionalMemberExpression,
+  VariableDeclarator,
+} from '@babel/types';
 
 type Class = Types.Class;
-type ClassBody = Types.ClassBody;
 type ClassPrivateProperty = Types.ClassPrivateProperty;
 type Expression = Types.Expression;
+type Identifier = Types.Identifier;
 type FunctionDeclaration = Types.FunctionDeclaration;
 type MemberExpression = Types.MemberExpression;
 type ObjectExpression = Types.ObjectExpression;
 type ObjectProperty = Types.ObjectProperty;
 type PrivateName = Types.PrivateName;
 type Property = Types.Property;
-type Statement = Types.Statement;
+
+describe(getReferenceTarget, () => {
+  describe('variable declarations', () => {
+    test('simple declarations', () => {
+      const identifier = t.identifier('foo');
+      const input = ast.module`
+        'pre';
+        let ${identifier} = 4;
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Identifier> => path.node === identifier,
+      )!;
+      const declaration = findAstNode(input, (path): path is NodePath<VariableDeclarator> =>
+        path.isVariableDeclarator(),
+      )!;
+      const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+      const expected = Reference.BindingDeclaration({
+        path: target,
+        declaration,
+        accessorPath: {
+          root: target,
+          path: [],
+        },
+      });
+      expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+      expect(actual && actual.path.node).toBe(expected.path.node);
+    });
+
+    describe('destructured declarations', () => {
+      test('shallow declarations', () => {
+        const identifier = t.identifier('bar');
+        const input = ast.module`
+          'pre';
+          let { foo: ${identifier} } = 4;
+          'post';
+        `;
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Identifier> => path.node === identifier,
+        )!;
+        const declaration = findAstNode(input, (path): path is NodePath<VariableDeclarator> =>
+          path.isVariableDeclarator(),
+        )!;
+        const pattern = findAstNode(input, (path): path is NodePath<ObjectPattern> =>
+          path.isObjectPattern(),
+        )!;
+        const property = findAstNode(input, (path): path is NodePath<ObjectProperty> =>
+          path.isObjectProperty(),
+        )!;
+        const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+        const expected = Reference.BindingDeclaration({
+          path: target,
+          declaration,
+          accessorPath: {
+            root: pattern,
+            path: [
+              DestructuringAccessor.Object({
+                key: AccessorKey.Property({ name: 'foo' }),
+                property: ObjectDestructuringAccessor.Property({ node: property }),
+              }),
+            ],
+          },
+        });
+        expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+        expect(actual && actual.path.node).toBe(expected.path.node);
+      });
+
+      test('shallow declarations (default value)', () => {
+        const identifier = t.identifier('bar');
+        const input = ast.module`
+          'pre';
+          let { foo: ${identifier} = 3 } = 4;
+          'post';
+        `;
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Identifier> => path.node === identifier,
+        )!;
+        const declaration = findAstNode(input, (path): path is NodePath<VariableDeclarator> =>
+          path.isVariableDeclarator(),
+        )!;
+        const pattern = findAstNode(input, (path): path is NodePath<ObjectPattern> =>
+          path.isObjectPattern(),
+        )!;
+        const property = findAstNode(input, (path): path is NodePath<ObjectProperty> =>
+          path.isObjectProperty(),
+        )!;
+        const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+        const expected = Reference.BindingDeclaration({
+          path: target,
+          declaration,
+          accessorPath: {
+            root: pattern,
+            path: [
+              DestructuringAccessor.Object({
+                key: AccessorKey.Property({ name: 'foo' }),
+                property: ObjectDestructuringAccessor.Property({ node: property }),
+              }),
+            ],
+          },
+        });
+        expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+        expect(actual && actual.path.node).toBe(expected.path.node);
+      });
+
+      test('deep declarations', () => {
+        const identifier = t.identifier('baz');
+        const input = ast.module`
+          'pre';
+          let { foo: { bar: ${identifier} } } = { foo: 3 };
+          'post';
+        `;
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Identifier> => path.node === identifier,
+        )!;
+        const declaration = findAstNode(input, (path): path is NodePath<VariableDeclarator> =>
+          path.isVariableDeclarator(),
+        )!;
+        const pattern = findAstNode(input, (path): path is NodePath<ObjectPattern> =>
+          path.isObjectPattern(),
+        )!;
+        const outerProperty = findAstNode(
+          input,
+          (path): path is NodePath<ObjectProperty> =>
+            path.isObjectProperty() &&
+            t.isIdentifier(path.node.key) &&
+            path.node.key.name === 'foo',
+        )!;
+        const innerProperty = findAstNode(
+          input,
+          (path): path is NodePath<ObjectProperty> =>
+            path.isObjectProperty() &&
+            t.isIdentifier(path.node.key) &&
+            path.node.key.name === 'bar',
+        )!;
+        const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+        const expected = Reference.BindingDeclaration({
+          path: target,
+          declaration,
+          accessorPath: {
+            root: pattern,
+            path: [
+              DestructuringAccessor.Object({
+                key: AccessorKey.Property({ name: 'foo' }),
+                property: ObjectDestructuringAccessor.Property({ node: outerProperty }),
+              }),
+              DestructuringAccessor.Object({
+                key: AccessorKey.Property({ name: 'bar' }),
+                property: ObjectDestructuringAccessor.Property({ node: innerProperty }),
+              }),
+            ],
+          },
+        });
+        expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+        expect(actual && actual.path.node).toBe(expected.path.node);
+      });
+
+      test('deep declarations (default values)', () => {
+        const identifier = t.identifier('baz');
+        const input = ast.module`
+          'pre';
+          let { foo: { bar: ${identifier} = 5 } = { bar: 4 } } = { foo: { bar: 3 } };
+          'post';
+        `;
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Identifier> => path.node === identifier,
+        )!;
+        const declaration = findAstNode(input, (path): path is NodePath<VariableDeclarator> =>
+          path.isVariableDeclarator(),
+        )!;
+        const pattern = findAstNode(input, (path): path is NodePath<ObjectPattern> =>
+          path.isObjectPattern(),
+        )!;
+        const outerProperty = findAstNode(
+          input,
+          (path): path is NodePath<ObjectProperty> =>
+            path.isObjectProperty() &&
+            t.isIdentifier(path.node.key) &&
+            path.node.key.name === 'foo',
+        )!;
+        const innerProperty = findAstNode(
+          input,
+          (path): path is NodePath<ObjectProperty> =>
+            path.isObjectProperty() &&
+            t.isIdentifier(path.node.key) &&
+            path.node.key.name === 'bar',
+        )!;
+        const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+        const expected = Reference.BindingDeclaration({
+          path: target,
+          declaration,
+          accessorPath: {
+            root: pattern,
+            path: [
+              DestructuringAccessor.Object({
+                key: AccessorKey.Property({ name: 'foo' }),
+                property: ObjectDestructuringAccessor.Property({ node: outerProperty }),
+              }),
+              DestructuringAccessor.Object({
+                key: AccessorKey.Property({ name: 'bar' }),
+                property: ObjectDestructuringAccessor.Property({ node: innerProperty }),
+              }),
+            ],
+          },
+        });
+        expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+        expect(actual && actual.path.node).toBe(expected.path.node);
+      });
+    });
+
+    test('deeply destructured declarations', () => {
+      const identifier = t.identifier('baz');
+      const input = ast.module`
+        'pre';
+        let { foo: { bar: ${identifier} } } = 4;
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Identifier> => path.node === identifier,
+      )!;
+      const declaration = findAstNode(input, (path): path is NodePath<VariableDeclarator> =>
+        path.isVariableDeclarator(),
+      )!;
+      const pattern = findAstNode(input, (path): path is NodePath<ObjectPattern> =>
+        path.isObjectPattern(),
+      )!;
+      const outerProperty = findAstNode(
+        input,
+        (path): path is NodePath<ObjectProperty> =>
+          path.isObjectProperty() && t.isIdentifier(path.node.key) && path.node.key.name === 'foo',
+      )!;
+      const innerProperty = findAstNode(
+        input,
+        (path): path is NodePath<ObjectProperty> =>
+          path.isObjectProperty() && t.isIdentifier(path.node.key) && path.node.key.name === 'bar',
+      )!;
+      const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+      const expected = Reference.BindingDeclaration({
+        path: target,
+        declaration,
+        accessorPath: {
+          root: pattern,
+          path: [
+            DestructuringAccessor.Object({
+              key: AccessorKey.Property({ name: 'foo' }),
+              property: ObjectDestructuringAccessor.Property({ node: outerProperty }),
+            }),
+            DestructuringAccessor.Object({
+              key: AccessorKey.Property({ name: 'bar' }),
+              property: ObjectDestructuringAccessor.Property({ node: innerProperty }),
+            }),
+          ],
+        },
+      });
+      expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+      expect(actual && actual.path.node).toBe(expected.path.node);
+    });
+  });
+
+  test('variable references', () => {
+    const usage = t.identifier('foo');
+    const input = ast.module`
+        'pre';
+        const foo = 3;
+        ${usage}
+        'post';
+      `;
+    const target = findAstNode(input, (path): path is NodePath<Identifier> => path.node === usage)!;
+    const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+    const expected = Reference.VariableGetter({
+      path: target,
+    });
+    expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+    expect(actual && actual.path.node).toBe(expected.path.node);
+  });
+
+  test('variable assignments', () => {
+    const identifier = t.identifier('foo');
+    const input = ast.module`
+      'pre';
+      let foo;
+      ${identifier} = 4;
+      'post';
+    `;
+    const target = findAstNode(
+      input,
+      (path): path is NodePath<Identifier> => path.node === identifier,
+    )!;
+    const assignment = findAstNode(
+      input,
+      (path): path is NodePath<AssignmentExpression> =>
+        path.isAssignmentExpression() && path.get('left').node === identifier,
+    )!;
+    const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+    const expected = Reference.VariableSetter({
+      path: target,
+      assignment,
+    });
+    expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+    expect(actual && actual.path.node).toBe(expected.path.node);
+  });
+
+  test('function declarations', () => {
+    const identifier = t.identifier('foo');
+    const input = ast.module`
+      'pre';
+      function ${identifier}() {}
+      'post';
+    `;
+    const target = findAstNode(
+      input,
+      (path): path is NodePath<Identifier> => path.node === identifier,
+    )!;
+    const declaration = findAstNode(input, (path): path is NodePath<FunctionDeclaration> =>
+      path.isFunctionDeclaration(),
+    )!;
+    const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+    const expected = Reference.FunctionDeclaration({
+      path: declaration,
+    });
+    expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+    expect(actual && actual.path.node).toBe(expected.path.node);
+  });
+
+  describe('module imports', () => {
+    test('named imports', () => {
+      const identifier = t.identifier('foo');
+      const input = ast.module`
+        'pre';
+        import { ${identifier} } from './foo';
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Identifier> => path.node === identifier,
+      )!;
+      const imported = findAstNode(input, (path): path is NodePath<ImportSpecifier> =>
+        path.isImportSpecifier(),
+      )!;
+      const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+      const expected = Reference.ModuleImport({
+        path: target,
+        imported,
+      });
+      expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+      expect(actual && actual.path.node).toBe(expected.path.node);
+    });
+
+    test('default imports', () => {
+      const identifier = t.identifier('foo');
+      const input = ast.module`
+        'pre';
+        import ${identifier} from './foo';
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Identifier> => path.node === identifier,
+      )!;
+      const imported = findAstNode(input, (path): path is NodePath<ImportDefaultSpecifier> =>
+        path.isImportDefaultSpecifier(),
+      )!;
+      const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+      const expected = Reference.ModuleImport({
+        path: target,
+        imported,
+      });
+      expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+      expect(actual && actual.path.node).toBe(expected.path.node);
+    });
+
+    test('namespace imports', () => {
+      const identifier = t.identifier('foo');
+      const input = ast.module`
+        'pre';
+        import * as ${identifier} from './foo';
+        'post';
+      `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<Identifier> => path.node === identifier,
+      )!;
+      const imported = findAstNode(input, (path): path is NodePath<ImportNamespaceSpecifier> =>
+        path.isImportNamespaceSpecifier(),
+      )!;
+      const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+      const expected = Reference.ModuleImport({
+        path: target,
+        imported,
+      });
+      expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+      expect(actual && actual.path.node).toBe(expected.path.node);
+    });
+  });
+
+  describe('propery accessors', () => {
+    test('shallow property accessors', () => {
+      const accessor = ast.expression`foo.bar`;
+      const input = ast.module`
+          'pre';
+          const foo = { bar: 3 };
+          ${accessor};
+          'post';
+        `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<MemberExpression> => path.node === accessor,
+      )!;
+      const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+      const expected = Reference.PropertyGetter({
+        path: target,
+      });
+      expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+      expect(actual && actual.path.node).toBe(expected.path.node);
+    });
+
+    test('shallow property accessors (optional)', () => {
+      const accessor = ast.expression`foo?.bar`;
+      const input = ast.module`
+          'pre';
+          const foo = { bar: 3 };
+          ${accessor};
+          'post';
+        `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<OptionalMemberExpression> => path.node === accessor,
+      )!;
+      const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+      const expected = Reference.PropertyGetter({
+        path: target,
+      });
+      expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+      expect(actual && actual.path.node).toBe(expected.path.node);
+    });
+
+    test('nested property accessors', () => {
+      const accessor = ast.expression`foo.bar.baz`;
+      const input = ast.module`
+          'pre';
+          const foo = { bar: { baz: 3 } };
+          ${accessor};
+          'post';
+        `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<MemberExpression> => path.node === accessor,
+      )!;
+      const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+      const expected = Reference.PropertyGetter({
+        path: target,
+      });
+      expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+      expect(actual && actual.path.node).toBe(expected.path.node);
+    });
+
+    test('nested property accessors (optional)', () => {
+      const accessor = ast.expression`foo?.bar?.baz`;
+      const input = ast.module`
+          'pre';
+          const foo = { bar: { baz: 3 } };
+          ${accessor};
+          'post';
+        `;
+      const target = findAstNode(
+        input,
+        (path): path is NodePath<OptionalMemberExpression> => path.node === accessor,
+      )!;
+      const actual = isReferenceNode(target) ? getReferenceTarget(target) : null;
+      const expected = Reference.PropertyGetter({
+        path: target,
+      });
+      expect(actual && unwrapNodePaths(actual)).toEqual(unwrapNodePaths(expected));
+      expect(actual && actual.path.node).toBe(expected.path.node);
+    });
+  });
+});
 
 describe(findReferences, () => {
   describe('variable declaration initializer values', () => {
@@ -352,77 +850,121 @@ describe(findReferences, () => {
     });
 
     test('single reference', () => {
-      const initializer = t.identifier('foo');
       const assignment = ast.expression`foo.bar`;
       const accessor = ast.expression`foo.bar`;
       const input = ast.module`
         'pre';
-        const ${initializer} = { bar: null };
+        const foo = { bar: null };
         ${assignment} = 3;
         ${accessor}.baz;
         'post';
       `;
-      const target = findAstNode(
-        input,
-        (path): path is NodePath<Expression> => path.node === assignment,
-      )!;
-      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
-      const expected: ReferenceValues = [
-        { type: 'PropertySetter', node: assignment },
-        { type: 'PropertyGetter', node: accessor },
-      ];
-      expect(stripReferencePaths(actual)).toEqual(expected);
-      for (const [actualRef, expectedRef] of zip(actual, expected)) {
-        expect(actualRef.path.node).toBe(expectedRef.node);
+      {
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Expression> => path.node === assignment,
+        )!;
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
+        const expected: ReferenceValues = [
+          { type: 'PropertySetter', node: assignment },
+          { type: 'PropertyGetter', node: accessor },
+        ];
+        expect(stripReferencePaths(actual)).toEqual(expected);
+        for (const [actualRef, expectedRef] of zip(actual, expected)) {
+          expect(actualRef.path.node).toBe(expectedRef.node);
+        }
+      }
+      {
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Expression> => path.node === accessor,
+        )!;
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
+        const expected: ReferenceValues = [
+          { type: 'PropertySetter', node: assignment },
+          { type: 'PropertyGetter', node: accessor },
+        ];
+        expect(stripReferencePaths(actual)).toEqual(expected);
+        for (const [actualRef, expectedRef] of zip(actual, expected)) {
+          expect(actualRef.path.node).toBe(expectedRef.node);
+        }
       }
     });
 
     test('multiple references', () => {
-      const initializer = t.identifier('foo');
       const assignment = ast.expression`foo.bar`;
       const accessor1 = ast.expression`foo.bar`;
       const accessor2 = ast.expression`foo.bar`;
       const input = ast.module`
         'pre';
         ${accessor1}.baz;
-        const ${initializer} = { bar: null };
+        const foo = { bar: null };
         ${assignment} = 3;
         ${accessor2}.baz;
         'post';
       `;
-      const target = findAstNode(
-        input,
-        (path): path is NodePath<Expression> => path.node === assignment,
-      )!;
-      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
-      const expected: ReferenceValues = [
-        { type: 'PropertyGetter', node: accessor1 },
-        { type: 'PropertySetter', node: assignment },
-        { type: 'PropertyGetter', node: accessor2 },
-      ];
-      expect(stripReferencePaths(actual)).toEqual(expected);
-      for (const [actualRef, expectedRef] of zip(actual, expected)) {
-        expect(actualRef.path.node).toBe(expectedRef.node);
+      {
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Expression> => path.node === assignment,
+        )!;
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
+        const expected: ReferenceValues = [
+          { type: 'PropertyGetter', node: accessor1 },
+          { type: 'PropertySetter', node: assignment },
+          { type: 'PropertyGetter', node: accessor2 },
+        ];
+        expect(stripReferencePaths(actual)).toEqual(expected);
+        for (const [actualRef, expectedRef] of zip(actual, expected)) {
+          expect(actualRef.path.node).toBe(expectedRef.node);
+        }
+      }
+      {
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Expression> => path.node === accessor1,
+        )!;
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
+        const expected: ReferenceValues = [
+          { type: 'PropertyGetter', node: accessor1 },
+          { type: 'PropertySetter', node: assignment },
+          { type: 'PropertyGetter', node: accessor2 },
+        ];
+        expect(stripReferencePaths(actual)).toEqual(expected);
+        for (const [actualRef, expectedRef] of zip(actual, expected)) {
+          expect(actualRef.path.node).toBe(expectedRef.node);
+        }
+      }
+      {
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Expression> => path.node === accessor2,
+        )!;
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
+        const expected: ReferenceValues = [
+          { type: 'PropertyGetter', node: accessor1 },
+          { type: 'PropertySetter', node: assignment },
+          { type: 'PropertyGetter', node: accessor2 },
+        ];
+        expect(stripReferencePaths(actual)).toEqual(expected);
+        for (const [actualRef, expectedRef] of zip(actual, expected)) {
+          expect(actualRef.path.node).toBe(expectedRef.node);
+        }
       }
     });
 
     test('destructured references', () => {
-      const initializer = t.identifier('foo');
       const assignment = ast.expression`foo.bar`;
       const accessor1 = t.identifier('bar');
       const accessor2 = t.identifier('bar');
       const input = ast.module`
         'pre';
-        const ${initializer} = { baz: null };
+        const foo = { baz: null };
         ${assignment} = 3;
         const { ${accessor1} } = foo;
         ${accessor2}.baz;
         'post';
       `;
-      const target = findAstNode(
-        input,
-        (path): path is NodePath<Expression> => path.node === assignment,
-      )!;
       const shorthandPropertyAccessor = findAstNode(
         input,
         (path): path is NodePath<ObjectProperty> =>
@@ -432,55 +974,64 @@ describe(findReferences, () => {
           t.isIdentifier(path.node.value) &&
           path.node.value.name === accessor1.name,
       )!.node.value;
-      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
-      const expected: ReferenceValues = [
-        { type: 'PropertySetter', node: assignment },
-        { type: 'BindingDeclaration', node: shorthandPropertyAccessor },
-        { type: 'VariableGetter', node: accessor2 },
-      ];
-      expect(stripReferencePaths(actual)).toEqual(expected);
-      for (const [actualRef, expectedRef] of zip(actual, expected)) {
-        expect(actualRef.path.node).toBe(expectedRef.node);
+      {
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Expression> => path.node === assignment,
+        )!;
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
+        const expected: ReferenceValues = [
+          { type: 'PropertySetter', node: assignment },
+          { type: 'BindingDeclaration', node: shorthandPropertyAccessor },
+          { type: 'VariableGetter', node: accessor2 },
+        ];
+        expect(stripReferencePaths(actual)).toEqual(expected);
+        for (const [actualRef, expectedRef] of zip(actual, expected)) {
+          expect(actualRef.path.node).toBe(expectedRef.node);
+        }
+      }
+      {
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Expression> => path.node === shorthandPropertyAccessor,
+        )!;
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
+        const expected: ReferenceValues = [
+          { type: 'PropertySetter', node: assignment },
+          { type: 'BindingDeclaration', node: shorthandPropertyAccessor },
+          { type: 'VariableGetter', node: accessor2 },
+        ];
+        expect(stripReferencePaths(actual)).toEqual(expected);
+        for (const [actualRef, expectedRef] of zip(actual, expected)) {
+          expect(actualRef.path.node).toBe(expectedRef.node);
+        }
+      }
+      {
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Expression> => path.node === accessor2,
+        )!;
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
+        const expected: ReferenceValues = [
+          { type: 'PropertySetter', node: assignment },
+          { type: 'BindingDeclaration', node: shorthandPropertyAccessor },
+          { type: 'VariableGetter', node: accessor2 },
+        ];
+        expect(stripReferencePaths(actual)).toEqual(expected);
+        for (const [actualRef, expectedRef] of zip(actual, expected)) {
+          expect(actualRef.path.node).toBe(expectedRef.node);
+        }
       }
     });
 
     test('aliased destructured references', () => {
-      const initializer = t.identifier('foo');
       const assignment = ast.expression`foo.bar`;
       const accessor1 = t.identifier('bar');
       const accessor2 = t.identifier('bar');
       const input = ast.module`
         'pre';
-        const ${initializer} = { bar: null };
+        const foo = { bar: null };
         ${assignment} = 3;
-        const { bar: ${accessor1} } = foo;
-        ${accessor2}.baz;
-        'post';
-      `;
-      const target = findAstNode(
-        input,
-        (path): path is NodePath<Expression> => path.node === assignment,
-      )!;
-      const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
-      const expected: ReferenceValues = [
-        { type: 'PropertySetter', node: assignment },
-        { type: 'BindingDeclaration', node: accessor1 },
-        { type: 'VariableGetter', node: accessor2 },
-      ];
-      expect(stripReferencePaths(actual)).toEqual(expected);
-      for (const [actualRef, expectedRef] of zip(actual, expected)) {
-        expect(actualRef.path.node).toBe(expectedRef.node);
-      }
-    });
-  });
-
-  describe('references to destructuring patterns', () => {
-    test('shallow destructuring references', () => {
-      const accessor1 = t.identifier('bar');
-      const accessor2 = t.identifier('bar');
-      const input = ast.module`
-        'pre';
-        const foo = { bar: { baz: 3 } };
         const { bar: ${accessor1} } = foo;
         ${accessor2}.baz;
         'post';
@@ -488,10 +1039,27 @@ describe(findReferences, () => {
       {
         const target = findAstNode(
           input,
+          (path): path is NodePath<Expression> => path.node === assignment,
+        )!;
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
+        const expected: ReferenceValues = [
+          { type: 'PropertySetter', node: assignment },
+          { type: 'BindingDeclaration', node: accessor1 },
+          { type: 'VariableGetter', node: accessor2 },
+        ];
+        expect(stripReferencePaths(actual)).toEqual(expected);
+        for (const [actualRef, expectedRef] of zip(actual, expected)) {
+          expect(actualRef.path.node).toBe(expectedRef.node);
+        }
+      }
+      {
+        const target = findAstNode(
+          input,
           (path): path is NodePath<Expression> => path.node === accessor1,
         )!;
         const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
         const expected: ReferenceValues = [
+          { type: 'PropertySetter', node: assignment },
           { type: 'BindingDeclaration', node: accessor1 },
           { type: 'VariableGetter', node: accessor2 },
         ];
@@ -507,8 +1075,57 @@ describe(findReferences, () => {
         )!;
         const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
         const expected: ReferenceValues = [
+          { type: 'PropertySetter', node: assignment },
           { type: 'BindingDeclaration', node: accessor1 },
           { type: 'VariableGetter', node: accessor2 },
+        ];
+        expect(stripReferencePaths(actual)).toEqual(expected);
+        for (const [actualRef, expectedRef] of zip(actual, expected)) {
+          expect(actualRef.path.node).toBe(expectedRef.node);
+        }
+      }
+    });
+  });
+
+  describe('references to destructuring patterns', () => {
+    test('shallow destructuring references', () => {
+      const accessor1 = t.identifier('bar');
+      const accessor2 = t.identifier('bar');
+      const accessor3 = ast.expression`foo.bar`;
+      const input = ast.module`
+        'pre';
+        const foo = { bar: { baz: 3 } };
+        const { bar: ${accessor1} } = foo;
+        ${accessor2}.baz;
+        ${accessor3};
+        'post';
+      `;
+      {
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Expression> => path.node === accessor1,
+        )!;
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
+        const expected: ReferenceValues = [
+          { type: 'BindingDeclaration', node: accessor1 },
+          { type: 'VariableGetter', node: accessor2 },
+          { type: 'PropertyGetter', node: accessor3 },
+        ];
+        expect(stripReferencePaths(actual)).toEqual(expected);
+        for (const [actualRef, expectedRef] of zip(actual, expected)) {
+          expect(actualRef.path.node).toBe(expectedRef.node);
+        }
+      }
+      {
+        const target = findAstNode(
+          input,
+          (path): path is NodePath<Expression> => path.node === accessor2,
+        )!;
+        const actual = isReferenceNode(target) ? findReferences(getReferenceTarget(target)!) : [];
+        const expected: ReferenceValues = [
+          { type: 'BindingDeclaration', node: accessor1 },
+          { type: 'VariableGetter', node: accessor2 },
+          { type: 'PropertyGetter', node: accessor3 },
         ];
         expect(stripReferencePaths(actual)).toEqual(expected);
         for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -520,6 +1137,7 @@ describe(findReferences, () => {
     test('deep destructuring references', () => {
       const accessor1 = t.identifier('baz');
       const accessor2 = t.identifier('baz');
+      const accessor3 = ast.expression`foo.bar`;
       const input = ast.module`
         'pre';
         const foo = { bar: { baz: { qux: 3 } } };
@@ -536,6 +1154,7 @@ describe(findReferences, () => {
         const expected: ReferenceValues = [
           { type: 'BindingDeclaration', node: accessor1 },
           { type: 'VariableGetter', node: accessor2 },
+          { type: 'PropertyGetter', node: accessor3 },
         ];
         expect(stripReferencePaths(actual)).toEqual(expected);
         for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -551,6 +1170,7 @@ describe(findReferences, () => {
         const expected: ReferenceValues = [
           { type: 'BindingDeclaration', node: accessor1 },
           { type: 'VariableGetter', node: accessor2 },
+          { type: 'PropertyGetter', node: accessor3 },
         ];
         expect(stripReferencePaths(actual)).toEqual(expected);
         for (const [actualRef, expectedRef] of zip(actual, expected)) {
@@ -1062,6 +1682,23 @@ type ReferenceValues = Array<{ type: EnumDiscriminant<Reference>; node: AstNode 
 
 function stripReferencePaths(references: Array<Reference>): ReferenceValues {
   return references.map(({ [VARIANT]: type, path: { node } }) => ({ type, node }));
+}
+
+function unwrapNodePaths(value: unknown): unknown {
+  if (!value) return value;
+  if (Array.isArray(value)) return value.map(unwrapNodePaths);
+  if (typeof value === 'object') {
+    if (value.constructor && value.constructor.name === 'NodePath') {
+      return (value as NodePath).node;
+    }
+    return Object.fromEntries(
+      [...Object.getOwnPropertySymbols(value), ...Object.getOwnPropertyNames(value)].map((key) => [
+        key,
+        unwrapNodePaths(value[key as keyof typeof value]),
+      ]),
+    );
+  }
+  return value;
 }
 
 function zip<T1, T2>(left: Array<T1>, right: Array<T2>): Array<[T1, T2]> {

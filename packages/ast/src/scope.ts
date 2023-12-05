@@ -164,8 +164,135 @@ export function getReferenceTarget(target: NodePath<ReferenceNode>): Reference |
   if (target.isIdentifier()) {
     const parent = getTypeErasedParent(target);
     if (parent && parent.isAssignmentExpression()) {
-      // FIXME: support nested assignments
       return Reference.VariableSetter({ path: target, assignment: parent });
+    } else if (
+      parent &&
+      (parent.isImportSpecifier() ||
+        parent.isImportDefaultSpecifier() ||
+        parent.isImportNamespaceSpecifier())
+    ) {
+      return Reference.ModuleImport({ path: target, imported: parent });
+    } else if (parent && parent.isFunctionDeclaration() && target.key === 'id') {
+      return Reference.FunctionDeclaration({ path: parent });
+    } else if (
+      // Determine whether the identifier is part of a destructuring pattern
+      parent &&
+      ((parent.isAssignmentPattern() &&
+        stripTypeScriptAnnotations(parent.get('left')).node === target.node) ||
+        (((parent.isObjectProperty() &&
+          stripTypeScriptAnnotations(parent.get('value'))?.node === target.node) ||
+          (parent.isRestElement() &&
+            stripTypeScriptAnnotations(parent.get('argument'))?.node === target.node)) &&
+          parent.parentPath.isObjectPattern()) ||
+        parent.isArrayPattern() ||
+        parent.isVariableDeclarator())
+    ) {
+      // Traverse up the destructuring pattern to retrieve the overall accessor path
+      let current: NodePath<PatternLike> = target;
+      let declaration: NodePath<VariableDeclarator> | null = null;
+      const accessorPathReversed = new Array<DestructuringAccessor | null>();
+      while (true) {
+        const parent = getTypeErasedParent(current);
+        if (!parent) break;
+        if (
+          parent.isAssignmentPattern() &&
+          stripTypeScriptAnnotations(parent.get('left')).node === current.node
+        ) {
+          current = parent;
+        } else if (parent.isObjectProperty() && parent.parentPath.isObjectPattern()) {
+          const property = parent;
+          const parentPattern = parent.parentPath;
+          const propertyKey = createPropertyKey(
+            stripTypeScriptAnnotations(property.get('key')),
+            property.node.computed,
+          );
+          accessorPathReversed.push(
+            propertyKey
+              ? DestructuringAccessor.Object({
+                  key: propertyKey,
+                  property: ObjectDestructuringAccessor.Property({ node: property }),
+                })
+              : null,
+          );
+          current = parentPattern;
+        } else if (parent.isRestElement() && parent.parentPath.isObjectPattern()) {
+          const property = parent;
+          const parentPattern = parent.parentPath;
+          const patternProperties = parentPattern.get('properties');
+          const restElementIndex = patternProperties.findIndex((patternProperty) =>
+            patternProperty.isRestElement(),
+          );
+          const precedingNamedProperties =
+            restElementIndex === -1
+              ? null
+              : patternProperties
+                  .slice(0, restElementIndex)
+                  .map((property) => (property.isObjectProperty() ? property : null))
+                  .filter(nonNull);
+          const precedingStaticKeys =
+            precedingNamedProperties &&
+            precedingNamedProperties
+              .map((property) =>
+                createPropertyKey(
+                  stripTypeScriptAnnotations(property.get('key')),
+                  property.node.computed,
+                ),
+              )
+              .filter(nonNull);
+          const precedingKeys =
+            precedingStaticKeys &&
+            precedingNamedProperties &&
+            precedingStaticKeys.length === precedingNamedProperties.length
+              ? precedingStaticKeys
+              : null;
+          accessorPathReversed.push(
+            precedingKeys
+              ? DestructuringAccessor.Object({
+                  key: AccessorKey.ObjectRest({ excluded: precedingKeys }),
+                  property: ObjectDestructuringAccessor.Rest({ node: property }),
+                })
+              : null,
+          );
+          current = parentPattern;
+        } else if (parent.isArrayPattern()) {
+          const index =
+            typeof current.key === 'number'
+              ? current.key
+              : parent.get('elements').findIndex((element) => element.node === current.node);
+          const accessorKey =
+            index !== -1
+              ? null
+              : current.isRestElement()
+              ? AccessorKey.ArrayRest({ startIndex: index })
+              : AccessorKey.Index({ index });
+          accessorPathReversed.push(
+            accessorKey
+              ? DestructuringAccessor.Array({
+                  key: accessorKey,
+                  element: current,
+                })
+              : null,
+          );
+          current = parent;
+        } else if (parent.isVariableDeclarator()) {
+          declaration = parent;
+          break;
+          // FIXME: support function param destructuring
+        } else {
+          break;
+        }
+      }
+      if (!declaration) return null;
+      const accessorPath = accessorPathReversed.filter(nonNull).reverse();
+      if (accessorPath.length < accessorPathReversed.length) return null;
+      return Reference.BindingDeclaration({
+        path: target,
+        declaration,
+        accessorPath: {
+          root: current,
+          path: accessorPath,
+        },
+      });
     } else {
       return Reference.VariableGetter({ path: target });
     }
@@ -206,6 +333,15 @@ export function findReferences(target: Reference): Array<Reference> {
     PropertyGetter: (ref) => getPropertyAccessorReferences(ref),
     PropertySetter: (ref) => getPropertyAccessorReferences(ref),
   });
+}
+
+function getBindingDeclarationReferences(reference: BindingDeclarationReference): Array<Reference> {
+  const { path: target } = reference;
+  // If this is a fully-specified variable binding, return the declaration and all references to the bound variable
+  if (target.isIdentifier()) return getLocalVariableReferences(target);
+  // Otherwise if this is only a partial binding declaration (i.e. an intermediate key within a destructuring pattern),
+  // there can be no further references to the current stage of the declaration pattern
+  return [reference];
 }
 
 function getVariableReferences(reference: VariableReference): Array<Reference> {
@@ -516,15 +652,6 @@ function getValueAssignmentTarget(target: NodePath<Expression>): NodePath<Refere
   return null;
 }
 
-function getBindingDeclarationReferences(reference: BindingDeclarationReference): Array<Reference> {
-  const { path: target } = reference;
-  // If this is a fully-specified variable binding, return the declaration and all references to the bound variable
-  if (target.isIdentifier()) return [reference, ...getLocalVariableReferences(target)];
-  // Otherwise if this is only a partial binding declaration (i.e. an intermediate key within a destructuring pattern),
-  // there can be no further references to the current stage of the declaration pattern
-  return [reference];
-}
-
 function getPropertyAccessorReferences(reference: PropertyReference): Array<Reference> {
   const { path: target } = reference;
   const object = stripTypeScriptAnnotations(target.get('object'));
@@ -542,12 +669,15 @@ export function getObjectPropertyReferences(
   if (!propertyKey) return [];
   const targetReference = isReferenceNode(target) ? getReferenceTarget(target) : null;
   if (!targetReference) return [];
-  const targetReferences = findReferences(targetReference);
+  return getReferencePropertyReferences(targetReference, propertyKey);
+}
+
+function getReferencePropertyReferences(reference: Reference, propertyKey: AccessorKey) {
+  const targetReferences = findReferences(reference);
   return targetReferences.flatMap((objectReference) => {
     return match(objectReference, {
       // If this is a destructuring pattern, drill into the pattern to retrieve references to the given property
-      BindingDeclaration: (ref) =>
-        getBindingDeclarationPropertyReferences(ref, key, computed, propertyKey),
+      BindingDeclaration: (ref) => getBindingDeclarationPropertyReferences(ref, propertyKey),
       // If this is a variable or property accessor, analyze the surrounding property-chaining expression for references to the given property
       VariableGetter: (ref) => getAccessorPropertyReferences(ref, propertyKey),
       VariableSetter: (ref) => getAccessorPropertyReferences(ref, propertyKey),
@@ -588,29 +718,24 @@ function getNamedPropertyAccessorReferences(
 
 function getBindingDeclarationPropertyReferences(
   reference: BindingDeclarationReference,
-  key: Expression | PrivateName,
-  computed: boolean,
   propertyKey: AccessorKey,
 ): Array<Reference> {
+  const { path: pattern } = reference;
   // If this is a partial destructuring expression, traverse inside the pattern to retrieve matching child property patterns
-  if (reference.path.isObjectPattern())
+  if (pattern.isObjectPattern())
     return getObjectDestructuringBindingDeclarationPropertyReferences(
-      reference.path,
+      pattern,
       reference,
-      key,
-      computed,
       propertyKey,
     );
   // FIXME: Support traversing indexed properties within destructured array initializers
-  if (reference.path.isArrayPattern()) return [];
+  if (pattern.isArrayPattern()) return [];
   return [];
 }
 
 function getObjectDestructuringBindingDeclarationPropertyReferences(
   objectPattern: NodePath<ObjectPattern>,
   reference: BindingDeclarationReference,
-  key: Expression | PrivateName,
-  computed: boolean,
   propertyKey: AccessorKey,
 ): Array<Reference> {
   const namedProperties = getNamedObjectPatternStaticProperties(objectPattern, propertyKey);
@@ -650,18 +775,26 @@ function getObjectDestructuringBindingDeclarationPropertyReferences(
           .find(nonNull) || null;
       if (!restProperty) return null;
       const localRestAccessor = restProperty.get('argument');
-      // If the rest property specifies a default value, traverse inside the default value
+      // If the rest property specifies a default value, traverse inside the default value as well as the local pattern
       if (localRestAccessor.isAssignmentPattern()) {
-        const target = localRestAccessor.get('left');
-        const defaultValue = localRestAccessor.get('right');
-        const targetReferences = target.isExpression()
-          ? getObjectPropertyReferences(target, key, computed)
+        const target = stripTypeScriptAnnotations(localRestAccessor.get('left'));
+        const targetReference = isReferenceNode(target) ? getReferenceTarget(target) : null;
+        const targetReferences = targetReference
+          ? getReferencePropertyReferences(targetReference, propertyKey)
           : [];
-        const defaultValueReferences = getObjectPropertyReferences(defaultValue, key, computed);
+        const defaultValue = stripTypeScriptAnnotations(localRestAccessor.get('right'));
+        const defaultValueReference = isReferenceNode(defaultValue)
+          ? getReferenceTarget(defaultValue)
+          : null;
+        const defaultValueReferences = defaultValueReference
+          ? getReferencePropertyReferences(defaultValueReference, propertyKey)
+          : [];
         return [...targetReferences, ...defaultValueReferences];
       } else if (localRestAccessor.isIdentifier()) {
-        const targetReferences = getObjectPropertyReferences(localRestAccessor, key, computed);
-        return targetReferences;
+        const localRestAccessorReference = getReferenceTarget(localRestAccessor);
+        return localRestAccessorReference
+          ? getReferencePropertyReferences(localRestAccessorReference, propertyKey)
+          : [];
       } else {
         return null;
       }
