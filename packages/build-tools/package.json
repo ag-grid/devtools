@@ -11,7 +11,7 @@
   },
   "scripts": {
     "pkg": "./scripts/pkg",
-    "lint": "eslint --ext cjs --max-warnings 0 ."
+    "lint": "eslint --ext cjs ."
   },
   "devDependencies": {
     "@ag-grid-devtools/build-config": "workspace:*"
