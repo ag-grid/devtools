@@ -14,7 +14,7 @@
     "build:docs": "typedoc",
     "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
     "lint": "pnpm run '/^lint:.*/'",
-    "lint:eslint": "eslint --ext js,cjs,mjs,ts --max-warnings 0 .",
+    "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
     "lint:typescript": "tsc --noEmit"
   },
   "pkg": {

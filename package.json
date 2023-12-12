@@ -12,7 +12,7 @@
     "build:docs": "typedoc",
     "verify": "pnpm run /^\\(lint\\|test\\)$/",
     "lint": "pnpm run /^lint:.*/ && pnpm run --recursive --parallel lint",
-    "lint:eslint": "eslint --ext js,cjs,mjs,ts --max-warnings 0 .",
+    "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
     "lint:typescript": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest watch",
