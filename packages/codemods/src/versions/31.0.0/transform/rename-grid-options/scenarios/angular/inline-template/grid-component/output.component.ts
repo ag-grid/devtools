@@ -8,18 +8,22 @@ import { IOlympicData } from './interfaces';
 
 @Component({
   selector: 'my-app',
-  templateUrl: './input.component.html',
+  template: `
+    <div>
+      <ag-grid-angular
+        [columnDefs]="columnDefs"
+        [rowData]="rowData"
+        (gridReady)="onGridReady($event)"
+      ></ag-grid-angular>
+    </div>
+  `,
 })
 export class AppComponent {
-  @ViewChild('my_grid') private grid!: AgGridAngular;
+  @ViewChild(AgGridAngular) private grid!: AgGridAngular;
   public columnDefs: (ColDef | ColGroupDef)[] = [];
   public rowData!: IOlympicData[];
 
   constructor(private http: HttpClient) {}
-
-  resetState() {
-    this.grid.columnApi.resetColumnState();
-  }
 
   onGridReady(params: GridReadyEvent<IOlympicData>) {
     this.http

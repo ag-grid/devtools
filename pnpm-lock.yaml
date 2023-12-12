@@ -175,12 +175,18 @@ importers:
       '@types/diff':
         specifier: 5.0.8
         version: 5.0.8
+      '@types/graceful-fs':
+        specifier: 4.1.9
+        version: 4.1.9
       '@types/semver':
         specifier: 7.5.6
         version: 7.5.6
       diff:
         specifier: 5.1.0
         version: 5.1.0
+      graceful-fs:
+        specifier: 4.2.11
+        version: 4.2.11
       semver:
         specifier: 7.5.4
         version: 7.5.4
@@ -264,6 +270,9 @@ importers:
       '@ag-grid-devtools/build-config':
         specifier: workspace:*
         version: link:../build-config
+      memfs:
+        specifier: 4.6.0
+        version: 4.6.0(quill-delta@5.1.0)(rxjs@7.8.1)(tslib@2.6.2)
 
   packages/types:
     dependencies:
@@ -1141,6 +1150,12 @@ packages:
     resolution: {integrity: sha512-LG4opVs2ANWZ1TJoKc937iMmNstM/d0ae1vNbnBvBhqCSezgVUOzcLCqbI5elV8Vy6WKwKjaqR+zO9VKirBBCA==}
     dev: false
 
+  /@types/graceful-fs@4.1.9:
+    resolution: {integrity: sha512-olP3sd1qOEe5dXTSaFvQG+02VdRXcdytWLAZsAq1PecU8uqQAhkrnbli7DagjtXKW/Bl7YJbUsa8MPcuc8LHEQ==}
+    dependencies:
+      '@types/node': 20.5.9
+    dev: true
+
   /@types/istanbul-lib-coverage@2.0.4:
     resolution: {integrity: sha512-z/QT1XN4K4KYuslS23k62yDIDLwLFkzxOuMplDtObz0+y7VqJCaO2o+SPwHCvLFZh7xazvvoor2tA/hPz9ee7g==}
     dev: false
@@ -1151,7 +1166,6 @@ packages:
 
   /@types/node@20.5.9:
     resolution: {integrity: sha512-PcGNd//40kHAS3sTlzKB9C9XL4K0sTup8nbG5lC14kzEteTNuAFh9u5nA0o5TWnSG2r/JNPRXFVcHJIIeRlmqQ==}
-    dev: false
 
   /@types/prop-types@15.7.5:
     resolution: {integrity: sha512-JCB8C6SnDoQf0cNycqd/35A7MjcnK+ZTqE7judS6o7utxUCg6imJg3QK2qzHKszlTjcj2cn+NwMB2i96ubpj7w==}
@@ -2228,7 +2242,6 @@ packages:
 
   /graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
-    dev: false
 
   /graphemer@1.4.0:
     resolution: {integrity: sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==}

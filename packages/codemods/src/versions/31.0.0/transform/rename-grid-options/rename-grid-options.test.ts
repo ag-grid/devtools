@@ -1,8 +1,10 @@
 import { transformFile } from '@ag-grid-devtools/codemod-utils';
+import { type CodemodFsUtils } from '@ag-grid-devtools/types';
+import { fs as memfs, vol } from 'memfs';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test } from 'vitest';
 
 import renameGridOptions from './rename-grid-options';
 
@@ -21,6 +23,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -35,6 +38,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -50,6 +54,7 @@ describe('transforms input files correctly', () => {
         sourceFilename: inputPath,
         sourceType: 'module',
         applyDangerousEdits: false,
+        fs: createFsHelpers(memfs),
       });
       expect(actual).toEqual({ source: expected, errors: [] });
     });
@@ -68,6 +73,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -85,6 +91,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -100,6 +107,7 @@ describe('transforms input files correctly', () => {
         sourceFilename: inputPath,
         sourceType: 'module',
         applyDangerousEdits: false,
+        fs: createFsHelpers(memfs),
       });
       expect(actual).toEqual({ source: expected, errors: [] });
     });
@@ -117,6 +125,7 @@ describe('transforms input files correctly', () => {
         sourceFilename: inputPath,
         sourceType: 'module',
         applyDangerousEdits: false,
+        fs: createFsHelpers(memfs),
       });
       expect(actual).toEqual({ source: expected, errors: [] });
     });
@@ -132,6 +141,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: null,
@@ -151,6 +161,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: true,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       }
@@ -166,6 +177,7 @@ describe('transforms input files correctly', () => {
         sourceFilename: inputPath,
         sourceType: 'module',
         applyDangerousEdits: false,
+        fs: createFsHelpers(memfs),
       });
       expect(actual).toEqual({ source: expected, errors: [] });
     });
@@ -181,6 +193,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: null,
@@ -224,6 +237,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: true,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       }
@@ -239,6 +253,7 @@ describe('transforms input files correctly', () => {
         sourceFilename: inputPath,
         sourceType: 'module',
         applyDangerousEdits: false,
+        fs: createFsHelpers(memfs),
       });
       expect(actual).toEqual({ source: expected, errors: [] });
     });
@@ -253,6 +268,7 @@ describe('transforms input files correctly', () => {
         sourceFilename: inputPath,
         sourceType: 'module',
         applyDangerousEdits: false,
+        fs: createFsHelpers(memfs),
       });
       expect(actual).toEqual({ source: expected, errors: [] });
     });
@@ -267,6 +283,7 @@ describe('transforms input files correctly', () => {
         sourceFilename: inputPath,
         sourceType: 'module',
         applyDangerousEdits: false,
+        fs: createFsHelpers(memfs),
       });
       expect(actual).toEqual({ source: expected, errors: [] });
     });
@@ -282,6 +299,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: null,
@@ -301,6 +319,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: true,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       }
@@ -317,6 +336,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: null,
@@ -336,6 +356,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: true,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       }
@@ -355,6 +376,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -372,6 +394,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -387,6 +410,7 @@ describe('transforms input files correctly', () => {
         sourceFilename: inputPath,
         sourceType: 'module',
         applyDangerousEdits: false,
+        fs: createFsHelpers(memfs),
       });
       expect(actual).toEqual({ source: expected, errors: [] });
     });
@@ -401,6 +425,7 @@ describe('transforms input files correctly', () => {
         sourceFilename: inputPath,
         sourceType: 'module',
         applyDangerousEdits: false,
+        fs: createFsHelpers(memfs),
       });
       expect(actual).toEqual({ source: expected, errors: [] });
     });
@@ -420,6 +445,7 @@ describe('transforms input files correctly', () => {
             sourceFilename: inputPath,
             sourceType: 'module',
             applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({ source: expected, errors: [] });
         });
@@ -437,6 +463,7 @@ describe('transforms input files correctly', () => {
             sourceFilename: inputPath,
             sourceType: 'module',
             applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({ source: expected, errors: [] });
         });
@@ -456,6 +483,7 @@ describe('transforms input files correctly', () => {
             sourceFilename: inputPath,
             sourceType: 'module',
             applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({ source: expected, errors: [] });
         });
@@ -473,6 +501,7 @@ describe('transforms input files correctly', () => {
             sourceFilename: inputPath,
             sourceType: 'module',
             applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({ source: expected, errors: [] });
         });
@@ -493,6 +522,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -510,6 +540,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -526,6 +557,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: null,
@@ -545,6 +577,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: true,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       }
@@ -561,6 +594,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: null,
@@ -580,6 +614,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: true,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       }
@@ -598,6 +633,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -612,6 +648,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -628,6 +665,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: null,
@@ -648,6 +686,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: true,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       }
@@ -665,6 +704,7 @@ describe('transforms input files correctly', () => {
             sourceFilename: inputPath,
             sourceType: 'module',
             applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({
             source: null,
@@ -685,6 +725,7 @@ describe('transforms input files correctly', () => {
             sourceFilename: inputPath,
             sourceType: 'module',
             applyDangerousEdits: true,
+            fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({ source: expected, errors: [] });
         }
@@ -701,6 +742,7 @@ describe('transforms input files correctly', () => {
             sourceFilename: inputPath,
             sourceType: 'module',
             applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({
             source: null,
@@ -721,6 +763,7 @@ describe('transforms input files correctly', () => {
             sourceFilename: inputPath,
             sourceType: 'module',
             applyDangerousEdits: true,
+            fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({ source: expected, errors: [] });
         }
@@ -730,25 +773,28 @@ describe('transforms input files correctly', () => {
 
   describe('Angular', () => {
     describe('Inline template', () => {
-      test('Deprecation warning', () => {
-        const scenarioPath = join(
-          __dirname,
-          './scenarios/angular/inline-template/row-data-change-detection-strategy',
-        );
-        const inputPath = join(scenarioPath, 'input.component.ts');
-        const input = readFileSync(inputPath, 'utf-8');
-        const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
-          applyDangerousEdits: false,
-        });
-        expect(actual).toEqual({
-          source: null,
-          errors: [
-            new SyntaxError(
-              'Angular components are not yet fully supported via codemods and may require manual fixes',
-            ),
-          ],
+      describe('Deprecation warning', () => {
+        test('Grid component', () => {
+          const scenarioPath = join(
+            __dirname,
+            './scenarios/angular/inline-template/grid-component',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const input = readFileSync(inputPath, 'utf-8');
+          const actual = transformFile(input, [renameGridOptions], {
+            sourceFilename: inputPath,
+            sourceType: 'module',
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: null,
+            errors: [
+              new SyntaxError(
+                'Angular components are not yet fully supported via codemods and may require manual fixes',
+              ),
+            ],
+          });
         });
       });
 
@@ -765,31 +811,49 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
     });
 
-    describe('External template', () => {
-      test('Deprecation warning', () => {
-        const scenarioPath = join(
-          __dirname,
-          './scenarios/angular/external-template/row-data-change-detection-strategy',
-        );
-        const inputPath = join(scenarioPath, 'input.component.ts');
-        const input = readFileSync(inputPath, 'utf-8');
-        const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
-          applyDangerousEdits: false,
-        });
-        expect(actual).toEqual({
-          source: null,
-          errors: [
-            new SyntaxError(
-              'Angular components are not yet fully supported via codemods and may require manual fixes',
-            ),
-          ],
+    describe('External template file', () => {
+      afterEach(() => {
+        vol.reset();
+      });
+
+      describe('Deprecation warning', () => {
+        test('Grid component', () => {
+          const scenarioPath = join(
+            __dirname,
+            './scenarios/angular/external-template/grid-component',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const actual = transformFile(input, [renameGridOptions], {
+            sourceFilename: inputPath,
+            sourceType: 'module',
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: null,
+            errors: [
+              new SyntaxError(
+                'Angular components are not yet fully supported via codemods and may require manual fixes',
+              ),
+            ],
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
         });
       });
 
@@ -800,14 +864,20 @@ describe('transforms input files correctly', () => {
         );
         const inputPath = join(scenarioPath, 'input.component.ts');
         const outputPath = join(scenarioPath, 'output.component.ts');
+        const inputTemplatePath = join(scenarioPath, 'input.component.html');
         const outputTemplatePath = join(scenarioPath, 'output.component.html');
-        const input = readFileSync(inputPath, 'utf-8');
+        const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
         const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+        vol.fromJSON({
+          [inputTemplatePath]: inputTemplate,
+        });
+        const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: expected,
@@ -836,6 +906,7 @@ describe('transforms input files correctly', () => {
             sourceFilename: inputPath,
             sourceType: 'module',
             applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({
             source: expected,
@@ -864,6 +935,7 @@ describe('transforms input files correctly', () => {
             sourceFilename: inputPath,
             sourceType: 'module',
             applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({
             source: expected,
@@ -890,6 +962,7 @@ describe('transforms input files correctly', () => {
             sourceFilename: inputPath,
             sourceType: 'module',
             applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({
             source: null,
@@ -924,6 +997,7 @@ describe('transforms input files correctly', () => {
             sourceFilename: inputPath,
             sourceType: 'module',
             applyDangerousEdits: true,
+            fs: createFsHelpers(memfs),
           });
           expect(actual).toEqual({
             source: expected,
@@ -938,3 +1012,20 @@ describe('transforms input files correctly', () => {
     });
   });
 });
+
+function createFsHelpers(fs: typeof memfs): CodemodFsUtils {
+  return {
+    readFileSync,
+    writeFileSync,
+  };
+
+  function readFileSync(filename: string, encoding: 'utf-8'): string;
+  function readFileSync(filename: string, encoding: BufferEncoding): string | Buffer;
+  function readFileSync(filename: string, encoding: BufferEncoding): string | Buffer {
+    return fs.readFileSync(filename, encoding);
+  }
+
+  function writeFileSync(filename: string, data: string | Buffer): void {
+    return fs.writeFileSync(filename, data);
+  }
+}

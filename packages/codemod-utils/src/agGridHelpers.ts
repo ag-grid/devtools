@@ -13,7 +13,7 @@ import {
   type AstNode,
   type AstNodeVisitor,
   type AstTransformContext,
-  type FileMetadata,
+  type FsContext,
   type NodePath,
   type Types,
 } from '@ag-grid-devtools/ast';
@@ -634,7 +634,7 @@ export function isGridApiReference(
 
 export function getGridApiReferences(
   accessor: NodePath<Expression>,
-  context: AstTransformContext<VueComponentCliContext>,
+  context: AstTransformContext<FsContext & VueComponentCliContext>,
 ): Array<GridApiDefinition> | null {
   // Determine the ultimate referents of the accessor within the current scope,
   // bailing out if the accessor is invalid
@@ -823,14 +823,14 @@ function isAgGridJsxElementGridOptionsProp(
 
 export function getAngularGridApiReferences(
   accessorPaths: Array<AccessorPath>,
-  context: FileMetadata,
+  context: AstTransformContext<FsContext>,
 ): Array<AngularGridApiDefinition> | null {
   return getAngularPublicApiReferences(AG_GRID_ANGULAR_API_ACCESSOR_NAME, accessorPaths, context);
 }
 
 export function getAngularColumnApiReferences(
   accessorPaths: Array<AccessorPath>,
-  context: FileMetadata,
+  context: AstTransformContext<FsContext>,
 ): Array<AngularGridApiDefinition> | null {
   return getAngularPublicApiReferences(
     AG_GRID_ANGULAR_COLUMN_API_ACCESSOR_NAME,
@@ -842,7 +842,7 @@ export function getAngularColumnApiReferences(
 function getAngularPublicApiReferences(
   accessorName: string,
   accessorPaths: Array<AccessorPath>,
-  context: FileMetadata,
+  context: AstTransformContext<FsContext>,
 ): Array<AngularGridApiDefinition> | null {
   /*
     Angular grid API instances can be obtained via two separate methods:

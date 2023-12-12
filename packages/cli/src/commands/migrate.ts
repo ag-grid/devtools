@@ -1,8 +1,9 @@
 import codemod from '@ag-grid-devtools/codemods/src/versions/31.0.0/codemod';
 import versions from '@ag-grid-devtools/codemods/src/versions/manifest';
-import { type VersionManifest } from '@ag-grid-devtools/types';
+import { type CodemodFsUtils, type VersionManifest } from '@ag-grid-devtools/types';
 import { nonNull } from '@ag-grid-devtools/utils';
 import { createTwoFilesPatch } from 'diff';
+import gracefulFs from 'graceful-fs';
 import semver from 'semver';
 
 import { type CliEnv, type CliOptions } from '../types/cli';
@@ -272,6 +273,7 @@ async function migrate(
             { path: inputFilePath, source },
             {
               applyDangerousEdits,
+              fs: createFsHelpers(gracefulFs),
             },
           );
           const isUnchanged = updated === source;
@@ -372,6 +374,19 @@ function getUnifiedDiff(
   });
 }
 
-function getUnifiedDiffTimestamp(time: Date): string {
-  return time.toISOString().replace('T', ' ').replace('Z', ' +0000');
+function createFsHelpers(fs: typeof gracefulFs): CodemodFsUtils {
+  return {
+    readFileSync,
+    writeFileSync,
+  };
+
+  function readFileSync(filename: string, encoding: 'utf-8'): string;
+  function readFileSync(filename: string, encoding: BufferEncoding): string | Buffer;
+  function readFileSync(filename: string, encoding: BufferEncoding): string | Buffer {
+    return fs.readFileSync(filename, encoding);
+  }
+
+  function writeFileSync(filename: string, data: string | Buffer): void {
+    return fs.writeFileSync(filename, data);
+  }
 }

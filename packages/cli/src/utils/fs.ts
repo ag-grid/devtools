@@ -1,8 +1,11 @@
-import type { Stats } from 'node:fs';
-import { readdir, stat } from 'node:fs/promises';
+import gracefulFs, { type Stats } from 'graceful-fs';
 import { join, parse } from 'node:path';
+import { promisify } from 'node:util';
 
-export { readFile, stat, writeFile } from 'node:fs/promises';
+export const readdir = promisify(gracefulFs.readdir);
+export const readFile = promisify(gracefulFs.readFile);
+export const writeFile = promisify(gracefulFs.writeFile);
+export const stat = promisify(gracefulFs.stat);
 
 export function isFsErrorCode<T extends string>(
   error: unknown,

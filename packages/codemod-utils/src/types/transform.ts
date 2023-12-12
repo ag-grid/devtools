@@ -1,9 +1,11 @@
-import { ParserOptions } from '@ag-grid-devtools/ast';
+import { type ParserOptions } from '@ag-grid-devtools/ast';
+import { type CodemodFsUtils } from '@ag-grid-devtools/types';
 
 export type AstTransformOptions = ParserOptions &
   Required<Pick<ParserOptions, 'sourceFilename'>> &
-  AstTransformReporterOptions;
+  AstTransformCliOptions;
 
-export interface AstTransformReporterOptions {
+export interface AstTransformCliOptions {
   applyDangerousEdits: boolean;
+  fs: CodemodFsUtils;
 }
