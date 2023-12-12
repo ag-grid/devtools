@@ -57,6 +57,11 @@ export function transformJsFile(
   options: AstTransformOptions & Required<Pick<ParserOptions, 'sourceType'>>,
 ): AstTransformResult {
   const { applyDangerousEdits, fs, ...parserOptions } = options;
+  // Attempt to determine input file line endings, defaulting to the operating system default
+  const crlfLineEndings = source.includes('\r\n');
+  const lfLineEndings = !crlfLineEndings && source.includes('\n');
+  const lineTerminator = crlfLineEndings ? '\r\n' : lfLineEndings ? '\n' : undefined;
+  // Parse the source AST
   const ast = parse(source, {
     parser: {
       sourceFilename: parserOptions.sourceFilename,
@@ -70,6 +75,7 @@ export function transformJsFile(
       },
     },
   }) as ReturnType<typeof parseAst>;
+  // Transform the AST
   const uniqueErrors = new Map<string, SyntaxError>();
   const transformContext: AstTransformContext<AstCliContext> = {
     filename: parserOptions.sourceFilename,
@@ -83,8 +89,14 @@ export function transformJsFile(
     },
   };
   const transformedAst = transformAst(ast, transforms, transformContext, { source });
+  // If there were no modifications to the AST, return a null result
   if (!transformedAst && uniqueErrors.size === 0) return { source: null, errors: [] };
-  const transformedSource = transformedAst ? print(transformedAst).code : null;
+  // Print the transformed AST
+  const transformedSource = transformedAst
+    ? print(transformedAst, {
+        lineTerminator,
+      }).code
+    : null;
   return {
     source: transformedSource === source ? null : transformedSource,
     errors: Array.from(uniqueErrors.values()),
