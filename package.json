@@ -10,14 +10,14 @@
     "build": "pnpm run build:lib && pnpm run build:docs && pnpm run coverage",
     "build:lib": "pnpm run --recursive --parallel build",
     "build:docs": "typedoc",
-    "lint": "pnpm run '/^lint:.*/'",
+    "verify": "pnpm run /^\\(lint\\|test\\)$/",
+    "lint": "pnpm run /^lint:.*/ && pnpm run --recursive --parallel lint",
     "lint:eslint": "eslint --ext js,cjs,mjs,ts --max-warnings 0 .",
     "lint:typescript": "tsc --noEmit",
-    "verify": "pnpm run lint && pnpm run --recursive --parallel verify",
     "test": "vitest run",
+    "test:watch": "vitest watch",
     "coverage": "vitest run --coverage",
-    "coverage:report": "vitest run --coverage --config ./report.vitest.config.ts",
-    "watch:test": "vitest watch"
+    "coverage:report": "vitest run --coverage --config ./report.vitest.config.ts"
   },
   "peerDependencies": {
     "@vitest/coverage-v8": "^0.34",
