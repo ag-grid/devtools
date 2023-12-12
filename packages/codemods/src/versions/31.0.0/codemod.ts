@@ -17,7 +17,7 @@ const codemod: Codemod = function transform(
   const { path, source } = file;
   const { applyDangerousEdits, fs } = options;
   return transformFile(source, transforms, {
-    sourceFilename: path,
+    filename: path,
     applyDangerousEdits: Boolean(applyDangerousEdits),
     fs,
   });

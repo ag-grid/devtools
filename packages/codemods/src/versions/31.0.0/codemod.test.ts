@@ -167,6 +167,27 @@ describe('Retains line endings', () => {
   });
 });
 
+test('Supports legacy TypeScript cast expressions in non-TSX files', () => {
+  const input = `
+    import { Grid, GridOptions } from 'ag-grid-community';
+    const options = <GridOptions>{ foo: true };
+    new Grid(document.body, options);
+  `;
+  const expected = `
+    import { GridOptions, createGrid } from 'ag-grid-community';
+    const options = <GridOptions>{ foo: true };
+    const optionsApi = createGrid(document.body, options);
+  `;
+  const actual = codemod(
+    { path: './input.ts', source: input },
+    {
+      applyDangerousEdits: true,
+      fs: createFsHelpers(memfs),
+    },
+  );
+  expect(actual).toEqual({ source: expected, errors: [] });
+});
+
 function createFsHelpers(fs: typeof memfs): CodemodFsUtils {
   return {
     readFileSync,

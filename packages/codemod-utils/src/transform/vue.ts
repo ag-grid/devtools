@@ -5,12 +5,12 @@ import {
   type AstTransformWithOptions,
 } from '@ag-grid-devtools/ast';
 
-import { type AstTransformOptions } from '../types';
+import { type AstTransformJsOptions, type AstTransformOptions } from '../types';
 import {
   parseVueSfcComponent,
+  printVueTemplate,
   type AST,
   type VueTemplateNode,
-  printVueTemplate,
 } from '../vueHelpers';
 import { transformJsFile } from './js';
 
@@ -28,7 +28,7 @@ export function transformVueSfcFile(
     | AstTransform<AstCliContext & VueComponentCliContext>
     | AstTransformWithOptions<AstCliContext & VueComponentCliContext>
   >,
-  options: AstTransformOptions,
+  options: AstTransformOptions & AstTransformJsOptions,
 ): AstTransformResult {
   // Extract the different sections of the SFC
   const component = parseVueSfcComponent(source);
@@ -61,7 +61,11 @@ export function transformVueSfcFile(
       const [plugin, options] = Array.isArray(transform) ? transform : [transform, {}];
       return [plugin, { ...options, ...vueTransformOptions }];
     }),
-    { ...options, sourceType: options.sourceType || 'module' },
+    {
+      ...options,
+      sourceType: 'module',
+      jsx: false,
+    },
   );
   // Determine whether the template has been updated within the transform
   const updatedTemplate = vueTransformOptions.vue && vueTransformOptions.vue.template;

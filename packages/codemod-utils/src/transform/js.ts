@@ -13,50 +13,59 @@ import {
 } from '@ag-grid-devtools/ast';
 import { parse, print } from 'recast';
 
-import { type AstTransformOptions } from '../types';
+import {
+  type AstTransformJsOptions,
+  type AstTransformJsxOptions,
+  type AstTransformOptions,
+} from '../types';
 
-const PARSER_PLUGINS: Array<ParserPlugin> = ['jsx', 'typescript', 'decorators-legacy'];
+const JS_PARSER_PLUGINS: Array<ParserPlugin> = ['typescript', 'decorators-legacy'];
+const JSX_PARSER_PLUGINS: Array<ParserPlugin> = ['jsx', ...JS_PARSER_PLUGINS];
 
 export function transformJsScriptFile(
   source: string,
   transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>,
-  options: AstTransformOptions,
+  options: AstTransformOptions & AstTransformJsOptions & AstTransformJsxOptions,
 ): AstTransformResult {
   return transformJsFile(source, transforms, {
     ...options,
-    sourceType: options.sourceType || 'script',
+    sourceType: 'script',
   });
 }
 
 export function transformJsModuleFile(
   source: string,
   transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>,
-  options: AstTransformOptions,
+  options: AstTransformOptions & AstTransformJsOptions & AstTransformJsxOptions,
 ): AstTransformResult {
   return transformJsFile(source, transforms, {
     ...options,
-    sourceType: options.sourceType || 'module',
+    sourceType: 'module',
   });
 }
 
 export function transformJsUnknownFile(
   source: string,
   transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>,
-  options: AstTransformOptions,
+  options: AstTransformOptions & AstTransformJsOptions & AstTransformJsxOptions,
 ): AstTransformResult {
   return transformJsFile(source, transforms, {
     ...options,
     // Determine whether module/script based on file contents
-    sourceType: options.sourceType || 'unambiguous',
+    sourceType: 'unambiguous',
   });
 }
 
 export function transformJsFile(
   source: string,
   transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>,
-  options: AstTransformOptions & Required<Pick<ParserOptions, 'sourceType'>>,
+  options: AstTransformOptions &
+    AstTransformJsOptions &
+    AstTransformJsxOptions &
+    Required<Pick<ParserOptions, 'sourceType'>>,
 ): AstTransformResult {
-  const { applyDangerousEdits, fs, ...parserOptions } = options;
+  const { filename, applyDangerousEdits, fs, jsx, sourceType, js: parserOptions = {} } = options;
+  const defaultPlugins = jsx ? JSX_PARSER_PLUGINS : JS_PARSER_PLUGINS;
   // Attempt to determine input file line endings, defaulting to the operating system default
   const crlfLineEndings = source.includes('\r\n');
   const lfLineEndings = !crlfLineEndings && source.includes('\n');
@@ -64,12 +73,14 @@ export function transformJsFile(
   // Parse the source AST
   const ast = parse(source, {
     parser: {
-      sourceFilename: parserOptions.sourceFilename,
+      sourceFilename: filename,
       parse(source: string): ReturnType<typeof parseAst> {
         const { plugins } = parserOptions;
         return parseAst(source, {
           ...parserOptions,
-          plugins: plugins ? [...PARSER_PLUGINS, ...plugins] : PARSER_PLUGINS,
+          sourceType,
+          sourceFilename: filename,
+          plugins: plugins ? [...defaultPlugins, ...plugins] : defaultPlugins,
           tokens: true,
         });
       },
@@ -78,7 +89,7 @@ export function transformJsFile(
   // Transform the AST
   const uniqueErrors = new Map<string, SyntaxError>();
   const transformContext: AstTransformContext<AstCliContext> = {
-    filename: parserOptions.sourceFilename,
+    filename,
     opts: {
       applyDangerousEdits,
       warn(node: NodePath<AstNode> | null, message: string) {

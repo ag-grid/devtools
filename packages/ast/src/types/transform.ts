@@ -17,7 +17,7 @@ export interface AstTransformContext<S extends object = object> extends FileMeta
 }
 
 export interface FileMetadata {
-  filename: string | undefined;
+  filename: string;
 }
 
 export interface AstCliContext extends FsContext {
