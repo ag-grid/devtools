@@ -18,8 +18,7 @@ describe('transforms input files correctly', () => {
     const input = readFileSync(inputPath, 'utf-8');
     const expected = readFileSync(outputPath, 'utf-8');
     const actual = transformFile(input, [renameGridApiMethods], {
-      sourceFilename: inputPath,
-      sourceType: 'module',
+      filename: inputPath,
       applyDangerousEdits: false,
       fs: createFsHelpers(memfs),
     });
@@ -33,8 +32,7 @@ describe('transforms input files correctly', () => {
     const input = readFileSync(inputPath, 'utf-8');
     const expected = readFileSync(outputPath, 'utf-8');
     const actual = transformFile(input, [renameGridApiMethods], {
-      sourceFilename: inputPath,
-      sourceType: 'module',
+      filename: inputPath,
       applyDangerousEdits: false,
       fs: createFsHelpers(memfs),
     });
@@ -48,8 +46,7 @@ describe('transforms input files correctly', () => {
     const input = readFileSync(inputPath, 'utf-8');
     const expected = readFileSync(outputPath, 'utf-8');
     const actual = transformFile(input, [renameGridApiMethods], {
-      sourceFilename: inputPath,
-      sourceType: 'module',
+      filename: inputPath,
       applyDangerousEdits: false,
       fs: createFsHelpers(memfs),
     });
@@ -63,8 +60,7 @@ describe('transforms input files correctly', () => {
     const input = readFileSync(inputPath, 'utf-8');
     const expected = readFileSync(outputPath, 'utf-8');
     const actual = transformFile(input, [renameGridApiMethods], {
-      sourceFilename: inputPath,
-      sourceType: 'module',
+      filename: inputPath,
       applyDangerousEdits: false,
       fs: createFsHelpers(memfs),
     });
@@ -78,8 +74,7 @@ describe('transforms input files correctly', () => {
     const input = readFileSync(inputPath, 'utf-8');
     const expected = readFileSync(outputPath, 'utf-8');
     const actual = transformFile(input, [renameGridApiMethods], {
-      sourceFilename: inputPath,
-      sourceType: 'module',
+      filename: inputPath,
       applyDangerousEdits: false,
       fs: createFsHelpers(memfs),
     });

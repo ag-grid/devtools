@@ -20,8 +20,7 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -35,8 +34,7 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -51,8 +49,7 @@ describe('transforms input files correctly', () => {
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
       const actual = transformFile(input, [renameGridOptions], {
-        sourceFilename: inputPath,
-        sourceType: 'module',
+        filename: inputPath,
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
@@ -70,8 +67,7 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -88,8 +84,7 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -104,8 +99,7 @@ describe('transforms input files correctly', () => {
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
       const actual = transformFile(input, [renameGridOptions], {
-        sourceFilename: inputPath,
-        sourceType: 'module',
+        filename: inputPath,
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
@@ -122,8 +116,7 @@ describe('transforms input files correctly', () => {
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
       const actual = transformFile(input, [renameGridOptions], {
-        sourceFilename: inputPath,
-        sourceType: 'module',
+        filename: inputPath,
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
@@ -138,8 +131,7 @@ describe('transforms input files correctly', () => {
       const expected = readFileSync(outputPath, 'utf-8');
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -158,8 +150,7 @@ describe('transforms input files correctly', () => {
       }
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
@@ -174,8 +165,7 @@ describe('transforms input files correctly', () => {
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
       const actual = transformFile(input, [renameGridOptions], {
-        sourceFilename: inputPath,
-        sourceType: 'module',
+        filename: inputPath,
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
@@ -190,8 +180,7 @@ describe('transforms input files correctly', () => {
       const expected = readFileSync(outputPath, 'utf-8');
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -234,8 +223,7 @@ describe('transforms input files correctly', () => {
       }
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
@@ -250,8 +238,7 @@ describe('transforms input files correctly', () => {
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
       const actual = transformFile(input, [renameGridOptions], {
-        sourceFilename: inputPath,
-        sourceType: 'module',
+        filename: inputPath,
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
@@ -265,8 +252,7 @@ describe('transforms input files correctly', () => {
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
       const actual = transformFile(input, [renameGridOptions], {
-        sourceFilename: inputPath,
-        sourceType: 'module',
+        filename: inputPath,
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
@@ -280,8 +266,7 @@ describe('transforms input files correctly', () => {
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
       const actual = transformFile(input, [renameGridOptions], {
-        sourceFilename: inputPath,
-        sourceType: 'module',
+        filename: inputPath,
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
@@ -296,8 +281,7 @@ describe('transforms input files correctly', () => {
       const expected = readFileSync(outputPath, 'utf-8');
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -316,8 +300,7 @@ describe('transforms input files correctly', () => {
       }
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
@@ -333,8 +316,7 @@ describe('transforms input files correctly', () => {
       const expected = readFileSync(outputPath, 'utf-8');
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -353,8 +335,7 @@ describe('transforms input files correctly', () => {
       }
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
@@ -373,8 +354,7 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -391,8 +371,7 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -407,8 +386,7 @@ describe('transforms input files correctly', () => {
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
       const actual = transformFile(input, [renameGridOptions], {
-        sourceFilename: inputPath,
-        sourceType: 'module',
+        filename: inputPath,
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
@@ -422,8 +400,7 @@ describe('transforms input files correctly', () => {
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
       const actual = transformFile(input, [renameGridOptions], {
-        sourceFilename: inputPath,
-        sourceType: 'module',
+        filename: inputPath,
         applyDangerousEdits: false,
         fs: createFsHelpers(memfs),
       });
@@ -442,8 +419,7 @@ describe('transforms input files correctly', () => {
           const input = readFileSync(inputPath, 'utf-8');
           const expected = readFileSync(outputPath, 'utf-8');
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -460,8 +436,7 @@ describe('transforms input files correctly', () => {
           const input = readFileSync(inputPath, 'utf-8');
           const expected = readFileSync(outputPath, 'utf-8');
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -480,8 +455,7 @@ describe('transforms input files correctly', () => {
           const input = readFileSync(inputPath, 'utf-8');
           const expected = readFileSync(outputPath, 'utf-8');
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -498,8 +472,7 @@ describe('transforms input files correctly', () => {
           const input = readFileSync(inputPath, 'utf-8');
           const expected = readFileSync(outputPath, 'utf-8');
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -519,8 +492,7 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -537,8 +509,7 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -554,8 +525,7 @@ describe('transforms input files correctly', () => {
       const expected = readFileSync(outputPath, 'utf-8');
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -574,8 +544,7 @@ describe('transforms input files correctly', () => {
       }
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
@@ -591,8 +560,7 @@ describe('transforms input files correctly', () => {
       const expected = readFileSync(outputPath, 'utf-8');
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -611,8 +579,7 @@ describe('transforms input files correctly', () => {
       }
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
@@ -630,8 +597,7 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -645,8 +611,7 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -662,8 +627,7 @@ describe('transforms input files correctly', () => {
       const expected = readFileSync(outputPath, 'utf-8');
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -683,8 +647,7 @@ describe('transforms input files correctly', () => {
       }
       {
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: true,
           fs: createFsHelpers(memfs),
         });
@@ -701,8 +664,7 @@ describe('transforms input files correctly', () => {
         const expected = readFileSync(outputPath, 'utf-8');
         {
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -722,8 +684,7 @@ describe('transforms input files correctly', () => {
         }
         {
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: true,
             fs: createFsHelpers(memfs),
           });
@@ -739,8 +700,7 @@ describe('transforms input files correctly', () => {
         const expected = readFileSync(outputPath, 'utf-8');
         {
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -760,8 +720,7 @@ describe('transforms input files correctly', () => {
         }
         {
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: true,
             fs: createFsHelpers(memfs),
           });
@@ -782,8 +741,7 @@ describe('transforms input files correctly', () => {
           const inputPath = join(scenarioPath, 'input.component.ts');
           const input = readFileSync(inputPath, 'utf-8');
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -801,8 +759,7 @@ describe('transforms input files correctly', () => {
           const inputPath = join(scenarioPath, 'input.component.ts');
           const input = readFileSync(inputPath, 'utf-8');
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -827,8 +784,7 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -857,8 +813,7 @@ describe('transforms input files correctly', () => {
           });
           const input = readFileSync(inputPath, 'utf-8');
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -886,8 +841,7 @@ describe('transforms input files correctly', () => {
           });
           const input = readFileSync(inputPath, 'utf-8');
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -922,8 +876,7 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const actual = transformFile(input, [renameGridOptions], {
-          sourceFilename: inputPath,
-          sourceType: 'module',
+          filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
@@ -951,8 +904,7 @@ describe('transforms input files correctly', () => {
           const input = readFileSync(inputPath, 'utf-8');
           const expected = readFileSync(outputPath, 'utf-8');
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -980,8 +932,7 @@ describe('transforms input files correctly', () => {
           const input = readFileSync(inputPath, 'utf-8');
           const expected = readFileSync(outputPath, 'utf-8');
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -1007,8 +958,7 @@ describe('transforms input files correctly', () => {
         const expected = readFileSync(outputPath, 'utf-8');
         {
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           });
@@ -1042,8 +992,7 @@ describe('transforms input files correctly', () => {
         }
         {
           const actual = transformFile(input, [renameGridOptions], {
-            sourceFilename: inputPath,
-            sourceType: 'module',
+            filename: inputPath,
             applyDangerousEdits: true,
             fs: createFsHelpers(memfs),
           });

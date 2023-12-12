@@ -46,7 +46,7 @@ export function parseAngularComponentTemplate(
   const templateSource = getAngularComponentMetadataTemplateSource(componentMetadata, context);
   if (!templateSource) return null;
   return parse(templateSource, {
-    filePath: filePath,
+    filePath,
     suppressParseErrors: false,
   });
 }
@@ -72,7 +72,7 @@ function getAngularComponentMetadataTemplateSource(
     // FIXME: confirm assumptions on what constitutes a valid Angular templateUrl
     // FIXME: warn when unable to load Angular component template
     if (!templateUrl || !templateUrl.startsWith('.')) return null;
-    const currentPath = context.filename ? path.dirname(context.filename) : '.';
+    const currentPath = path.dirname(context.filename);
     const templatePath = path.join(currentPath, templateUrl);
     const templateSource = (() => {
       const { fs } = context.opts;
@@ -82,7 +82,7 @@ function getAngularComponentMetadataTemplateSource(
         throw new Error(
           [
             `Failed to load Angular component template: ${templatePath}`,
-            ...(context.filename ? [`  in component ${context.filename}`] : []),
+            `  in component ${context.filename}`,
           ].join('\n'),
           {
             cause: error,
