@@ -45,7 +45,8 @@
     "@ag-grid-devtools/utils": "workspace:*"
   },
   "devDependencies": {
-    "@ag-grid-devtools/build-config": "workspace:*"
+    "@ag-grid-devtools/build-config": "workspace:*",
+    "memfs": "4.6.0"
   },
   "peerDependencies": {
     "eslint": "^8",

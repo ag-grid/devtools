@@ -1,6 +1,7 @@
 import {
   parseAst,
   transformAst,
+  type AstCliContext,
   type AstNode,
   type AstTransform,
   type AstTransformContext,
@@ -9,7 +10,6 @@ import {
   type NodePath,
   type ParserOptions,
   type ParserPlugin,
-  AstCliContext,
 } from '@ag-grid-devtools/ast';
 import { parse, print } from 'recast';
 
@@ -56,7 +56,7 @@ export function transformJsFile(
   transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>,
   options: AstTransformOptions & Required<Pick<ParserOptions, 'sourceType'>>,
 ): AstTransformResult {
-  const { applyDangerousEdits, ...parserOptions } = options;
+  const { applyDangerousEdits, fs, ...parserOptions } = options;
   const ast = parse(source, {
     parser: {
       sourceFilename: parserOptions.sourceFilename,
@@ -79,6 +79,7 @@ export function transformJsFile(
         const error = node ? node.buildCodeFrameError(message) : new SyntaxError(message);
         uniqueErrors.set(error.message, error);
       },
+      fs,
     },
   };
   const transformedAst = transformAst(ast, transforms, transformContext, { source });

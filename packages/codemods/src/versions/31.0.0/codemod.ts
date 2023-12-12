@@ -12,13 +12,14 @@ const transforms = transformsManifest.map(({ transform }) => transform);
 
 const codemod: Codemod = function transform(
   file: CodemodInput,
-  options?: CodemodOptions,
+  options: CodemodOptions,
 ): CodemodResult {
   const { path, source } = file;
-  const applyDangerousEdits = options ? options.applyDangerousEdits : false;
+  const { applyDangerousEdits, fs } = options;
   return transformFile(source, transforms, {
     sourceFilename: path,
     applyDangerousEdits: Boolean(applyDangerousEdits),
+    fs,
   });
 };
 

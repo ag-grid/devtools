@@ -1,6 +1,7 @@
 import {
   getNamedModuleImportExpression,
-  type FileMetadata,
+  type AstTransformContext,
+  type FsContext,
   type NodePath,
   type Types,
 } from '@ag-grid-devtools/ast';
@@ -15,7 +16,6 @@ import {
   type TmplAstNode,
 } from '@angular/compiler';
 import { parse } from '@angular-eslint/template-parser';
-import fs from 'node:fs';
 import path from 'node:path';
 
 export interface TmplAST extends ReturnType<typeof parse> {
@@ -38,7 +38,7 @@ const ANGULAR_VIEW_CHILD_DECORATOR_IMPORT_NAME = 'ViewChild';
 
 export function parseAngularComponentTemplate(
   component: NodePath<Class>,
-  context: FileMetadata,
+  context: AstTransformContext<FsContext>,
 ): TmplAST | null {
   const { filename: filePath = './component.html' } = context;
   const componentMetadata = getAngularComponentMetadata(component);
@@ -53,7 +53,7 @@ export function parseAngularComponentTemplate(
 
 function getAngularComponentMetadataTemplateSource(
   metadata: NodePath<ObjectExpression>,
-  context: FileMetadata,
+  context: AstTransformContext<FsContext>,
 ): string | null {
   const templateValue = getAngularComponentMetadataNamedFieldValue(
     metadata,
@@ -75,6 +75,7 @@ function getAngularComponentMetadataTemplateSource(
     const currentPath = context.filename ? path.dirname(context.filename) : '.';
     const templatePath = path.join(currentPath, templateUrl);
     const templateSource = (() => {
+      const { fs } = context.opts;
       try {
         return fs.readFileSync(templatePath, 'utf-8');
       } catch (error) {
