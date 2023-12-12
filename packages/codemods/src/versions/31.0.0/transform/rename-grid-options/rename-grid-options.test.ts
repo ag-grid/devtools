@@ -774,6 +774,25 @@ describe('transforms input files correctly', () => {
   describe('Angular', () => {
     describe('Inline template', () => {
       describe('Deprecation warning', () => {
+        test('Unrelated components', () => {
+          const scenarioPath = join(
+            __dirname,
+            './scenarios/angular/inline-template/unrelated-components',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const input = readFileSync(inputPath, 'utf-8');
+          const actual = transformFile(input, [renameGridOptions], {
+            sourceFilename: inputPath,
+            sourceType: 'module',
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: null,
+            errors: [],
+          });
+        });
+
         test('Grid component', () => {
           const scenarioPath = join(
             __dirname,
@@ -823,6 +842,35 @@ describe('transforms input files correctly', () => {
       });
 
       describe('Deprecation warning', () => {
+        test('Unrelated components', () => {
+          const scenarioPath = join(
+            __dirname,
+            './scenarios/angular/external-template/unrelated-components',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const actual = transformFile(input, [renameGridOptions], {
+            sourceFilename: inputPath,
+            sourceType: 'module',
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: null,
+            errors: [],
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
         test('Grid component', () => {
           const scenarioPath = join(
             __dirname,
