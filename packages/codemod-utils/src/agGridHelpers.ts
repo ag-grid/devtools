@@ -352,7 +352,9 @@ export function visitGridOptionsProperties<
     // Traverse Angular grid components
     Class(path, context) {
       const template = parseAngularComponentTemplate(path, context);
-      if (!template) return null;
+      if (!template) return;
+      const gridElements = findNamedAngularTemplateElements(template, AG_GRID_ANGULAR_ELEMENT_NAME);
+      if (gridElements.length === 0) return;
       // FIXME: Rename deprecated grid options in Angular components
       context.opts.warn(
         null,
