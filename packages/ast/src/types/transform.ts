@@ -1,3 +1,4 @@
+import { type CodemodFsUtils } from '@ag-grid-devtools/types';
 import type { NodePath, PluginObj, PluginPass, Visitor } from '@babel/core';
 
 import { type AstNode } from './ast';
@@ -19,9 +20,13 @@ export interface FileMetadata {
   filename: string | undefined;
 }
 
-export interface AstCliContext {
+export interface AstCliContext extends FsContext {
   applyDangerousEdits: boolean;
   warn(node: NodePath<AstNode> | null, message: string): void;
+}
+
+export interface FsContext {
+  fs: CodemodFsUtils;
 }
 
 export type AstTransformResult = { source: string | null; errors: Array<Error> };

@@ -1,4 +1,6 @@
 import { transformFile } from '@ag-grid-devtools/codemod-utils';
+import { type CodemodFsUtils } from '@ag-grid-devtools/types';
+import { fs as memfs } from 'memfs';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +23,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -35,6 +38,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -51,6 +55,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -69,6 +74,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -83,6 +89,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -99,6 +106,7 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
@@ -116,9 +124,27 @@ describe('transforms input files correctly', () => {
           sourceFilename: inputPath,
           sourceType: 'module',
           applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
         });
         expect(actual).toEqual({ source: expected, errors: [] });
       });
     });
   });
 });
+
+function createFsHelpers(fs: typeof memfs): CodemodFsUtils {
+  return {
+    readFileSync,
+    writeFileSync,
+  };
+
+  function readFileSync(filename: string, encoding: 'utf-8'): string;
+  function readFileSync(filename: string, encoding: BufferEncoding): string | Buffer;
+  function readFileSync(filename: string, encoding: BufferEncoding): string | Buffer {
+    return fs.readFileSync(filename, encoding);
+  }
+
+  function writeFileSync(filename: string, data: string | Buffer): void {
+    return fs.writeFileSync(filename, data);
+  }
+}

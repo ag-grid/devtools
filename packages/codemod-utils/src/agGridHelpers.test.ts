@@ -6,11 +6,14 @@ import {
   pattern as p,
   AccessorKey,
   type AccessorPath,
-  type Types,
+  type AstTransformContext,
+  type FsContext,
   type NodePath,
+  type Types,
 } from '@ag-grid-devtools/ast';
+import { type CodemodFsUtils } from '@ag-grid-devtools/types';
 import { unreachable } from '@ag-grid-devtools/utils';
-import { type fs, vol } from 'memfs';
+import { fs as memfs, vol } from 'memfs';
 import { describe, expect, vi, test, beforeEach, afterEach } from 'vitest';
 
 import {
@@ -61,7 +64,10 @@ describe(getGridApiReferences, () => {
       const statements = program.get('body');
       const finalStatement = statements[statements.length - 1];
       const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-      const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.js', { fs: memfs }),
+      );
       const actual =
         gridApis &&
         gridApis.map((gridApi) =>
@@ -81,7 +87,10 @@ describe(getGridApiReferences, () => {
       const statements = program.get('body');
       const finalStatement = statements[statements.length - 1];
       const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-      const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.js', { fs: memfs }),
+      );
       const actual =
         gridApis &&
         gridApis.map((gridApi) =>
@@ -101,7 +110,10 @@ describe(getGridApiReferences, () => {
       const statements = program.get('body');
       const finalStatement = statements[statements.length - 1];
       const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-      const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.js', { fs: memfs }),
+      );
       const actual =
         gridApis &&
         gridApis.map((gridApi) =>
@@ -122,7 +134,10 @@ describe(getGridApiReferences, () => {
       const statements = program.get('body');
       const finalStatement = statements[statements.length - 1];
       const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-      const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.js', { fs: memfs }),
+      );
       const actual =
         gridApis &&
         gridApis.map((gridApi) =>
@@ -142,7 +157,10 @@ describe(getGridApiReferences, () => {
       const statements = program.get('body');
       const finalStatement = statements[statements.length - 1];
       const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-      const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.js', { fs: memfs }),
+      );
       const actual =
         gridApis &&
         gridApis.map((gridApi) =>
@@ -163,7 +181,10 @@ describe(getGridApiReferences, () => {
       const statements = program.get('body');
       const finalStatement = statements[statements.length - 1];
       const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-      const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.js', { fs: memfs }),
+      );
       const actual =
         gridApis &&
         gridApis.map((gridApi) =>
@@ -182,7 +203,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -201,7 +225,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -220,7 +247,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -239,7 +269,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -258,7 +291,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -277,7 +313,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -296,7 +335,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -315,7 +357,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -334,7 +379,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -354,7 +402,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -373,7 +424,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -392,7 +446,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -411,7 +468,10 @@ describe(getGridApiReferences, () => {
         const statements = program.get('body');
         const finalStatement = statements[statements.length - 1];
         const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -448,7 +508,10 @@ describe(getGridApiReferences, () => {
       } = matchNode(({ gridApi }) => ast.expression`${gridApi}.resetColumnState()`, {
         gridApi: p.expression(),
       }).find(program)!;
-      const gridApis = getGridApiReferences(gridApi, { filename: './app.jsx', opts: {} });
+      const gridApis = getGridApiReferences(
+        gridApi,
+        createTransformContext('./app.jsx', { fs: memfs }),
+      );
       const actual =
         gridApis &&
         gridApis.map((gridApi) =>
@@ -493,7 +556,10 @@ describe(getGridApiReferences, () => {
       } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
         api: p.expression(),
       }).find(program)!;
-      const gridApis = getGridApiReferences(reference, { filename: './app.jsx', opts: {} });
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.jsx', { fs: memfs }),
+      );
       const actual =
         gridApis &&
         gridApis.map((gridApi) =>
@@ -539,7 +605,10 @@ describe(getGridApiReferences, () => {
       } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
         api: p.expression(),
       }).find(program)!;
-      const gridApis = getGridApiReferences(reference, { filename: './app.jsx', opts: {} });
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.jsx', { fs: memfs }),
+      );
       const actual =
         gridApis &&
         gridApis.map((gridApi) =>
@@ -584,7 +653,10 @@ describe(getGridApiReferences, () => {
       } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
         api: p.expression(),
       }).find(program)!;
-      const gridApis = getGridApiReferences(reference, { filename: './app.jsx', opts: {} });
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.jsx', { fs: memfs }),
+      );
       const actual =
         gridApis &&
         gridApis.map((gridApi) =>
@@ -630,7 +702,10 @@ describe(getGridApiReferences, () => {
       } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
         api: p.expression(),
       }).find(program)!;
-      const gridApis = getGridApiReferences(reference, { filename: './app.jsx', opts: {} });
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.jsx', { fs: memfs }),
+      );
       const actual =
         gridApis &&
         gridApis.map((gridApi) =>
@@ -675,7 +750,10 @@ describe(getGridApiReferences, () => {
       } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
         api: p.expression(),
       }).find(program)!;
-      const gridApis = getGridApiReferences(reference, { filename: './app.jsx', opts: {} });
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.jsx', { fs: memfs }),
+      );
       const actual =
         gridApis &&
         gridApis.map((gridApi) =>
@@ -745,10 +823,10 @@ describe(getGridApiReferences, () => {
           } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
             api: p.expression(),
           }).find(program)!;
-          const gridApis = getGridApiReferences(reference, {
-            filename: './app.component.ts',
-            opts: {},
-          });
+          const gridApis = getGridApiReferences(
+            reference,
+            createTransformContext('./app.component.ts', { fs: memfs }),
+          );
           const actual =
             gridApis &&
             gridApis.map((gridApi) =>
@@ -824,10 +902,10 @@ describe(getGridApiReferences, () => {
           } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
             api: p.expression(),
           }).find(program)!;
-          const gridApis = getGridApiReferences(reference, {
-            filename: './app.component.ts',
-            opts: {},
-          });
+          const gridApis = getGridApiReferences(
+            reference,
+            createTransformContext('./app.component.ts', { fs: memfs }),
+          );
           const actual =
             gridApis &&
             gridApis.map((gridApi) =>
@@ -871,48 +949,10 @@ describe(getGridApiReferences, () => {
               </div>
             `,
           });
-
-          vi.mock('fs', async function mockFs() {
-            const memfs = await vi.importActual<{ fs: typeof fs }>('memfs');
-            const module = memfs.fs;
-            const exports = Object.create(module, {
-              default: {
-                get() {
-                  return module;
-                },
-              },
-            });
-            return exports;
-          });
-          vi.mock('node:fs', async function mockFs() {
-            const memfs = await vi.importActual<{ fs: typeof fs }>('memfs');
-            const module = memfs.fs;
-            const exports = Object.create(module, {
-              default: {
-                get() {
-                  return module;
-                },
-              },
-            });
-            return exports;
-          });
-          vi.mock('node:fs/promises', async function mockFs() {
-            const memfs = await vi.importActual<{ fs: typeof fs }>('memfs');
-            const module = memfs.fs.promises;
-            const exports = Object.create(module, {
-              default: {
-                get() {
-                  return module;
-                },
-              },
-            });
-            return exports;
-          });
         });
 
         afterEach(() => {
           vol.reset();
-          vi.resetAllMocks();
         });
 
         test('id-based element binding', () => {
@@ -953,10 +993,10 @@ describe(getGridApiReferences, () => {
           } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
             api: p.expression(),
           }).find(program)!;
-          const gridApis = getGridApiReferences(reference, {
-            filename: './app.component.ts',
-            opts: {},
-          });
+          const gridApis = getGridApiReferences(
+            reference,
+            createTransformContext('./app.component.ts', { fs: memfs }),
+          );
           const actual =
             gridApis &&
             gridApis.map((gridApi) =>
@@ -1030,10 +1070,10 @@ describe(getGridApiReferences, () => {
           } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
             api: p.expression(),
           }).find(program)!;
-          const gridApis = getGridApiReferences(reference, {
-            filename: './app.component.ts',
-            opts: {},
-          });
+          const gridApis = getGridApiReferences(
+            reference,
+            createTransformContext('./app.component.ts', { fs: memfs }),
+          );
           const actual =
             gridApis &&
             gridApis.map((gridApi) =>
@@ -1105,10 +1145,10 @@ describe(getGridApiReferences, () => {
           } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
             api: p.expression(),
           }).find(program)!;
-          const gridApis = getGridApiReferences(reference, {
-            filename: './app.component.ts',
-            opts: {},
-          });
+          const gridApis = getGridApiReferences(
+            reference,
+            createTransformContext('./app.component.ts', { fs: memfs }),
+          );
           const actual =
             gridApis &&
             gridApis.map((gridApi) =>
@@ -1181,10 +1221,10 @@ describe(getGridApiReferences, () => {
           } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
             api: p.expression(),
           }).find(program)!;
-          const gridApis = getGridApiReferences(reference, {
-            filename: './app.component.ts',
-            opts: {},
-          });
+          const gridApis = getGridApiReferences(
+            reference,
+            createTransformContext('./app.component.ts', { fs: memfs }),
+          );
           const actual =
             gridApis &&
             gridApis.map((gridApi) =>
@@ -1257,10 +1297,10 @@ describe(getGridApiReferences, () => {
           } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
             api: p.expression(),
           }).find(program)!;
-          const gridApis = getGridApiReferences(reference, {
-            filename: './app.component.ts',
-            opts: {},
-          });
+          const gridApis = getGridApiReferences(
+            reference,
+            createTransformContext('./app.component.ts', { fs: memfs }),
+          );
           const actual =
             gridApis &&
             gridApis.map((gridApi) =>
@@ -1333,10 +1373,10 @@ describe(getGridApiReferences, () => {
           } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
             api: p.expression(),
           }).find(program)!;
-          const gridApis = getGridApiReferences(reference, {
-            filename: './app.component.ts',
-            opts: {},
-          });
+          const gridApis = getGridApiReferences(
+            reference,
+            createTransformContext('./app.component.ts', { fs: memfs }),
+          );
           const actual =
             gridApis &&
             gridApis.map((gridApi) =>
@@ -1409,10 +1449,10 @@ describe(getGridApiReferences, () => {
           } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
             api: p.expression(),
           }).find(program)!;
-          const gridApis = getGridApiReferences(reference, {
-            filename: './app.component.ts',
-            opts: {},
-          });
+          const gridApis = getGridApiReferences(
+            reference,
+            createTransformContext('./app.component.ts', { fs: memfs }),
+          );
           const actual =
             gridApis &&
             gridApis.map((gridApi) =>
@@ -1491,10 +1531,10 @@ describe(getGridApiReferences, () => {
           } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
             api: p.expression(),
           }).find(program)!;
-          const gridApis = getGridApiReferences(reference, {
-            filename: './app.component.ts',
-            opts: {},
-          });
+          const gridApis = getGridApiReferences(
+            reference,
+            createTransformContext('./app.component.ts', { fs: memfs }),
+          );
           const actual =
             gridApis &&
             gridApis.map((gridApi) =>
@@ -1571,7 +1611,10 @@ describe(getGridApiReferences, () => {
         } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
           api: p.expression(),
         }).find(program)!;
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -1640,7 +1683,10 @@ describe(getGridApiReferences, () => {
         } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
           api: p.expression(),
         }).find(program)!;
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -1709,7 +1755,10 @@ describe(getGridApiReferences, () => {
         } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
           api: p.expression(),
         }).find(program)!;
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -1785,7 +1834,10 @@ describe(getGridApiReferences, () => {
         } = matchNode(({ api }) => ast.expression`${api}.resetColumnState()`, {
           api: p.expression(),
         }).find(program)!;
-        const gridApis = getGridApiReferences(reference, { filename: './app.js', opts: {} });
+        const gridApis = getGridApiReferences(
+          reference,
+          createTransformContext('./app.js', { fs: memfs }),
+        );
         const actual =
           gridApis &&
           gridApis.map((gridApi) =>
@@ -1920,4 +1972,36 @@ function formatPropertyAccessorKey(
 ): string {
   if (computed) return `[${generate(key.node)}]`;
   return generate(key.node);
+}
+
+function createTransformContext(
+  filename: string,
+  options: {
+    fs: typeof memfs;
+  },
+): AstTransformContext<FsContext> {
+  const { fs } = options;
+  return {
+    filename,
+    opts: {
+      fs: createFsHelpers(fs),
+    },
+  };
+}
+
+function createFsHelpers(fs: typeof memfs): CodemodFsUtils {
+  return {
+    readFileSync,
+    writeFileSync,
+  };
+
+  function readFileSync(filename: string, encoding: 'utf-8'): string;
+  function readFileSync(filename: string, encoding: BufferEncoding): string | Buffer;
+  function readFileSync(filename: string, encoding: BufferEncoding): string | Buffer {
+    return fs.readFileSync(filename, encoding);
+  }
+
+  function writeFileSync(filename: string, data: string | Buffer): void {
+    return fs.writeFileSync(filename, data);
+  }
 }

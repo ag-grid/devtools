@@ -8,7 +8,7 @@ import { IOlympicData } from './interfaces';
 
 @Component({
   selector: 'my-app',
-  templateUrl: './app.component.html',
+  templateUrl: './input.component.html',
 })
 export class AppComponent {
   @ViewChild('my_grid') private grid!: AgGridAngular;
