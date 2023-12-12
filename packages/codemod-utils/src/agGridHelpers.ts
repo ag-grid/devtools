@@ -75,10 +75,6 @@ type VDirectiveKey = AST.VDirectiveKey;
 type VElement = AST.VElement;
 type VIdentifier = AST.VIdentifier;
 
-type BabelPluginOpts<T> = {
-  opts: T;
-};
-
 export const AG_GRID_JS_PACKAGE_NAME_PATTERN =
   /^(?:ag-grid-(?:community|enterprise)|@ag-grid-community\/core)$/;
 export const AG_GRID_JS_UMD_GLOBAL_NAME = 'agGrid';
