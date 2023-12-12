@@ -1,5 +1,5 @@
 /// <reference types="vitest" />
-import { resolve } from 'path';
+import { join, resolve } from 'path';
 import { defineConfig, mergeConfig } from 'vite';
 
 import base from './vite.config';
@@ -9,6 +9,7 @@ export default mergeConfig(
   defineConfig({
     test: {
       root: resolve(__dirname, '..', '..'),
+      include: [join(__dirname, '**/*.{test,spec}.?(c|m)[jt]s?(x)')],
     },
   }),
 );
