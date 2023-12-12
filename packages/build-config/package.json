@@ -10,8 +10,7 @@
     "url": "https://github.com/ag-grid/devtools.git"
   },
   "scripts": {
-    "lint": "eslint --ext js,cjs,mjs,ts --max-warnings 0 .",
-    "verify": "pnpm run lint"
+    "lint": "eslint --ext js,cjs,mjs,ts --max-warnings 0 ."
   },
   "dependencies": {
     "@types/node": "20.5.9",

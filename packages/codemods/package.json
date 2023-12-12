@@ -16,12 +16,11 @@
     "build": "pnpm run build:lib && pnpm run build:pkg",
     "build:lib": "vite build",
     "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
-    "test": "vitest run",
     "lint": "pnpm run '/^lint:.*/'",
     "lint:eslint": "eslint --ext js,cjs,mjs,ts --max-warnings 0 .",
     "lint:typescript": "tsc --noEmit",
-    "verify": "pnpm run '/^(lint|test)$/'",
-    "watch:test": "vitest watch"
+    "test": "vitest run",
+    "test:watch": "vitest watch"
   },
   "pkg": {
     "type": "module",
