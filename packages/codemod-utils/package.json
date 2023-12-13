@@ -21,7 +21,8 @@
     "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
     "lint:typescript": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest watch"
+    "test:watch": "vitest watch",
+    "update-event-keys": "./scripts/update-event-keys ./src/eventKeys.ts"
   },
   "pkg": {
     "type": "module",
