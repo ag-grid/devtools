@@ -18,12 +18,11 @@
     "lint:eslint": "eslint --ext js,cjs,mjs,ts --max-warnings 0 .",
     "lint:typescript": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest watch"
+    "test:watch": "vitest watch",
+    "version": "node -p -e \"require('./package.json').version\"",
+    "publish": "npm publish ./dist --access public"
   },
   "pkg": {
-    "publishConfig": {
-      "access": "public"
-    },
     "main": "./index.js",
     "bin": "./index.js"
   },

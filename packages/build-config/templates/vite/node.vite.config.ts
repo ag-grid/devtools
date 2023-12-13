@@ -6,6 +6,7 @@ const NODE_MODULES = [
   'assert',
   'buffer',
   'child_process',
+  'constants',
   'crypto',
   'events',
   'fs',
