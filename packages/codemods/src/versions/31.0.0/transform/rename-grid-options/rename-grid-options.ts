@@ -13,6 +13,7 @@ import {
 } from '@ag-grid-devtools/ast';
 import {
   createVueAstNode,
+  getFrameworkEventNames,
   getVueTemplateNodeChild,
   isPropertyAssignmentNode,
   isPropertyInitializerNode,
@@ -102,19 +103,6 @@ const GRID_OPTION_REPLACEMENTS = Object.entries({
     'getServerSideGroupLevelParams',
     migrateOptionalValue(),
   ),
-  onColumnRowGroupChangeRequest: removeProperty(
-    getDeprecationMessage('onColumnRowGroupChangeRequest', MIGRATION_URL_V31),
-  ),
-  onColumnPivotChangeRequest: removeProperty(
-    getDeprecationMessage('onColumnPivotChangeRequest', MIGRATION_URL_V31),
-  ),
-  onColumnValueChangeRequest: removeProperty(
-    getDeprecationMessage('onColumnValueChangeRequest', MIGRATION_URL_V31),
-  ),
-  onColumnAggFuncChangeRequest: removeProperty(
-    getDeprecationMessage('onColumnAggFuncChangeRequest', MIGRATION_URL_V31),
-  ),
-  onRowDataChanged: migrateProperty('onRowDataUpdated', migrateOptionalValue()),
   processSecondaryColDef: migrateProperty('processPivotResultColDef', migrateOptionalValue()),
   processSecondaryColGroupDef: migrateProperty(
     'processPivotResultColGroupDef',
@@ -154,12 +142,33 @@ const GRID_OPTION_REPLACEMENTS = Object.entries({
     getDeprecationMessage('suppressParentsInRowNodes', MIGRATION_URL_V31),
   ),
   suppressReactUi: removeProperty(getDeprecationMessage('suppressReactUi', MIGRATION_URL_V31)),
+  ...frameworkEvent('columnRowGroupChangeRequest', (eventName) =>
+    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
+  ),
+  ...frameworkEvent('columnPivotChangeRequest', (eventName) =>
+    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
+  ),
+  ...frameworkEvent('columnValueChangeRequest', (eventName) =>
+    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
+  ),
+  ...frameworkEvent('columnAggFuncChangeRequest', (eventName) =>
+    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
+  ),
+  ...frameworkEvent('rowDataChanged', (eventName) =>
+    migrateProperty(eventName.replace(/Changed$/, 'Updated'), migrateOptionalValue()),
+  ),
 } as Record<string, PropertyTransformer<AstTransformContext<AstCliContext>>>).map(
   ([key, transform]) => ({
     accessor: { key: t.identifier(key), computed: false },
     transform,
   }),
 );
+
+function frameworkEvent<T>(key: string, factory: (frameworkKey: string) => T): Record<string, T> {
+  return Object.fromEntries(
+    Object.values(getFrameworkEventNames(key)).map((eventName) => [eventName, factory(eventName)]),
+  );
+}
 
 function getDeprecationMessage(key: string, migrationUrl: string): string {
   return `The grid option "${key}" is deprecated. Please refer to the migration guide for more details: ${migrationUrl}`;
