@@ -32,6 +32,7 @@ import {
   parseAngularComponentTemplate,
   type TmplAST,
 } from './angularHelpers';
+import { Events } from './eventKeys';
 import { REACT_REF_VALUE_ACCESSOR_NAME, getReactBoundElementRef } from './reactHelpers';
 import {
   findVueTemplateNodes,
@@ -99,108 +100,28 @@ const AG_GRID_VUE_GRID_OPTIONS_ATTRIBUTE_NAME = 'gridOptions';
 const AG_GRID_VUE_API_ACCESSOR_NAME = 'api';
 const AG_GRID_VUE_COLUMN_API_ACCESSOR_NAME = 'columnApi';
 
-// FIXME: ensure list of event names is always up-to-date
-const AG_GRID_EVENT_NAMES = [
-  'onToolPanelVisibleChanged',
-  'onToolPanelSizeChanged',
-  'onCutStart',
-  'onCutEnd',
-  'onPasteStart',
-  'onPasteEnd',
-  'onColumnVisible',
-  'onColumnPinned',
-  'onColumnResized',
-  'onColumnMoved',
-  'onColumnValueChanged',
-  'onColumnPivotModeChanged',
-  'onColumnPivotChanged',
-  'onColumnGroupOpened',
-  'onNewColumnsLoaded',
-  'onGridColumnsChanged',
-  'onDisplayedColumnsChanged',
-  'onVirtualColumnsChanged',
-  'onColumnEverythingChanged',
-  'onComponentStateChanged',
-  'onCellValueChanged',
-  'onCellEditRequest',
-  'onRowValueChanged',
-  'onCellEditingStarted',
-  'onCellEditingStopped',
-  'onRowEditingStarted',
-  'onRowEditingStopped',
-  'onUndoStarted',
-  'onUndoEnded',
-  'onRedoStarted',
-  'onRedoEnded',
-  'onRangeDeleteStart',
-  'onRangeDeleteEnd',
-  'onFilterOpened',
-  'onFilterChanged',
-  'onFilterModified',
-  'onAdvancedFilterBuilderVisibleChanged',
-  'onChartCreated',
-  'onChartRangeSelectionChanged',
-  'onChartOptionsChanged',
-  'onChartDestroyed',
-  'onCellKeyDown',
-  'onGridReady',
-  'onGridPreDestroyed',
-  'onFirstDataRendered',
-  'onGridSizeChanged',
-  'onModelUpdated',
-  'onVirtualRowRemoved',
-  'onViewportChanged',
-  'onBodyScroll',
-  'onBodyScrollEnd',
-  'onDragStarted',
-  'onDragStopped',
-  'onStateUpdated',
-  'onPaginationChanged',
-  'onRowDragEnter',
-  'onRowDragMove',
-  'onRowDragLeave',
-  'onRowDragEnd',
-  'onColumnRowGroupChanged',
-  'onRowGroupOpened',
-  'onExpandOrCollapseAll',
-  'onPinnedRowDataChanged',
-  'onRowDataUpdated',
-  'onAsyncTransactionsFlushed',
-  'onStoreRefreshed',
-  'onCellClicked',
-  'onCellDoubleClicked',
-  'onCellFocused',
-  'onCellMouseOver',
-  'onCellMouseOut',
-  'onCellMouseDown',
-  'onRowClicked',
-  'onRowDoubleClicked',
-  'onRowSelected',
-  'onSelectionChanged',
-  'onCellContextMenu',
-  'onRangeSelectionChanged',
-  'onTooltipShow',
-  'onTooltipHide',
-  'onSortChanged',
-  'onColumnRowGroupChangeRequest',
-  'onColumnPivotChangeRequest',
-  'onColumnValueChangeRequest',
-  'onColumnAggFuncChangeRequest',
-];
+const AG_GRID_EVENT_NAMES = Object.values(Events)
+  .map((eventKey) => (typeof eventKey === 'string' ? eventKey : null))
+  .filter(nonNull)
+  .map(getFrameworkEventNames);
 
-const AG_GRID_ANGULAR_EVENT_HANDLERS = new Set(
-  AG_GRID_EVENT_NAMES.map((eventName) =>
-    eventName.replace(/^on([A-Z])/, (_, initialChar) => initialChar.toLowerCase()),
-  ),
-);
+const AG_GRID_ANGULAR_EVENT_HANDLERS = new Set(AG_GRID_EVENT_NAMES.map(({ angular }) => angular));
 
-const AG_GRID_VUE_EVENT_HANDLERS = new Set(
-  AG_GRID_EVENT_NAMES.map((value) =>
-    value
-      .replace(/^on([A-Z])/, (_, initial) => initial.toLowerCase())
-      .replace(/([a-zA-Z])([A-Z])/, (_, prev, next) => `${prev}-${next.toLowerCase()}`),
-  ),
-);
+const AG_GRID_VUE_EVENT_HANDLERS = new Set(AG_GRID_EVENT_NAMES.map(({ vue }) => vue));
+
+export function getFrameworkEventNames(eventKey: string): {
+  js: string;
+  react: string;
+  angular: string;
+  vue: string;
+} {
+  return {
+    js: `on${eventKey.charAt(0).toUpperCase()}${eventKey.slice(1)}`, // e.g. onGridReady
+    react: `on${eventKey.charAt(0).toUpperCase()}${eventKey.slice(1)}`, // e.g. onGridReady
+    angular: eventKey, // e.g. gridReady
+    vue: eventKey.replace(/([a-zA-Z])([A-Z])/g, (_, prev, next) => `${prev}-${next.toLowerCase()}`), // e.g. grid-ready
+  };
+}
 
 export type GridApiDefinition = Enum<{
   Js: {
