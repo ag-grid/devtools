@@ -1,0 +1,28 @@
+name: Verify PR branch
+
+on:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check target branch
+        if: github.base_ref == 'main' && github.head_ref != 'develop'
+        run: |
+          echo "ERROR: Only the 'develop' branch can be merged to 'main'"
+          exit 1
+      - name: Checkout Git repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get package version
+        id: version
+        run: |
+          echo "VERSION=$(npm run --silent version)" >> $GITHUB_OUTPUT
+      - name: Ensure new version
+        run: |
+          if [ $(git tag --list "${{ steps.version.outputs.VERSION }}") ]; then
+            echo "ERROR: A release tag already exists for version ${{ steps.version.outputs.VERSION }}"
+            exit 1
+          fi

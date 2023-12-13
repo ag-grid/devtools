@@ -1,0 +1,48 @@
+name: Build release
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged
+    steps:
+      - name: Checkout Git repository
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.x
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install
+      - name: Build release artifact
+        run: pnpm run build
+      - name: Get package version
+        id: version
+        run: |
+          echo "VERSION=$(npm run --silent version)" >> $GITHUB_OUTPUT
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          commitish: ${{ github.ref }}
+          tag_name: ${{ steps.version.outputs.VERSION }}
+          release_name: ${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+      - name: Publish package
+        run: pnpm run publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
