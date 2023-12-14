@@ -29,9 +29,9 @@ import {
   findNamedAngularTemplateElements,
   getAngularComponentDataFieldReferences,
   getAngularViewChildMetadata,
-  getAngularPropertyReadExpressionName,
+  getAngularComponentPropertyReadExpression,
   getAngularTemplateNodeChild,
-  isNamedAngularMethodCallExpression,
+  isNamedAngularComponentMethodCallExpression,
   isTypedAngularTemplateNode,
   parseAngularComponentTemplate,
   updateAngularComponentTemplate,
@@ -219,18 +219,19 @@ export interface ObjectPropertyVisitor<S> {
   init(path: NodePath<PropertyInitializerNode>, context: S): void;
   get(path: NodePath<PropertyAccessorNode>, context: S): void;
   set(path: NodePath<PropertyAssignmentNode>, context: S): void;
-  initNamedProperty(accessor: AccessorKey, value: NodePath<AstNode>, context: S): void;
-  jsxAttribute(path: NodePath<JSXAttribute>, context: S): void;
+  jsxAttribute(path: NodePath<JSXAttribute>, element: NodePath<JSXElement>, context: S): void;
   angularAttribute(
     attributeNode: AngularTemplateNode<
       Angular.TmplAstTextAttribute | Angular.TmplAstBoundAttribute | Angular.TmplAstBoundEvent
     >,
     component: NodePath<Class>,
+    element: AngularTemplateNode<Angular.TmplAstElement>,
     context: S,
   ): void;
   vueAttribute(
     attributeNode: VueTemplateNode<VAttribute | VDirective>,
     component: NodePath<ObjectExpression>,
+    element: VueTemplateNode<VElement>,
     context: S,
   ): void;
 }
@@ -259,26 +260,14 @@ export function visitGridOptionsProperties<
           // If this is the overall gridOptions attribute, traverse over the properties of the attribute value
           if (isAgGridJsxElementGridOptionsProp(attribute)) {
             const propValue = getJsxAttributeValue(attribute);
+            // FIXME: warn if unable to parse gridOptions attribute value
             if (!propValue) return;
             const accessors = getAccessorExpressionPaths(propValue);
             if (!accessors) return;
             accessors.forEach((accessor) => visitObjectAccessor(accessor, visitor, context));
           } else if (attribute.isJSXAttribute()) {
-            // Otherwise visit the individual property key
-            const attributeName = getJsxAttributeName(attribute);
-            const attributeValue = getJsxAttributeValue(attribute);
-            const propertyKey =
-              attributeName && AccessorKey.Property({ name: attributeName.node.name });
-            if (propertyKey && attributeValue) {
-              const accessors = getAccessorExpressionPaths(attributeValue);
-              if (accessors) {
-                accessors.forEach((accessor) =>
-                  visitObjectPropertyAccessor(accessor, propertyKey, visitor, context),
-                );
-              }
-            }
-            if (attribute.shouldSkip) return;
-            visitor.jsxAttribute(attribute, context);
+            // Otherwise visit the individual attribute
+            visitor.jsxAttribute(attribute, path, context);
           }
         });
     },
@@ -286,10 +275,6 @@ export function visitGridOptionsProperties<
     Class(path, context) {
       const templateDefinition = parseAngularComponentTemplate(path, context);
       if (!templateDefinition) return;
-      context.opts.warn(
-        null,
-        'Angular components are not yet fully supported via codemods and may require manual fixes',
-      );
       const { template, metadata } = templateDefinition;
       const gridElements = findNamedAngularTemplateElements(template, AG_GRID_ANGULAR_ELEMENT_NAME);
       if (gridElements.length === 0) return;
@@ -301,15 +286,18 @@ export function visitGridOptionsProperties<
         ];
         for (const attribute of attributes) {
           if (isTypedAngularTemplateNode(Angular.TmplAstTextAttribute, attribute)) {
-            visitor.angularAttribute(attribute, path, context);
+            visitor.angularAttribute(attribute, path, element, context);
           } else if (isTypedAngularTemplateNode(Angular.TmplAstBoundAttribute, attribute)) {
             // If this is the overall gridOptions input, traverse over the properties of the bound value
             if (isAgGridAngularElementBoundGridOptionsInput(attribute)) {
-              const boundFieldName = getAngularPropertyReadExpressionName(attribute.node.value);
-              if (!boundFieldName) return;
+              const boundComponentProperty = getAngularComponentPropertyReadExpression(
+                attribute.node.value,
+              );
+              // FIXME: warn if unable to parse gridOptions attribute value
+              if (!boundComponentProperty) return;
               const gridOptionsDataFieldReferences = getAngularComponentDataFieldReferences(
                 path,
-                boundFieldName,
+                boundComponentProperty.name,
               );
               const gridOptionsDataFieldAccessors = gridOptionsDataFieldReferences
                 .map((accessor) => {
@@ -330,69 +318,11 @@ export function visitGridOptionsProperties<
                 visitObjectAccessor(accessor, visitor, context);
               });
             } else {
-              // Otherwise visit the individual property key
-              // Determine the corresponding component data field
-              const boundFieldName = getAngularPropertyReadExpressionName(attribute.node.value);
-              const propertyKey = boundFieldName && AccessorKey.Property({ name: boundFieldName });
-              // Collect references to all the data field accessors
-              if (boundFieldName && propertyKey) {
-                const dataFieldReferences = getAngularComponentDataFieldReferences(
-                  path,
-                  boundFieldName,
-                );
-                const dataFieldAccessors = dataFieldReferences
-                  .map((accessor) => {
-                    if (accessor.isExpression()) return accessor;
-                    if (accessor.isClassProperty()) {
-                      const value = getOptionalNodeFieldValue(accessor.get('value'));
-                      if (value && value.isExpression()) return value;
-                      return null;
-                    }
-                    return null;
-                  })
-                  .filter(nonNull)
-                  .flatMap((expression) => {
-                    // FIXME: deduplicate Angular component data field accessors
-                    return getAccessorExpressionPaths(expression) || [];
-                  });
-                // Apply the appropriate transformation to all the value references
-                dataFieldAccessors.forEach((accessor) =>
-                  visitObjectPropertyAccessor(accessor, propertyKey, visitor, context),
-                );
-              }
-              visitor.angularAttribute(attribute, path, context);
+              // Otherwise visit the individual attribute
+              visitor.angularAttribute(attribute, path, element, context);
             }
           } else if (isTypedAngularTemplateNode(Angular.TmplAstBoundEvent, attribute)) {
-            // Determine the corresponding component data field
-            const boundFieldName = getAngularPropertyReadExpressionName(attribute.node.handler);
-            const propertyKey = boundFieldName && AccessorKey.Property({ name: boundFieldName });
-            // Collect references to all the data field accessors
-            if (boundFieldName && propertyKey) {
-              const dataFieldReferences = getAngularComponentDataFieldReferences(
-                path,
-                boundFieldName,
-              );
-              const dataFieldAccessors = dataFieldReferences
-                .map((accessor) => {
-                  if (accessor.isExpression()) return accessor;
-                  if (accessor.isClassProperty()) {
-                    const value = getOptionalNodeFieldValue(accessor.get('value'));
-                    if (value && value.isExpression()) return value;
-                    return null;
-                  }
-                  return null;
-                })
-                .filter(nonNull)
-                .flatMap((expression) => {
-                  // FIXME: deduplicate Angular component data field accessors
-                  return getAccessorExpressionPaths(expression) || [];
-                });
-              // Apply the appropriate transformation to all the value references
-              dataFieldAccessors.forEach((accessor) =>
-                visitObjectPropertyAccessor(accessor, propertyKey, visitor, context),
-              );
-            }
-            visitor.angularAttribute(attribute, path, context);
+            visitor.angularAttribute(attribute, path, element, context);
           }
         }
       }
@@ -406,10 +336,6 @@ export function visitGridOptionsProperties<
       if (!gridElementNames) return;
       const template = getVueComponentTemplate(path, context);
       if (!template) return;
-      context.opts.warn(
-        null,
-        'Vue components are not yet fully supported via codemods and may require manual fixes',
-      );
       const gridElementNamesLookup = new Set(gridElementNames);
       const gridElements = findTemplateNodes(
         template,
@@ -431,6 +357,7 @@ export function visitGridOptionsProperties<
               attributeValue.expression.type === 'Identifier'
                 ? attributeValue.expression.name
                 : null;
+            // FIXME: warn if unable to parse gridOptions attribute value
             if (!gridOptionsDataFieldName) return;
             const gridOptionsDataFieldAccessors = getVueComponentDataFieldReferences(
               path,
@@ -444,33 +371,8 @@ export function visitGridOptionsProperties<
               visitObjectAccessor(accessor, visitor, context);
             });
           } else {
-            // Otherwise visit the individual property key
-            // Determine the corresponding component data field
-            // FIXME: handle all Vue component binding types
-            const boundFieldName =
-              node.directive &&
-              node.value &&
-              node.value.expression &&
-              node.value.expression.type === 'Identifier'
-                ? node.value.expression.name
-                : null;
-            const propertyKey = boundFieldName && AccessorKey.Property({ name: boundFieldName });
-            if (propertyKey && boundFieldName) {
-              // Collect references to all the data field accessors
-              const dataFieldAccessors = getVueComponentDataFieldReferences(
-                path,
-                boundFieldName,
-              ).flatMap((expression) => {
-                if (!expression.isExpression()) return [];
-                // FIXME: deduplicate Vue component data field accessors
-                return getAccessorExpressionPaths(expression) || [];
-              });
-              // Apply the appropriate transformation to all the value references
-              dataFieldAccessors.forEach((accessor) =>
-                visitObjectPropertyAccessor(accessor, propertyKey, visitor, context),
-              );
-            }
-            visitor.vueAttribute(attribute, path, context);
+            // Otherwise visit the individual attribute
+            visitor.vueAttribute(attribute, path, element, context);
           }
         });
       });
@@ -552,19 +454,6 @@ export function visitGridOptionsProperties<
       ) {
         propertyVisitor.init(reference.accessor, context);
       }
-    });
-  }
-
-  function visitObjectPropertyAccessor<S>(
-    accessorPath: AccessorPath,
-    propertyKey: AccessorKey,
-    propertyVisitor: ObjectPropertyVisitor<S>,
-    context: S,
-  ): void {
-    const { initializers, assignments } = explainAccessorPathUsages(accessorPath);
-    const assignedValues = assignments.map((assignment) => assignment.get('right'));
-    [...initializers, ...assignedValues].forEach((value) => {
-      propertyVisitor.initNamedProperty(propertyKey, value, context);
     });
   }
 
@@ -1059,7 +948,8 @@ function getAngularPublicApiReferences(
             // Ignore any outputs that are not known grid event outputs
             if (!AG_GRID_ANGULAR_EVENT_HANDLERS.has(output.node.name)) return null;
             // Ignore any outputs that do not invoke the current handler method
-            if (!isNamedAngularMethodCallExpression(methodName, output.node.handler)) return null;
+            if (!isNamedAngularComponentMethodCallExpression(methodName, output.node.handler))
+              return null;
             // At this point, we know that the current method is invoked by a grid element event handler
             return GridApiDefinition.Angular({
               component,

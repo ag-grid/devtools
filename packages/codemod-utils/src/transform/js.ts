@@ -96,6 +96,10 @@ export function transformJsFile(
         const error = node ? node.buildCodeFrameError(message) : new SyntaxError(message);
         uniqueErrors.set(error.message, error);
       },
+      fail(node: NodePath<AstNode> | null, message: string) {
+        const error = node ? node.buildCodeFrameError(message) : new SyntaxError(message);
+        uniqueErrors.set(error.message, error);
+      },
       fs,
     },
   };
@@ -108,6 +112,7 @@ export function transformJsFile(
         lineTerminator,
       }).code
     : null;
+  // FIXME: differentiate between errors and warnings
   return {
     source: transformedSource === source ? null : transformedSource,
     errors: Array.from(uniqueErrors.values()),

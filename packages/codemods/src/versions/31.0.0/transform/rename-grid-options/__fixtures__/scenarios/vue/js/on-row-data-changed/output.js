@@ -1,0 +1,30 @@
+/* eslint-disable */
+import { AgGridVue } from '@ag-grid-community/vue';
+
+const AppComponent = {
+  template: `
+    <div>
+      <ag-grid-vue
+        :columnDefs="columnDefs"
+        :rowData="rowData"
+        @row-data-updated="onRowDataChanged"
+        @grid-ready="onGridReady"
+      ></ag-grid-vue>
+    </div>
+  `,
+  components: {
+    'ag-grid-vue': AgGridVue,
+  },
+  data() {
+    return {
+      columnDefs: [],
+      rowData: [],
+    };
+  },
+  methods: {
+    onGridReady(params) {},
+    onRowDataChanged(params) {
+      console.log('onRowDataChanged', params);
+    },
+  },
+};

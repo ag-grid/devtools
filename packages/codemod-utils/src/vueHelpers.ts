@@ -1,20 +1,21 @@
 import {
+  findClassMemberAccessors,
   getFunctionReturnValues,
+  getNamedObjectLiteralStaticProperty,
   getNamedObjectLiteralStaticPropertyValue,
   getObjectLiteralStaticPropertyValues,
+  getStaticPropertyKey,
   parseStringExpressionValue,
-  findClassMemberAccessors,
-  getNamedObjectLiteralStaticProperty,
   type AstNode,
   type NodePath,
   type Types,
-  getStaticPropertyKey,
 } from '@ag-grid-devtools/ast';
 import { nonNull } from '@ag-grid-devtools/utils';
 import { parse } from 'vue-eslint-parser';
 import { AST } from 'vue-eslint-parser';
 import {
   getTemplateNodeChild,
+  mergeSourceChunks,
   type TemplateEngine,
   type TemplateFormatter,
   type TemplateMutation,
@@ -36,11 +37,21 @@ type ObjectProperty = Types.ObjectProperty;
 type PrivateName = Types.PrivateName;
 type Property = Types.Property;
 
+type ESLintExpression = AST.ESLintExpression;
+type ESLintLiteral = AST.ESLintLiteral;
+type ESLintStringLiteral = AST.ESLintStringLiteral;
+type ESLintBooleanLiteral = AST.ESLintBooleanLiteral;
+type ESLintNullLiteral = AST.ESLintNullLiteral;
+type ESLintNumberLiteral = AST.ESLintNumberLiteral;
+type ESLintRegExpLiteral = AST.ESLintRegExpLiteral;
+type ESLintBigIntLiteral = AST.ESLintBigIntLiteral;
 type HasLocation = AST.HasLocation;
 type HasParent = AST.HasParent;
 type Node = AST.Node;
+type Reference = AST.Reference;
 type VAttribute = AST.VAttribute;
 type VDirective = AST.VDirective;
+type VDirectiveKey = AST.VDirectiveKey;
 type VElement = AST.VElement;
 type VText = AST.VText;
 type VExpressionContainer = AST.VExpressionContainer;
@@ -414,6 +425,10 @@ export function createVueAstNode<T extends Node['type']>(
   } as Extract<Node, { type: T }>;
 }
 
+function isUnmodifiedVueAstNode(node: Node): boolean {
+  return node.range[0] !== -1 && node.range[1] !== -1;
+}
+
 export interface VueTemplateNode<T extends Node> extends TemplateNode<T, VueTemplateRoot, Node> {}
 
 export interface VueTemplateRoot {
@@ -454,7 +469,7 @@ export class VueTemplateFormatter implements TemplateFormatter<VueTemplateRoot, 
     return { start: node.range[0], end: node.range[1] };
   }
   printNode(node: Node, previous: Node | null, templateSource: string): string {
-    return printVueNode(node);
+    return printVueNode(node, previous, templateSource);
   }
 }
 
@@ -478,22 +493,413 @@ function isNode(x: any): x is Node {
   return x !== null && typeof x === 'object' && typeof x.type === 'string';
 }
 
-function printVueNode(node: Node): string {
+export function isTypedVueTemplateNode<T extends Node['type']>(
+  nodeType: T,
+  templateNode: VueTemplateNode<Node>,
+): templateNode is VueTemplateNode<Extract<Node, { type: T }>> {
+  const { node } = templateNode;
+  return node.type === nodeType;
+}
+
+function printVueNode(node: Node, previous: Node | null, templateSource: string): string {
   switch (node.type) {
     case 'Identifier':
       return node.name;
     case 'VIdentifier':
       return node.rawName;
+    case 'VAttribute': {
+      const result =
+        !previous || previous.type !== node.type
+          ? // FIXME: allow printing newly-generated Vue attribute nodes
+            null
+          : !node.directive && !previous.directive
+          ? printVueAttributeNode(node, previous, templateSource)
+          : node.directive && previous.directive
+          ? printVueDirectiveNode(node, previous, templateSource)
+          : null;
+      if (typeof result === 'string') return result;
+      break;
+    }
     // FIXME: format Vue AST node types
     default:
-      throw new Error(`Unable to format node type: ${node.type}`);
+      break;
   }
+  throw new Error(`Unable to format node type: ${node.type}`);
+}
+
+function printVueAttributeNode(
+  node: AST.VAttribute,
+  previous: AST.VAttribute,
+  templateSource: string,
+): string | null {
+  // Generate the output code based on the existing node
+  const existingNode = previous;
+  const updatedNode = node;
+  const hasKeyUpdate = updatedNode.key.name !== existingNode.key.name;
+  const hasValueUpdate =
+    updatedNode.value && existingNode.value
+      ? updatedNode.value.value !== existingNode.value.value
+      : updatedNode.value !== existingNode.value;
+  if (!hasKeyUpdate && !hasValueUpdate) {
+    return templateSource.slice(existingNode.range[0], existingNode.range[1]);
+  }
+  return mergeSourceChunks([
+    ...(hasKeyUpdate
+      ? [
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.range[0],
+              end: existingNode.key.range[0],
+            },
+          },
+          updatedNode.key.name,
+        ]
+      : [
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.range[0],
+              end: existingNode.key.range[1],
+            },
+          },
+        ]),
+    ...(hasValueUpdate
+      ? existingNode.value && updatedNode.value
+        ? [
+            {
+              source: templateSource,
+              range: {
+                start: existingNode.key.range[1],
+                end: existingNode.value.range[0],
+              },
+            },
+            escapeVueString(updatedNode.value.value),
+            {
+              source: templateSource,
+              range: {
+                start: existingNode.value.range[1],
+                end: existingNode.range[1],
+              },
+            },
+          ]
+        : existingNode.value
+        ? [
+            {
+              source: templateSource,
+              range: {
+                start: existingNode.value.range[1],
+                end: existingNode.range[1],
+              },
+            },
+          ]
+        : updatedNode.value
+        ? [
+            `="${escapeVueString(updatedNode.value.value)}"`,
+            {
+              source: templateSource,
+              range: {
+                start: existingNode.key.range[1],
+                end: existingNode.range[1],
+              },
+            },
+          ]
+        : [
+            {
+              source: templateSource,
+              range: {
+                start: existingNode.key.range[1],
+                end: existingNode.range[1],
+              },
+            },
+          ]
+      : [
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.key.range[1],
+              end: existingNode.range[1],
+            },
+          },
+        ]),
+  ]);
+}
+
+function printVueDirectiveNode(
+  node: AST.VDirective,
+  previous: AST.VDirective,
+  templateSource: string,
+): string | null {
+  // Generate the output code based on the existing node
+  const existingNode = previous;
+  const updatedNode = node;
+  const hasKeyUpdate = (() => {
+    try {
+      return !areVueDirectiveNamesEqual(updatedNode.key, existingNode.key);
+    } catch (error) {
+      // FIXME: Expose errors when attempting to parse dynamic Vue binding keys
+      return true;
+    }
+  })();
+  const hasValueUpdate =
+    updatedNode.value && existingNode.value
+      ? (() => {
+          try {
+            return !areVueBindingExpressionsEqual(updatedNode.value, existingNode.value);
+          } catch (error) {
+            // FIXME: Expose errors when attempting to parse Vue binding expressions
+            return true;
+          }
+        })()
+      : updatedNode.value !== existingNode.value;
+  if (!hasKeyUpdate && !hasValueUpdate) {
+    return templateSource.slice(existingNode.range[0], existingNode.range[1]);
+  }
+  return mergeSourceChunks([
+    ...(hasKeyUpdate
+      ? [
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.range[0],
+              end: existingNode.key.range[0],
+            },
+          },
+          escapeVueString(formatVueDirectiveName(updatedNode.key, templateSource)),
+        ]
+      : [
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.range[0],
+              end: existingNode.key.range[1],
+            },
+          },
+        ]),
+    ...(hasValueUpdate
+      ? existingNode.value && updatedNode.value
+        ? [
+            {
+              source: templateSource,
+              range: {
+                start: existingNode.key.range[1],
+                end: existingNode.value.range[0],
+              },
+            },
+            `"${escapeVueString(formatVueBindingExpression(updatedNode.value, templateSource))}"`,
+            {
+              source: templateSource,
+              range: {
+                start: existingNode.value.range[1],
+                end: existingNode.range[1],
+              },
+            },
+          ]
+        : existingNode.value
+        ? [
+            {
+              source: templateSource,
+              range: {
+                start: existingNode.value.range[1],
+                end: existingNode.range[1],
+              },
+            },
+          ]
+        : updatedNode.value
+        ? [
+            `="${escapeVueString(formatVueBindingExpression(updatedNode.value, templateSource))}"`,
+            {
+              source: templateSource,
+              range: {
+                start: existingNode.key.range[1],
+                end: existingNode.range[1],
+              },
+            },
+          ]
+        : [
+            {
+              source: templateSource,
+              range: {
+                start: existingNode.key.range[1],
+                end: existingNode.range[1],
+              },
+            },
+          ]
+      : [
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.key.range[1],
+              end: existingNode.range[1],
+            },
+          },
+        ]),
+  ]);
+}
+
+function escapeVueString(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function areVueDirectiveNamesEqual(left: VDirectiveKey, right: VDirectiveKey): boolean {
+  if (left === right) return true;
+  if (left.name.name !== right.name.name) return false;
+  if (!left.argument || !right.argument) return left.argument === right.argument;
+  if (left.argument.type === 'VIdentifier' || right.argument.type === 'VIdentifier') {
+    return (
+      left.argument.type === 'VIdentifier' &&
+      right.argument.type === 'VIdentifier' &&
+      left.argument.name === right.argument.name
+    );
+  }
+  return areVueBindingExpressionsEqual(left.argument, right.argument);
+}
+
+function areVueBindingExpressionsEqual(
+  left: VExpressionContainer,
+  right: VExpressionContainer,
+): boolean {
+  if (left === right) return true;
+  if (left.expression === right.expression) return true;
+  if (!left.expression || !right.expression) return false;
+  if (left.expression.type !== right.expression.type) return false;
+  const leftExpression = parseVueBindingExpression(left.expression);
+  const rightExpression = parseVueBindingExpression(right.expression);
+  return areESLintExpressionsEqual(leftExpression, rightExpression);
+}
+
+function parseVueBindingExpression(
+  expression: NonNullable<VExpressionContainer['expression']>,
+): ESLintExpression {
+  switch (expression.type) {
+    case 'VFilterSequenceExpression':
+    case 'VForExpression':
+    case 'VOnExpression':
+    case 'VSlotScopeExpression':
+    case 'VGenericExpression':
+      throw new SyntaxError(`Unable to parse Vue binding expression: ${expression.type}`);
+    default:
+      return expression;
+  }
+}
+
+function areESLintExpressionsEqual(left: ESLintExpression, right: ESLintExpression): boolean {
+  if (left === right) return true;
+  if (left.type !== right.type) return false;
+  switch (left.type) {
+    case 'Literal':
+      return right.type === 'Literal' && left.value === right.value;
+    case 'Identifier':
+      return right.type === 'Identifier' && right.name === left.name;
+    case 'UnaryExpression':
+      return (
+        right.type === 'UnaryExpression' &&
+        right.operator === left.operator &&
+        left.prefix === right.prefix &&
+        areESLintExpressionsEqual(left.argument, right.argument)
+      );
+    default:
+      // FIXME: support comparing all ESLint expression types
+      throw new SyntaxError(`Unable to compare Vue expression: ${left.type}`);
+  }
+}
+
+function formatVueDirectiveName(key: VDirectiveKey, templateSource: string): string {
+  return `${key.name.rawName}${
+    key.argument
+      ? key.argument.type === 'VIdentifier'
+        ? key.argument.name
+        : `[${formatVueBindingExpression(key.argument, templateSource)}]`
+      : ''
+  }`;
+}
+
+function formatVueBindingExpression(binding: VExpressionContainer, templateSource: string): string {
+  if (isUnmodifiedVueAstNode(binding)) {
+    return templateSource.slice(binding.range[0], binding.range[1]);
+  }
+  if (!binding.expression) return '';
+  switch (binding.expression.type) {
+    case 'VFilterSequenceExpression':
+    case 'VForExpression':
+    case 'VOnExpression':
+    case 'VSlotScopeExpression':
+    case 'VGenericExpression':
+      // FIXME: support formatting Vue binding expressions
+      break;
+    default:
+      return formatESLintExpression(binding.expression, templateSource);
+  }
+  throw new SyntaxError(`Unable to print Vue binding expression: ${binding.expression.type}`);
+}
+
+function formatESLintExpression(expression: ESLintExpression, templateSource: string): string {
+  if (isUnmodifiedVueAstNode(expression)) {
+    return templateSource.slice(expression.range[0], expression.range[1]);
+  }
+  switch (expression.type) {
+    case 'Literal':
+      return String(expression.value);
+    case 'Identifier':
+      return expression.name;
+    case 'UnaryExpression':
+      if (expression.operator !== '!') break;
+      return `!${formatESLintExpression(expression.argument, templateSource)}`;
+    default:
+      // FIXME: support formatting Vue expressions
+      break;
+  }
+  throw new SyntaxError(`Unable to print Vue expression: ${expression.type}`);
 }
 
 export function isVueDirectiveAttribute(
   templateNode: VueTemplateNode<VAttribute | VDirective>,
 ): templateNode is VueTemplateNode<VDirective> {
   return templateNode.node.directive;
+}
+
+export function isVueAttributeAttribute(
+  templateNode: VueTemplateNode<VAttribute | VDirective>,
+): templateNode is VueTemplateNode<VAttribute> {
+  return !templateNode.node.directive;
+}
+
+function isVueESLintLiteral(value: Node): value is ESLintLiteral {
+  return value.type === 'Literal';
+}
+
+export function isVueESLintStringLiteral(value: Node): value is ESLintStringLiteral {
+  return isVueESLintLiteral(value) && typeof value.value === 'string';
+}
+
+export function isVueESLintBooleanLiteral(value: Node): value is ESLintBooleanLiteral {
+  return isVueESLintLiteral(value) && typeof value.value === 'boolean';
+}
+
+export function isVueESLintNullLiteral(value: Node): value is ESLintNullLiteral {
+  return (
+    isVueESLintLiteral(value) &&
+    value.value === null &&
+    value.regex === undefined &&
+    value.bigint === undefined
+  );
+}
+
+export function isVueESLintNumberLiteral(value: Node): value is ESLintNumberLiteral {
+  return isVueESLintLiteral(value) && typeof value.value === 'number';
+}
+
+export function isVueESLintRegExpLiteral(value: Node): value is ESLintRegExpLiteral {
+  return isVueESLintLiteral(value) && Boolean(value.regex);
+}
+
+export function isVueESLintBigIntLiteral(value: Node): value is ESLintBigIntLiteral {
+  return isVueESLintLiteral(value) && typeof value.bigint === 'string';
 }
 
 export function getVueElementEventHandlerDirectives(
@@ -563,4 +969,60 @@ function text(predicate?: (text: VText) => boolean): VueTemplateNodeMatcher<VTex
     if (!predicate) return true;
     return predicate(node.node);
   };
+}
+
+export function invertVueBooleanExpression(value: ESLintExpression): ESLintExpression {
+  const existingTruthinessValue = isVueESLintNullLiteral(value)
+    ? false
+    : isVueESLintBooleanLiteral(value) ||
+      isVueESLintStringLiteral(value) ||
+      isVueESLintNumberLiteral(value)
+    ? value.value
+    : null;
+  if (typeof existingTruthinessValue === 'boolean') {
+    const invertedValue = !existingTruthinessValue;
+    return createVueBooleanLiteral(invertedValue);
+  } else {
+    return createVueAstNode({
+      type: 'UnaryExpression',
+      operator: '!',
+      prefix: true,
+      argument: value,
+    });
+  }
+}
+
+export function createVueBooleanLiteral(value: boolean): ESLintBooleanLiteral {
+  return createVueAstNode({
+    type: 'Literal',
+    value: value,
+    raw: String(value),
+  }) as ESLintBooleanLiteral;
+}
+
+export function getVueExpressionContainerExpression(
+  node: VExpressionContainer,
+): ESLintExpression | null {
+  if (!node.expression) return null;
+  switch (node.expression.type) {
+    case 'VFilterSequenceExpression':
+    case 'VForExpression':
+    case 'VOnExpression':
+    case 'VSlotScopeExpression':
+    case 'VGenericExpression':
+      return null;
+    default:
+      return node.expression;
+  }
+}
+
+export function createVueExpressionContainer(
+  value: VExpressionContainer['expression'],
+  references?: Array<Reference>,
+): VExpressionContainer {
+  return createVueAstNode({
+    type: 'VExpressionContainer',
+    expression: value,
+    references: references || [],
+  });
 }

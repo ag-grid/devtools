@@ -1,166 +1,236 @@
 import { type CodemodFsUtils } from '@ag-grid-devtools/types';
-import { fs as memfs } from 'memfs';
-import { describe, expect, test } from 'vitest';
+import { fs as memfs, vol } from 'memfs';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { afterEach, describe, expect, test } from 'vitest';
 
 import codemod from './codemod';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function toCrlf(input: string): string {
+  return (input.endsWith('\n') ? input.slice(0, -1) : input).split('\n').join('\r\n');
+}
 
 describe('Retains line endings', () => {
   describe('CRLF', () => {
     describe('JavaScript source files', () => {
       test('No modifications', () => {
-        const input = [
-          `import { Foo } from 'unrelated-package';`,
-          `new Foo(document.body, { bar: true });`,
-        ].join('\r\n');
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/crlf/javascript/no-modifications',
+        );
+        const inputPath = join(scenarioPath, 'input.js');
+        const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = toCrlf(readFileSync(inputPath, 'utf-8'));
+        const expected = toCrlf(readFileSync(outputPath, 'utf-8'));
+        const errors = require(errorsPath);
         const actual = codemod(
-          { path: './input.js', source: input },
+          { path: inputPath, source: input },
           {
-            applyDangerousEdits: true,
+            applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           },
         );
-        expect(actual).toEqual({ source: null, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
       });
 
       test('Modifications', () => {
-        const input = [
-          `import { Grid } from 'ag-grid-community';`,
-          `const options = { foo: true };`,
-          `new Grid(document.body, options);`,
-        ].join('\r\n');
-        const expected = [
-          `import { createGrid } from 'ag-grid-community';`,
-          `const options = { foo: true };`,
-          `const optionsApi = createGrid(document.body, options);`,
-        ].join('\r\n');
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/crlf/javascript/modifications',
+        );
+        const inputPath = join(scenarioPath, 'input.js');
+        const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = toCrlf(readFileSync(inputPath, 'utf-8'));
+        const expected = toCrlf(readFileSync(outputPath, 'utf-8'));
+        const errors = require(errorsPath);
         const actual = codemod(
-          { path: './input.js', source: input },
+          { path: inputPath, source: input },
           {
-            applyDangerousEdits: true,
+            applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           },
         );
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+    });
+
+    describe('Angular source files', () => {
+      describe('Inline template', () => {
+        test('No modifications', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/crlf/angular/inline-template/no-modifications',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = toCrlf(readFileSync(inputPath, 'utf-8'));
+          const expected = toCrlf(readFileSync(outputPath, 'utf-8'));
+          const errors = require(errorsPath);
+          const actual = codemod(
+            { path: inputPath, source: input },
+            {
+              applyDangerousEdits: false,
+              fs: createFsHelpers(memfs),
+            },
+          );
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('Modifications', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/crlf/angular/inline-template/modifications',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = toCrlf(readFileSync(inputPath, 'utf-8'));
+          const expected = toCrlf(readFileSync(outputPath, 'utf-8'));
+          const errors = require(errorsPath);
+          const actual = codemod(
+            { path: inputPath, source: input },
+            {
+              applyDangerousEdits: false,
+              fs: createFsHelpers(memfs),
+            },
+          );
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+      });
+
+      describe('External template file', () => {
+        afterEach(() => {
+          vol.reset();
+        });
+
+        test('No modifications', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/crlf/angular/external-template/no-modifications',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = toCrlf(readFileSync(inputTemplatePath, 'utf-8'));
+          const outputTemplate = toCrlf(readFileSync(outputTemplatePath, 'utf-8'));
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = toCrlf(readFileSync(inputPath, 'utf-8'));
+          const expected = toCrlf(readFileSync(outputPath, 'utf-8'));
+          const errors = require(errorsPath);
+          const actual = codemod(
+            { path: inputPath, source: input },
+            {
+              applyDangerousEdits: false,
+              fs: createFsHelpers(memfs),
+            },
+          );
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('Modifications', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/crlf/angular/external-template/modifications',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = toCrlf(readFileSync(inputTemplatePath, 'utf-8'));
+          const outputTemplate = toCrlf(readFileSync(outputTemplatePath, 'utf-8'));
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = toCrlf(readFileSync(inputPath, 'utf-8'));
+          const expected = toCrlf(readFileSync(outputPath, 'utf-8'));
+          const errors = require(errorsPath);
+          const actual = codemod(
+            { path: inputPath, source: input },
+            {
+              applyDangerousEdits: false,
+              fs: createFsHelpers(memfs),
+            },
+          );
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
       });
     });
 
     describe('Vue source files', () => {
       test('No modifications', () => {
-        const input = [
-          `<script>`,
-          `export default {`,
-          `  data() {`,
-          `    return {`,
-          `      greeting: 'Hello World!'`,
-          `    }`,
-          `  }`,
-          `}`,
-          `</script>`,
-          ``,
-          `<template>`,
-          `  <p class="greeting">{{ greeting }}</p>`,
-          `<template>`,
-          ``,
-          `<style>`,
-          `.greeting {`,
-          `  color: red;`,
-          `  font-weight: bold;`,
-          `}`,
-          `</style>`,
-        ].join('\r\n');
+        const scenarioPath = join(__dirname, './__fixtures__/scenarios/crlf/vue/no-modifications');
+        const inputPath = join(scenarioPath, 'input.vue');
+        const outputPath = join(scenarioPath, 'output.vue');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = toCrlf(readFileSync(inputPath, 'utf-8'));
+        const expected = toCrlf(readFileSync(outputPath, 'utf-8'));
+        const errors = require(errorsPath);
         const actual = codemod(
-          { path: './input.vue', source: input },
+          { path: inputPath, source: input },
           {
-            applyDangerousEdits: true,
-            fs: createFsHelpers(memfs),
-          },
-        );
-        expect(actual).toEqual({ source: null, errors: [] });
-      });
-
-      test('Modifications', () => {
-        const input = [
-          `<script>`,
-          `import { AgGridVue } from '@ag-grid-community/vue';`,
-          ``,
-          `export default {`,
-          `  components: {`,
-          `    'ag-grid-vue': AgGridVue,`,
-          `  },`,
-          `  data() {`,
-          `    return {`,
-          `      columnDefs: [],`,
-          `      rowData: [],`,
-          `      advancedFilterModel: {`,
-          `        filterType: 'join',`,
-          `        type: 'AND',`,
-          `        conditions: [],`,
-          `      },`,
-          `    };`,
-          `  },`,
-          `};`,
-          `</script>`,
-          ``,
-          `<template>`,
-          `  <div>`,
-          `    <ag-grid-vue`,
-          `      :columnDefs="columnDefs"`,
-          `      :rowData="rowData"`,
-          `      :advancedFilterModel="advancedFilterModel"`,
-          `    ></ag-grid-vue>`,
-          `  </div>`,
-          `</template>`,
-        ].join('\r\n');
-        const expected = [
-          `<script>`,
-          `import { AgGridVue } from '@ag-grid-community/vue';`,
-          ``,
-          `export default {`,
-          `  components: {`,
-          `    'ag-grid-vue': AgGridVue,`,
-          `  },`,
-          `  data() {`,
-          `    return {`,
-          `      columnDefs: [],`,
-          `      rowData: [],`,
-          `      advancedFilterModel: {`,
-          `        filter: {`,
-          `          advancedFilterModel: {`,
-          `            filterType: 'join',`,
-          `            type: 'AND',`,
-          `            conditions: []`,
-          `          }`,
-          `        }`,
-          `      },`,
-          `    };`,
-          `  },`,
-          `};`,
-          `</script>`,
-          ``,
-          `<template>`,
-          `  <div>`,
-          `    <ag-grid-vue`,
-          `      :columnDefs="columnDefs"`,
-          `      :rowData="rowData"`,
-          `      :initialState="advancedFilterModel"`,
-          `    ></ag-grid-vue>`,
-          `  </div>`,
-          `</template>`,
-        ].join('\r\n');
-        const actual = codemod(
-          { path: './input.vue', source: input },
-          {
-            applyDangerousEdits: true,
+            applyDangerousEdits: false,
             fs: createFsHelpers(memfs),
           },
         );
         expect(actual).toEqual({
-          source: expected,
-          errors: [
-            new SyntaxError(
-              'Vue components are not yet fully supported via codemods and may require manual fixes',
-            ),
-          ],
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('Modifications', () => {
+        const scenarioPath = join(__dirname, './__fixtures__/scenarios/crlf/vue/modifications');
+        const inputPath = join(scenarioPath, 'input.vue');
+        const outputPath = join(scenarioPath, 'output.vue');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = toCrlf(readFileSync(inputPath, 'utf-8'));
+        const expected = toCrlf(readFileSync(outputPath, 'utf-8'));
+        const errors = require(errorsPath);
+        const actual = codemod(
+          { path: inputPath, source: input },
+          {
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          },
+        );
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
         });
       });
     });
@@ -168,24 +238,24 @@ describe('Retains line endings', () => {
 });
 
 test('Supports legacy TypeScript cast expressions in non-TSX files', () => {
-  const input = `
-    import { Grid, GridOptions } from 'ag-grid-community';
-    const options = <GridOptions>{ foo: true };
-    new Grid(document.body, options);
-  `;
-  const expected = `
-    import { GridOptions, createGrid } from 'ag-grid-community';
-    const options = <GridOptions>{ foo: true };
-    const optionsApi = createGrid(document.body, options);
-  `;
+  const scenarioPath = join(__dirname, './__fixtures__/scenarios/cast-expressions');
+  const inputPath = join(scenarioPath, 'input.ts');
+  const outputPath = join(scenarioPath, 'output.ts');
+  const errorsPath = join(scenarioPath, 'output.errors.cjs');
+  const input = toCrlf(readFileSync(inputPath, 'utf-8'));
+  const expected = toCrlf(readFileSync(outputPath, 'utf-8'));
+  const errors = require(errorsPath);
   const actual = codemod(
-    { path: './input.ts', source: input },
+    { path: inputPath, source: input },
     {
-      applyDangerousEdits: true,
+      applyDangerousEdits: false,
       fs: createFsHelpers(memfs),
     },
   );
-  expect(actual).toEqual({ source: expected, errors: [] });
+  expect(actual).toEqual({
+    source: expected === input ? null : expected,
+    errors,
+  });
 });
 
 function createFsHelpers(fs: typeof memfs): CodemodFsUtils {

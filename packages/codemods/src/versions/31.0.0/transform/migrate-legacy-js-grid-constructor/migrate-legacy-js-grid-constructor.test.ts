@@ -14,47 +14,71 @@ describe('transforms input files correctly', () => {
   describe('ES Modules', () => {
     describe('Named import', () => {
       test('local scope', () => {
-        const scenarioPath = join(__dirname, './scenarios/esm/named-import/local-scope');
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/esm/named-import/local-scope',
+        );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
       });
 
       test('aliased import name', () => {
-        const scenarioPath = join(__dirname, './scenarios/esm/named-import/aliased-import-name');
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/esm/named-import/aliased-import-name',
+        );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
       });
     });
 
     describe('Namespaced import', () => {
       test('local scope', () => {
-        const scenarioPath = join(__dirname, './scenarios/esm/namespaced-import/local-scope');
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/esm/namespaced-import/local-scope',
+        );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
       });
     });
   });
@@ -62,64 +86,187 @@ describe('transforms input files correctly', () => {
   describe('CommonJS Modules', () => {
     describe('Named import', () => {
       test('local scope', () => {
-        const scenarioPath = join(__dirname, './scenarios/cjs/named-import/local-scope');
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/cjs/named-import/local-scope',
+        );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
-      });
-
-      test('aliased import name', () => {
-        const scenarioPath = join(__dirname, './scenarios/cjs/named-import/aliased-import-name');
-        const inputPath = join(scenarioPath, 'input.js');
-        const outputPath = join(scenarioPath, 'output.js');
-        const input = readFileSync(inputPath, 'utf-8');
-        const expected = readFileSync(outputPath, 'utf-8');
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
-          filename: inputPath,
-          applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
-      });
-    });
-
-    describe('Namespaced import', () => {
-      test('local scope', () => {
-        const scenarioPath = join(__dirname, './scenarios/cjs/namespaced-import/local-scope');
-        const inputPath = join(scenarioPath, 'input.js');
-        const outputPath = join(scenarioPath, 'output.js');
-        const input = readFileSync(inputPath, 'utf-8');
-        const expected = readFileSync(outputPath, 'utf-8');
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
-          filename: inputPath,
-          applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
-        });
-        expect(actual).toEqual({ source: expected, errors: [] });
       });
 
       test('aliased import name', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/cjs/namespaced-import/aliased-import-name',
+          './__fixtures__/scenarios/cjs/named-import/aliased-import-name',
         );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
           fs: createFsHelpers(memfs),
         });
-        expect(actual).toEqual({ source: expected, errors: [] });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+    });
+
+    describe('Namespaced import', () => {
+      test('local scope', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/cjs/namespaced-import/local-scope',
+        );
+        const inputPath = join(scenarioPath, 'input.js');
+        const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('aliased import name', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/cjs/namespaced-import/aliased-import-name',
+        );
+        const inputPath = join(scenarioPath, 'input.js');
+        const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+    });
+  });
+
+  describe('UMD Modules', () => {
+    describe('Named import', () => {
+      test('local scope', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/umd/named-import/local-scope',
+        );
+        const inputPath = join(scenarioPath, 'input.js');
+        const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('aliased import name', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/umd/named-import/aliased-import-name',
+        );
+        const inputPath = join(scenarioPath, 'input.js');
+        const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+    });
+
+    describe('Namespaced import', () => {
+      test('local scope', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/umd/namespaced-import/local-scope',
+        );
+        const inputPath = join(scenarioPath, 'input.js');
+        const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('aliased import name', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/umd/namespaced-import/aliased-import-name',
+        );
+        const inputPath = join(scenarioPath, 'input.js');
+        const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
       });
     });
   });
