@@ -27,7 +27,9 @@ import path from 'node:path';
 import {
   findTemplateNodes,
   getTemplateNodeChild,
+  mergeSourceChunks,
   printTemplate,
+  SourceChunk,
   type TemplateEngine,
   type TemplateFormatter,
   type TemplateMutation,
@@ -39,6 +41,23 @@ import {
 
 export * as Angular from '@angular-eslint/bundled-angular-compiler';
 export { TSESTree } from '@typescript-eslint/types';
+
+export enum BindingType {
+  Property = 0 as Angular.BindingType.Property,
+  Attribute = 1 as Angular.BindingType.Attribute,
+  Class = 2 as Angular.BindingType.Class,
+  Style = 3 as Angular.BindingType.Style,
+  Animation = 4 as Angular.BindingType.Animation,
+}
+
+export enum SecurityContext {
+  NONE = 0 as Angular.core.SecurityContext.NONE,
+  HTML = 1 as Angular.core.SecurityContext.HTML,
+  STYLE = 2 as Angular.core.SecurityContext.STYLE,
+  SCRIPT = 3 as Angular.core.SecurityContext.SCRIPT,
+  URL = 4 as Angular.core.SecurityContext.URL,
+  RESOURCE_URL = 5 as Angular.core.SecurityContext.RESOURCE_URL,
+}
 
 export type AngularAstNode = TmplAST | TmplAstNode;
 
@@ -62,7 +81,11 @@ const ANGULAR_COMPONENT_METADATA_TEMPLATE_FIELD_NAME = 'template';
 const ANGULAR_COMPONENT_METADATA_TEMPLATE_URL_FIELD_NAME = 'templateUrl';
 const ANGULAR_VIEW_CHILD_DECORATOR_IMPORT_NAME = 'ViewChild';
 
-export interface AngularNodeType<T extends TmplAstNode = TmplAstNode> {
+export interface AngularTemplateNodeType<T extends TmplAstNode = TmplAstNode> {
+  new (...args: Array<any>): T;
+}
+
+export interface AngularExpressionNodeType<T extends Angular.AST = Angular.AST> {
   new (...args: Array<any>): T;
 }
 
@@ -343,18 +366,30 @@ export function isAngularAstRootNode(node: AngularAstNode): node is TmplAST {
 }
 
 export function isTypedAngularAstNode<T extends TmplAstNode>(
-  nodeType: AngularNodeType<T>,
+  nodeType: AngularTemplateNodeType<T>,
   node: AngularAstNode,
 ): node is T {
   return !isAngularAstRootNode(node) && node.constructor.name === (nodeType as Function).name;
 }
 
+export function isTypedAngularExpressionNode<T extends Angular.AST>(
+  nodeType: AngularExpressionNodeType<T>,
+  node: Angular.AST,
+): node is T {
+  return node.constructor.name === (nodeType as Function).name;
+}
+
 export function isTypedAngularTemplateNode<T extends TmplAstNode>(
-  nodeType: AngularNodeType<T>,
+  nodeType: AngularTemplateNodeType<T>,
   templateNode: AngularTemplateNode<AngularAstNode>,
 ): templateNode is AngularTemplateNode<T> {
   const { node } = templateNode;
   return isTypedAngularAstNode(nodeType, node);
+}
+
+export function getAngularExpressionRoot(node: Angular.AST): Angular.AST {
+  if (isTypedAngularExpressionNode(Angular.ASTWithSource, node)) return node.ast;
+  return node;
 }
 
 function printAngularNode(
@@ -364,32 +399,292 @@ function printAngularNode(
 ): string {
   switch (node.constructor.name) {
     // FIXME: format all Angular element attribute node types
-    case Angular.TmplAstBoundAttribute.name:
-      if (!previous || previous.constructor.name !== node.constructor.name) break;
-      const previousNode = previous as Angular.TmplAstBoundAttribute;
-      const updatedNode = node as Angular.TmplAstBoundAttribute;
-      const isKeyUpdate =
-        updatedNode.name !== previousNode.name &&
-        updatedNode.type === previousNode.type &&
-        updatedNode.securityContext === previousNode.securityContext &&
-        updatedNode.value === previousNode.value &&
-        updatedNode.unit === previousNode.unit &&
-        updatedNode.i18n === previousNode.i18n;
-      if (!isKeyUpdate) break;
-      const prefix = templateSource.slice(
-        previousNode.sourceSpan.start.offset,
-        previousNode.keySpan.start.offset,
+    case Angular.TmplAstTextAttribute.name: {
+      const result = printAngularTextAttributeNode(
+        node as Angular.TmplAstTextAttribute,
+        previous,
+        templateSource,
       );
-      const suffix = templateSource.slice(
-        previousNode.keySpan.end.offset,
-        previousNode.sourceSpan.end.offset,
+      if (typeof result === 'string') return result;
+      break;
+    }
+    case Angular.TmplAstBoundAttribute.name: {
+      const result = printAngularBoundAttributeNode(
+        node as Angular.TmplAstBoundAttribute,
+        previous,
+        templateSource,
       );
-      return `${prefix}${updatedNode.name}${suffix}`;
+      if (typeof result === 'string') return result;
+      break;
+    }
+    case Angular.TmplAstBoundEvent.name: {
+      const result = printAngularBoundEventNode(
+        node as Angular.TmplAstBoundEvent,
+        previous,
+        templateSource,
+      );
+      if (typeof result === 'string') return result;
+      break;
+    }
     default:
       // FIXME: format all Angular AST node types
       break;
   }
   throw new Error(`Unable to format node type: ${node.constructor.name}`);
+}
+
+function printAngularTextAttributeNode(
+  node: Angular.TmplAstTextAttribute,
+  previous: AngularAstNode | null,
+  templateSource: string,
+): string | null {
+  // If the node already exists, generate the output code based on the existing node
+  if (previous && previous.constructor.name === node.constructor.name) {
+    return patchExistingAngularTextAttributeNode(
+      node,
+      previous as Angular.TmplAstTextAttribute,
+      templateSource,
+    );
+  }
+  // Otherwise print the node from scratch
+  return formatAngularTextAttributeNode(node);
+}
+
+function patchExistingAngularTextAttributeNode(
+  updatedNode: Angular.TmplAstTextAttribute,
+  existingNode: Angular.TmplAstTextAttribute,
+  templateSource: string,
+): string | null {
+  const hasKeyUpdate = updatedNode.name !== existingNode.name;
+  const hasValueUpdate = updatedNode.value !== existingNode.value;
+  // If the node is identical to the existing node, return the existing source
+  if (!hasKeyUpdate && !hasValueUpdate) {
+    return templateSource.slice(
+      existingNode.sourceSpan.start.offset,
+      existingNode.sourceSpan.end.offset,
+    );
+  }
+  // Otherwise print the node from scratch
+  return formatAngularTextAttributeNode(updatedNode);
+}
+
+function formatAngularTextAttributeNode(node: Angular.TmplAstTextAttribute): string {
+  const isShorthandBooleanAttribute = !node.value && !node.valueSpan;
+  if (isShorthandBooleanAttribute) return node.name;
+  return `${node.name}="${escapeAngularString(node.value)}"`;
+}
+
+function printAngularBoundAttributeNode(
+  node: Angular.TmplAstBoundAttribute,
+  previous: AngularAstNode | null,
+  templateSource: string,
+): string | null {
+  // If the node already exists, generate the output code based on the existing node
+  if (previous && previous.constructor.name === node.constructor.name) {
+    return patchExistingAngularBoundAttributeNode(
+      node,
+      previous as Angular.TmplAstBoundAttribute,
+      templateSource,
+    );
+  }
+  // Otherwise print the node from scratch
+  return formatAngularBoundAttributeNode(node, templateSource);
+}
+
+function patchExistingAngularBoundAttributeNode(
+  updatedNode: Angular.TmplAstBoundAttribute,
+  existingNode: Angular.TmplAstBoundAttribute,
+  templateSource: string,
+): string | null {
+  const hasKeyUpdate = updatedNode.name !== existingNode.name;
+  const hasValueUpdate = updatedNode.value !== existingNode.value;
+  if (!hasKeyUpdate && !hasValueUpdate) {
+    return templateSource.slice(
+      existingNode.sourceSpan.start.offset,
+      existingNode.sourceSpan.end.offset,
+    );
+  }
+  return mergeSourceChunks([
+    ...(hasKeyUpdate
+      ? [
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.sourceSpan.start.offset,
+              end: existingNode.keySpan.start.offset,
+            },
+          },
+          updatedNode.name,
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.keySpan.end.offset,
+              end: existingNode.valueSpan
+                ? existingNode.valueSpan.start.offset
+                : existingNode.sourceSpan.end.offset,
+            },
+          },
+        ]
+      : [
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.sourceSpan.start.offset,
+              end: existingNode.valueSpan
+                ? existingNode.valueSpan.start.offset
+                : existingNode.sourceSpan.end.offset,
+            },
+          },
+        ]),
+    ...(hasValueUpdate
+      ? existingNode.valueSpan
+        ? [
+            formatAngularExpression(updatedNode.value, templateSource),
+            {
+              source: templateSource,
+              range: {
+                start: existingNode.valueSpan.end.offset,
+                end: existingNode.sourceSpan.end.offset,
+              },
+            },
+          ]
+        : [`="${formatAngularExpression(updatedNode.value, templateSource)}"`]
+      : existingNode.valueSpan
+      ? [
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.valueSpan.start.offset,
+              end: existingNode.sourceSpan.end.offset,
+            },
+          },
+        ]
+      : []),
+  ]);
+}
+
+function formatAngularBoundAttributeNode(
+  node: Angular.TmplAstBoundAttribute,
+  templateSource: string,
+): string | null {
+  return `[${node.name}]="${formatAngularExpression(node.value, templateSource)}"`;
+}
+
+function printAngularBoundEventNode(
+  node: Angular.TmplAstBoundEvent,
+  previous: AngularAstNode | null,
+  templateSource: string,
+): string | null {
+  // If the node already exists, generate the output code based on the existing node
+  if (previous && previous.constructor.name === node.constructor.name) {
+    return patchExistingAngularBoundEventNode(
+      node,
+      previous as Angular.TmplAstBoundEvent,
+      templateSource,
+    );
+  }
+  // Otherwise print the node from scratch
+  return formatAngularBoundEventNode(node, templateSource);
+}
+
+function patchExistingAngularBoundEventNode(
+  updatedNode: Angular.TmplAstBoundEvent,
+  existingNode: Angular.TmplAstBoundEvent,
+  templateSource: string,
+): string | null {
+  const hasKeyUpdate = updatedNode.name !== existingNode.name;
+  const hasValueUpdate = updatedNode.handler !== existingNode.handler;
+  if (!hasKeyUpdate && !hasValueUpdate) {
+    return templateSource.slice(
+      existingNode.sourceSpan.start.offset,
+      existingNode.sourceSpan.end.offset,
+    );
+  }
+  return mergeSourceChunks([
+    ...(hasKeyUpdate
+      ? [
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.sourceSpan.start.offset,
+              end: existingNode.keySpan.start.offset,
+            },
+          },
+          updatedNode.name,
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.keySpan.end.offset,
+              end: existingNode.handlerSpan.start.offset,
+            },
+          },
+        ]
+      : [
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.sourceSpan.start.offset,
+              end: existingNode.handlerSpan.start.offset,
+            },
+          },
+        ]),
+    ...(hasValueUpdate
+      ? [
+          formatAngularExpression(updatedNode.handler, templateSource),
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.handlerSpan.end.offset,
+              end: existingNode.sourceSpan.end.offset,
+            },
+          },
+        ]
+      : [
+          {
+            source: templateSource,
+            range: {
+              start: existingNode.handlerSpan.start.offset,
+              end: existingNode.sourceSpan.end.offset,
+            },
+          },
+        ]),
+  ]);
+}
+
+function formatAngularBoundEventNode(
+  node: Angular.TmplAstBoundEvent,
+  templateSource: string,
+): string | null {
+  return `(${node.name})="${formatAngularExpression(node.handler, templateSource)}"`;
+}
+
+function escapeAngularString(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function formatAngularExpression(expression: Angular.AST, templateSource: string): string {
+  const unmodifiedSourceSpan: Angular.AbsoluteSourceSpan | undefined = expression.sourceSpan;
+  if (unmodifiedSourceSpan) {
+    return templateSource.slice(unmodifiedSourceSpan.start, unmodifiedSourceSpan.end);
+  }
+  switch (expression.constructor.name) {
+    case Angular.LiteralPrimitive.name:
+      return String((expression as Angular.LiteralPrimitive).value);
+    case Angular.PropertyRead.name:
+      return (expression as Angular.PropertyRead).name;
+    case Angular.PrefixNot.name:
+      return `!${formatAngularExpression(
+        (expression as Angular.PrefixNot).expression,
+        templateSource,
+      )}`;
+    default:
+      throw new Error(`Unable to format Angular expression: ${expression.constructor.name}`);
+  }
 }
 
 function getStringExpressionValue(value: NodePath<Expression>): string | null {
@@ -504,7 +799,7 @@ function getAngularViewChildDecoratorOptions(
 
 export function getAngularTemplateRootElements(ast: TmplAST): Array<TmplAstElement> {
   return ast.templateNodes.flatMap((node) => {
-    const visitor = new RootElementVisitor();
+    const visitor = new TemplateRootElementVisitor();
     node.visit(visitor);
     return visitor.results;
   });
@@ -529,40 +824,41 @@ export function getAngularComponentDataFieldReferences(
   return findNamedClassMemberAccessorExpressions(component, fieldName);
 }
 
-export function getAngularPropertyReadExpressionName(ast: AST): string | null {
-  const visitor = new PropertyReadExpressionNameVisitor();
+export function getAngularComponentPropertyReadExpression(ast: AST): Angular.PropertyRead | null {
+  const visitor = new ComponentPropertyReadExpressionVisitor();
   ast.visit(visitor);
   if (visitor.results.length === 0) return null;
   const [result] = visitor.results;
+  if (!isTypedAngularExpressionNode(Angular.ImplicitReceiver, result.receiver)) return null;
   return result;
 }
 
-export function isNamedAngularMethodCallExpression(methodName: string, ast: AST): boolean {
-  const visitor = new MethodCallExpressionNameVisitor(methodName);
+export function isNamedAngularComponentMethodCallExpression(methodName: string, ast: AST): boolean {
+  const visitor = new ComponentMethodCallExpressionNameVisitor(methodName);
   ast.visit(visitor);
   return visitor.results.some((handler) => handler.methodName === methodName);
 }
 
-class RootElementVisitor extends TmplAstRecursiveVisitor {
-  public results: Array<TmplAstElement> = [];
-  public visitElement(element: TmplAstElement): void {
-    this.results.push(element);
-    return; // Prevent further traversal within root elements
+export function createAngularBooleanLiteral(value: boolean): Angular.LiteralPrimitive {
+  return new Angular.LiteralPrimitive(undefined!, undefined!, value);
+}
+
+export function invertAngularBooleanExpression(expression: Angular.AST): Angular.AST {
+  const value = getAngularExpressionRoot(expression);
+  const existingTruthinessValue = isTypedAngularExpressionNode(Angular.LiteralPrimitive, value)
+    ? Boolean(value.value)
+    : isTypedAngularExpressionNode(Angular.EmptyExpr, value)
+    ? true
+    : null;
+  if (typeof existingTruthinessValue === 'boolean') {
+    const invertedValue = !existingTruthinessValue;
+    return createAngularBooleanLiteral(invertedValue);
+  } else {
+    return new Angular.PrefixNot(undefined!, undefined!, value);
   }
 }
 
-class NamedElementVisitor extends TmplAstRecursiveVisitor {
-  public results: Array<TmplAstElement> = [];
-  public constructor(private elementName: string) {
-    super();
-  }
-  public visitElement(element: TmplAstElement): void {
-    if (element.name === this.elementName) this.results.push(element);
-    return super.visitElement(element);
-  }
-}
-
-class MethodCallExpressionNameVisitor extends RecursiveAstVisitor {
+class ComponentMethodCallExpressionNameVisitor extends RecursiveAstVisitor {
   public results: Array<{ handler: Call; methodName: string }> = [];
   private rootNode: AST | null = null;
   public constructor(private methodName: string) {
@@ -579,16 +875,18 @@ class MethodCallExpressionNameVisitor extends RecursiveAstVisitor {
   public visitCall(ast: Call, context: any): any {
     if (ast === this.rootNode) {
       const handlerReference = ast.receiver;
-      const visitor = new PropertyReadExpressionNameVisitor();
+      const visitor = new ComponentPropertyReadExpressionVisitor();
       visitor.visit(handlerReference);
-      this.results.push(...visitor.results.map((methodName) => ({ handler: ast, methodName })));
+      this.results.push(
+        ...visitor.results.map((accessor) => ({ handler: ast, methodName: accessor.name })),
+      );
     }
     return super.visitCall(ast, context);
   }
 }
 
-class PropertyReadExpressionNameVisitor extends RecursiveAstVisitor {
-  public results: Array<string> = [];
+class ComponentPropertyReadExpressionVisitor extends RecursiveAstVisitor {
+  public results: Array<PropertyRead> = [];
   private rootNode: AST | null = null;
   public visit(ast: AST, context?: any): any {
     if (!this.rootNode) this.rootNode = ast;
@@ -600,8 +898,16 @@ class PropertyReadExpressionNameVisitor extends RecursiveAstVisitor {
   }
   public visitPropertyRead(ast: PropertyRead, context: any) {
     if (ast === this.rootNode) {
-      this.results.push(ast.name);
+      this.results.push(ast);
     }
     return super.visitPropertyRead(ast, context);
+  }
+}
+
+class TemplateRootElementVisitor extends TmplAstRecursiveVisitor {
+  public results: Array<TmplAstElement> = [];
+  public visitElement(element: TmplAstElement): void {
+    this.results.push(element);
+    return; // Prevent further traversal within root elements
   }
 }

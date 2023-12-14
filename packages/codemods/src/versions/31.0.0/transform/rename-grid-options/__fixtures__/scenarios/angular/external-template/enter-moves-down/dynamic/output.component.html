@@ -1,0 +1,9 @@
+<div>
+  <ag-grid-angular
+    [columnDefs]="columnDefs"
+    [rowData]="rowData"
+    [enterNavigatesVertically]="{ foo: true }.foo"
+    [enterNavigatesVerticallyAfterEdit]="{ foo: true }.foo"
+    (gridReady)="onGridReady($event)"
+  ></ag-grid-angular>
+</div>

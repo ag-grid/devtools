@@ -1,0 +1,8 @@
+<div>
+  <ag-grid-angular
+    [columnDefs]="columnDefs"
+    [rowData]="rowData"
+    [suppressChartToolPanelsButton]="!{ foo: true }.foo"
+    (gridReady)="onGridReady($event)"
+  ></ag-grid-angular>
+</div>
