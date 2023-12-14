@@ -10,6 +10,7 @@ export default mergeConfig(
       coverage: {
         provider: 'v8',
         reporter: ['lcovonly', 'text'],
+        exclude: ['**__fixtures__/**'],
       },
     },
   }),

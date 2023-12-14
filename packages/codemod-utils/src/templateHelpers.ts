@@ -171,11 +171,11 @@ export function printTemplate<TRoot, TNode>(
   return mergeSourceChunks(chunkSets.flatMap((chunks) => chunks || []));
 }
 
-type SourceChunk<TNode> =
+export type SourceChunk<TNode> =
   | string
   | { source: TemplateSource<any, TNode>['source']; range: TemplateRange };
 
-function mergeSourceChunks<TNode>(chunks: Array<SourceChunk<TNode>>): string {
+export function mergeSourceChunks<TNode>(chunks: Array<SourceChunk<TNode>>): string {
   const { completed, pending } = chunks.reduce(
     (
       { pending, completed },

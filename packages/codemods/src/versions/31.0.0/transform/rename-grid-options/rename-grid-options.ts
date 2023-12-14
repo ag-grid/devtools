@@ -1,36 +1,53 @@
 import {
-  ast,
-  getLiteralPropertyKey,
-  node as t,
   AccessorKey,
+  areLiteralsEqual,
+  ast,
+  createPropertyKey,
+  createStaticPropertyKey,
+  getLiteralPropertyKey,
+  getLocatedPath,
+  getNamedObjectLiteralStaticProperty,
+  getOptionalNodeFieldValue,
+  node as t,
+  type AstCliContext,
   type AstNode,
   type AstTransform,
   type AstTransformContext,
   type NodePath,
   type Types,
-  getNamedObjectLiteralStaticProperty,
-  AstCliContext,
 } from '@ag-grid-devtools/ast';
 import {
   Angular,
+  BindingType,
+  createAngularBooleanLiteral,
   createVueAstNode,
+  createVueBooleanLiteral,
+  createVueExpressionContainer,
+  getAngularExpressionRoot,
+  getAngularTemplateNodeChild,
   getFrameworkEventNames,
+  getVueExpressionContainerExpression,
   getVueTemplateNodeChild,
-  isPropertyAssignmentNode,
+  invertAngularBooleanExpression,
+  invertVueBooleanExpression,
   isPropertyInitializerNode,
+  isTypedAngularExpressionNode,
   isTypedAngularTemplateNode,
+  isVueAttributeAttribute,
   isVueDirectiveAttribute,
   removeTemplateNode,
   replaceTemplateNode,
+  SecurityContext,
   visitGridOptionsProperties,
+  type AngularTemplateNode,
   type AST,
   type PropertyAccessorNode,
   type PropertyAssignmentNode,
   type PropertyInitializerNode,
   type VueTemplateNode,
-  type AngularTemplateNode,
+  isTypedVueTemplateNode,
 } from '@ag-grid-devtools/codemod-utils';
-import { match, nonNull, unreachable } from '@ag-grid-devtools/utils';
+import { Enum, match, nonNull, unreachable } from '@ag-grid-devtools/utils';
 
 type AssignmentExpression = Types.AssignmentExpression;
 type Class = Types.Class;
@@ -38,56 +55,104 @@ type Expression = Types.Expression;
 type Identifier = Types.Identifier;
 type JSXAttribute = Types.JSXAttribute;
 type JSXEmptyExpression = Types.JSXEmptyExpression;
+type JSXElement = Types.JSXElement;
+type JSXIdentifier = Types.JSXIdentifier;
+type JSXNamespacedName = Types.JSXNamespacedName;
 type Literal = Types.Literal;
+type MemberExpression = Types.MemberExpression;
 type ObjectExpression = Types.ObjectExpression;
 type ObjectMethod = Types.ObjectMethod;
+type ObjectProperty = Types.ObjectProperty;
 type PrivateName = Types.PrivateName;
 
 type VAttribute = AST.VAttribute;
 type VDirective = AST.VDirective;
+type VDirectiveKey = AST.VDirectiveKey;
+type VElement = AST.VElement;
+type VExpressionContainer = AST.VExpressionContainer;
+type VLiteral = AST.VLiteral;
 
-interface JsxBooleanShorthandAttribute extends JSXAttribute {
-  value?: undefined | null;
-}
+type ObjectPropertyNode = ObjectProperty | ObjectMethod;
+type JsxPropertyNode = JSXAttribute;
+type VuePropertyNode = VAttribute | VDirective;
+type AngularPropertyNode =
+  | Angular.TmplAstTextAttribute
+  | Angular.TmplAstBoundAttribute
+  | Angular.TmplAstBoundEvent;
 
-type PropertyValueNode =
-  | Expression
-  | ObjectMethod
-  | JsxBooleanShorthandAttribute
-  | JSXEmptyExpression;
+type ObjectPropertyValue = NodePath<ObjectPropertyValueNode>;
+type JsxPropertyValue = NodePath<JsxPropertyValueNode> | true;
+type AngularPropertyValue = AngularPropertyValueNode | string;
+type VuePropertyValue = VueTemplateNode<VuePropertyValueNode> | true;
 
-function isPropertyValueNode(path: NodePath<AstNode>): path is NodePath<PropertyValueNode> {
-  return (
-    path.isExpression() ||
-    path.isObjectMethod() ||
-    (path.isJSXAttribute() && !path.node.value) ||
-    path.isJSXEmptyExpression()
-  );
-}
+type ObjectPropertyValueNode = Expression | ObjectMethod;
+type JsxPropertyValueNode = Expression | JSXEmptyExpression;
+type VuePropertyValueNode = VLiteral | VExpressionContainer;
+type AngularPropertyValueNode = Angular.AST;
 
-const MIGRATION_URL_V31 = 'https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/';
+const MIGRATION_URL_V31 = 'https://ag-grid.com/javascript-data-grid/upgrading-to-ag-grid-31/';
 
 const GRID_OPTION_REPLACEMENTS = Object.entries({
   advancedFilterModel: migrateProperty(
     'initialState',
     transformOptionalValue(
-      (value) => ast.expression`{ filter: { advancedFilterModel: ${value.node} }}`,
+      (() => {
+        const warnings = frameworkWarning(
+          getManualInterventionMessage('advancedFilterModel', MIGRATION_URL_V31),
+        );
+        return {
+          property(value) {
+            return transform(value);
+          },
+          jsxAttribute(value) {
+            if (isNonNullJsxPropertyValue(value)) return transform(value);
+            return null;
+          },
+          angularAttribute: warnings.angularAttribute,
+          vueAttribute: warnings.vueAttribute,
+        };
+        function transform(value: ObjectPropertyValue): Expression {
+          return ast.expression`{ filter: { advancedFilterModel: ${value.node} }}`;
+        }
+      })(),
     ),
   ),
   defaultExcelExportParams: transformPropertyValue(
-    transformOptionalValue((value) => {
-      if (!value.isObjectExpression()) return value.node;
-      const exportMode = getNamedObjectLiteralStaticProperty(value, 'exportMode');
-      const suppressTextAsCDATA = getNamedObjectLiteralStaticProperty(value, 'suppressTextAsCDATA');
-      if (!exportMode && !suppressTextAsCDATA) return value.node;
-      return t.objectExpression(
-        value.node.properties.filter((property) => {
-          if (exportMode && property === exportMode.node) return false;
-          if (suppressTextAsCDATA && property === suppressTextAsCDATA.node) return false;
-          return true;
-        }),
-      );
-    }),
+    transformOptionalValue(
+      (() => {
+        const warnings = frameworkWarning(
+          getManualInterventionMessage('advancedFilterModel', MIGRATION_URL_V31),
+        );
+        return {
+          property(value) {
+            if (!value.isExpression()) return value.node;
+            return transform(value);
+          },
+          jsxAttribute(value) {
+            if (isNonNullJsxPropertyValue(value)) return transform(value);
+            return null;
+          },
+          angularAttribute: warnings.angularAttribute,
+          vueAttribute: warnings.vueAttribute,
+        };
+        function transform(value: NodePath<Expression>): Expression {
+          if (!value.isObjectExpression()) return value.node;
+          const exportMode = getNamedObjectLiteralStaticProperty(value, 'exportMode');
+          const suppressTextAsCDATA = getNamedObjectLiteralStaticProperty(
+            value,
+            'suppressTextAsCDATA',
+          );
+          if (!exportMode && !suppressTextAsCDATA) return value.node;
+          return t.objectExpression(
+            value.node.properties.filter((property) => {
+              if (exportMode && property === exportMode.node) return false;
+              if (suppressTextAsCDATA && property === suppressTextAsCDATA.node) return false;
+              return true;
+            }),
+          );
+        }
+      })(),
+    ),
   ),
   enableChartToolPanelsButton: migrateProperty(
     'suppressChartToolPanelsButton',
@@ -129,11 +194,31 @@ const GRID_OPTION_REPLACEMENTS = Object.entries({
   serverSideSortingAlwaysResets: migrateProperty('serverSideSortAllLevels', migrateOptionalValue()),
   serverSideStoreType: migrateProperty(
     'suppressServerSideInfiniteScroll',
-    transformOptionalValue((value) => {
-      if (value.isStringLiteral()) return t.booleanLiteral(value.node.value !== 'partial');
-      if (!value.isExpression()) return t.booleanLiteral(false);
-      return t.binaryExpression('!==', value.node, t.stringLiteral('partial'));
-    }),
+    transformOptionalValue(
+      (() => {
+        const warnings = frameworkWarning(
+          getManualInterventionMessage('suppressServerSideInfiniteScroll', MIGRATION_URL_V31),
+        );
+        return {
+          property(value) {
+            return transformPropertyValue(value.node);
+          },
+          jsxAttribute(value, element, attribute, context) {
+            if (value === true) return null;
+            const { node } = value;
+            if (t.isJSXEmptyExpression(node)) return null;
+            return transformPropertyValue(node);
+          },
+          angularAttribute: warnings.angularAttribute,
+          vueAttribute: warnings.vueAttribute,
+        };
+        function transformPropertyValue(value: Expression | ObjectMethod): Expression {
+          if (t.isStringLiteral(value)) return t.booleanLiteral(value.value !== 'partial');
+          if (!t.isExpression(value)) return t.booleanLiteral(false);
+          return t.binaryExpression('!==', value, t.stringLiteral('partial'));
+        }
+      })(),
+    ),
   ),
   suppressAggAtRootLevel: migrateProperty(
     'alwaysAggregateAtRootLevel',
@@ -159,9 +244,12 @@ const GRID_OPTION_REPLACEMENTS = Object.entries({
     removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
   ),
   ...frameworkEvent('rowDataChanged', (eventName) =>
-    migrateProperty(eventName.replace(/Changed$/, 'Updated'), migrateOptionalValue()),
+    migrateProperty(
+      eventName.replace(/changed$/, 'updated').replace(/Changed$/, 'Updated'),
+      migrateOptionalValue(),
+    ),
   ),
-} as Record<string, PropertyTransformer<AstTransformContext<AstCliContext>>>).map(
+} as Record<string, ObjectPropertyTransformer<AstTransformContext<AstCliContext>>>).map(
   ([key, transform]) => ({
     accessor: { key: t.identifier(key), computed: false },
     transform,
@@ -174,14 +262,37 @@ function frameworkEvent<T>(key: string, factory: (frameworkKey: string) => T): R
   );
 }
 
+function frameworkWarning<S extends AstTransformContext<AstCliContext>>(
+  message: string,
+): Omit<ObjectPropertyValueTransformer<S>, 'property'> {
+  return {
+    jsxAttribute(value, element, attribute, context) {
+      context.opts.warn(attribute, message);
+      return value === true ? value : value.node;
+    },
+    angularAttribute(value, component, element, attribute, context) {
+      context.opts.warn(getLocatedPath(component) || component, message);
+      return value;
+    },
+    vueAttribute(value, component, element, attribute, context) {
+      context.opts.warn(getLocatedPath(component) || component, message);
+      return value === true ? value : value.node;
+    },
+  };
+}
+
 function getDeprecationMessage(key: string, migrationUrl: string): string {
   return `The grid option "${key}" is deprecated. Please refer to the migration guide for more details: ${migrationUrl}`;
+}
+
+function getManualInterventionMessage(key: string, migrationUrl: string): string {
+  return `The grid option "${key}" cannot be automatically migrated. Please refer to the migration guide for more details: ${migrationUrl}`;
 }
 
 const transform: AstTransform<AstCliContext> = {
   visitor: visitGridOptionsProperties({
     init(path, context) {
-      const accessor = parseGridOptionInitializerAccessor(path);
+      const accessor = parseObjectPropertyInitializerAccessor(path);
       if (!accessor) return;
       // Iterate over each of the replacements until a match is found
       for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
@@ -194,7 +305,7 @@ const transform: AstTransform<AstCliContext> = {
       }
     },
     get(path, context) {
-      const accessor = parseGridOptionGetterAccessor(path);
+      const accessor = parseObjectPropertyGetterAccessor(path);
       if (!accessor) return;
       // Iterate over each of the replacements until a match is found
       for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
@@ -207,7 +318,7 @@ const transform: AstTransform<AstCliContext> = {
       }
     },
     set(path, context) {
-      const accessor = parseGridOptionAssignmentAccessor(path);
+      const accessor = parseObjectPropertyAssignmentAccessor(path);
       if (!accessor) return;
       // Iterate over each of the replacements until a match is found
       for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
@@ -219,20 +330,7 @@ const transform: AstTransform<AstCliContext> = {
         break;
       }
     },
-    initNamedProperty(key, path, context) {
-      const accessor = parseNamedPropertyAccessor(key);
-      if (!accessor) return;
-      // Iterate over each of the replacements until a match is found
-      for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
-        // Skip over any properties that do not match any of the defined replacement patterns
-        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-        // If a match was found, apply the appropriate transformation
-        if (isPropertyValueNode(path)) transform.value(path, context);
-        // Skip all other replacements
-        break;
-      }
-    },
-    jsxAttribute(path, context) {
+    jsxAttribute(path, element, context) {
       const accessor = parseJsxAttributeAccessor(path.node);
       if (!accessor) return;
       // Iterate over each of the replacements until a match is found
@@ -240,30 +338,30 @@ const transform: AstTransform<AstCliContext> = {
         // Skip over any properties that do not match any of the defined replacement patterns
         if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
         // If a match was found, apply the appropriate transformation
-        transform.jsxAttribute(path, context);
+        transform.jsxAttribute(path, element, context);
         // Skip all other replacements
         break;
       }
     },
-    angularAttribute(attributeNode, component, context) {
+    angularAttribute(attributeNode, component, element, context) {
       const accessor = parseAngularAttributeAccessor(attributeNode);
       // Iterate over each of the replacements until a match is found
       for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
         // Skip over any properties that do not match any of the defined replacement patterns
         if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-        transform.angularAttribute(attributeNode, component, context);
+        transform.angularAttribute(attributeNode, component, element, context);
         // Skip all other replacements
         break;
       }
     },
-    vueAttribute(attributeNode, component, context) {
+    vueAttribute(attributeNode, component, element, context) {
       const accessor = parseGridOptionVueAttributeAccessor(attributeNode.node);
       if (!accessor) return;
       // Iterate over each of the replacements until a match is found
       for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
         // Skip over any properties that do not match any of the defined replacement patterns
         if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-        transform.vueAttribute(attributeNode, component, context);
+        transform.vueAttribute(attributeNode, component, element, context);
         // Skip all other replacements
         break;
       }
@@ -278,28 +376,174 @@ interface PropertyAccessor {
   computed: boolean;
 }
 
-type PropertyTransformer<S> = {
+type ObjectPropertyTransformer<S> = {
   init(node: NodePath<PropertyInitializerNode>, context: S): void;
   get(node: NodePath<PropertyAccessorNode>, context: S): void;
   set(node: NodePath<PropertyAssignmentNode>, context: S): void;
-  jsxAttribute(node: NodePath<JSXAttribute>, context: S): void;
-  value(node: NodePath<PropertyValueNode>, context: S): void;
+  jsxAttribute(node: NodePath<JsxPropertyNode>, element: NodePath<JSXElement>, context: S): void;
   angularAttribute(
-    attributeNode: AngularTemplateNode<
-      Angular.TmplAstTextAttribute | Angular.TmplAstBoundAttribute | Angular.TmplAstBoundEvent
-    >,
+    attributeNode: AngularTemplateNode<AngularPropertyNode>,
     component: NodePath<Class>,
+    element: AngularTemplateNode<Angular.TmplAstElement>,
     context: S,
   ): void;
   vueAttribute(
-    // FIXME: Support alternative attribute types when renaming Vue element attributes
-    templateNode: VueTemplateNode<VAttribute | VDirective>,
+    templateNode: VueTemplateNode<VuePropertyNode>,
     component: NodePath<ObjectExpression>,
+    element: VueTemplateNode<VElement>,
     context: S,
   ): void;
 };
 
-function parseGridOptionInitializerAccessor(
+interface ObjectPropertyValueTransformer<S extends AstTransformContext<AstCliContext>> {
+  property(
+    value: ObjectPropertyValue,
+    accessor: AccessorKey,
+    context: S,
+  ): ObjectPropertyValueNode | null;
+  jsxAttribute(
+    value: JsxPropertyValue,
+    element: NodePath<JSXElement>,
+    attribute: NodePath<JsxPropertyNode>,
+    context: S,
+  ): JsxPropertyValueNode | true | null;
+  angularAttribute(
+    value: AngularPropertyValue,
+    component: NodePath<Class>,
+    element: AngularTemplateNode<Angular.TmplAstElement>,
+    attribute: AngularTemplateNode<AngularPropertyNode>,
+    context: S,
+  ): AngularPropertyValueNode | string | null;
+  vueAttribute(
+    value: VuePropertyValue,
+    component: NodePath<ObjectExpression>,
+    element: VueTemplateNode<VElement>,
+    attribute: VueTemplateNode<VuePropertyNode>,
+    context: S,
+  ): VuePropertyValueNode | true | null;
+}
+
+type AngularProperty = Enum<{
+  Text: {
+    attribute: AngularTemplateNode<Angular.TmplAstTextAttribute>;
+  };
+  Bound: {
+    attribute: AngularTemplateNode<Angular.TmplAstBoundAttribute>;
+  };
+  Event: {
+    attribute: AngularTemplateNode<Angular.TmplAstBoundEvent>;
+  };
+}>;
+const AngularProperty = Enum.create<AngularProperty>({
+  Text: true,
+  Bound: true,
+  Event: true,
+});
+
+function parseAngularProperty(
+  node: AngularTemplateNode<AngularPropertyNode>,
+): AngularProperty | null {
+  if (isTypedAngularTemplateNode(Angular.TmplAstTextAttribute, node)) {
+    return AngularProperty.Text({ attribute: node });
+  } else if (isTypedAngularTemplateNode(Angular.TmplAstBoundAttribute, node)) {
+    return AngularProperty.Bound({ attribute: node });
+  } else if (isTypedAngularTemplateNode(Angular.TmplAstBoundEvent, node)) {
+    return AngularProperty.Event({ attribute: node });
+  }
+  return null;
+}
+
+function getAngularPropertyName(attribute: AngularProperty): string {
+  return attribute.attribute.node.name;
+}
+
+function getAngularPropertyValue(attribute: AngularProperty): AngularPropertyValueNode | string {
+  return match(attribute, {
+    Text: ({ attribute }) => attribute.node.value,
+    Bound: ({ attribute }) => attribute.node.value,
+    Event: ({ attribute }) => attribute.node.handler,
+  });
+}
+
+function getAngularPropertySourceSpan(attribute: AngularProperty): Angular.ParseSourceSpan {
+  return match(attribute, {
+    Text: ({ attribute }) => attribute.node.sourceSpan,
+    Bound: ({ attribute }) => attribute.node.sourceSpan,
+    Event: ({ attribute }) => attribute.node.sourceSpan,
+  });
+}
+
+function getAngularPropertyKeySpan(
+  attribute: AngularProperty,
+): Angular.ParseSourceSpan | undefined {
+  return match(attribute, {
+    Text: ({ attribute }) => attribute.node.keySpan,
+    Bound: ({ attribute }) => attribute.node.keySpan,
+    Event: ({ attribute }) => attribute.node.keySpan,
+  });
+}
+
+function getAngularPropertyValueSpan(
+  attribute: AngularProperty,
+): Angular.ParseSourceSpan | undefined {
+  return match(attribute, {
+    Text: ({ attribute }) => attribute.node.valueSpan,
+    Bound: ({ attribute }) => attribute.node.valueSpan,
+    Event: ({ attribute }) => attribute.node.handlerSpan,
+  });
+}
+
+function getAngularPropertyI18n(
+  attribute: AngularProperty,
+): Angular.TmplAstTextAttribute['i18n'] | Angular.TmplAstBoundAttribute['i18n'] | undefined {
+  return match(attribute, {
+    Text: ({ attribute }) => attribute.node.i18n,
+    Bound: ({ attribute }) => attribute.node.i18n,
+    Event: ({ attribute }) => undefined,
+  });
+}
+
+type VueProperty = Enum<{
+  Attribute: {
+    attribute: VueTemplateNode<VAttribute>;
+  };
+  Directive: {
+    attribute: VueTemplateNode<VDirective>;
+  };
+}>;
+const VueProperty = Enum.create<VueProperty>({
+  Attribute: true,
+  Directive: true,
+});
+
+function parseVueProperty(node: VueTemplateNode<VuePropertyNode>): VueProperty | null {
+  const directiveAttribute = isVueDirectiveAttribute(node) ? node : null;
+  const attributeAttribute = isVueAttributeAttribute(node) ? node : null;
+  if (directiveAttribute) {
+    return VueProperty.Directive({ attribute: directiveAttribute });
+  } else if (attributeAttribute) {
+    return VueProperty.Attribute({ attribute: attributeAttribute });
+  }
+  return null;
+}
+
+function getVuePropertyName(
+  attribute: VueProperty,
+): VueTemplateNode<VAttribute['key'] | VDirective['key']> {
+  return match(attribute, {
+    Attribute: ({ attribute }) => getVueTemplateNodeChild(attribute, 'key'),
+    Directive: ({ attribute }) => getVueTemplateNodeChild(attribute, 'key'),
+  });
+}
+
+function getVuePropertyValue(attribute: VueProperty): VuePropertyValue {
+  return match(attribute, {
+    Attribute: ({ attribute }) => getVueTemplateNodeChild(attribute, 'value') || true,
+    Directive: ({ attribute }) => getVueTemplateNodeChild(attribute, 'value') || true,
+  });
+}
+
+function parseObjectPropertyInitializerAccessor(
   property: NodePath<PropertyInitializerNode>,
 ): PropertyAccessor | null {
   switch (property.node.type) {
@@ -316,7 +560,7 @@ function parseGridOptionInitializerAccessor(
   }
 }
 
-function parseGridOptionGetterAccessor(
+function parseObjectPropertyGetterAccessor(
   property: NodePath<PropertyAccessorNode>,
 ): PropertyAccessor | null {
   switch (property.node.type) {
@@ -336,7 +580,7 @@ function parseGridOptionGetterAccessor(
   }
 }
 
-function parseGridOptionAssignmentAccessor(
+function parseObjectPropertyAssignmentAccessor(
   property: NodePath<PropertyAssignmentNode>,
 ): PropertyAccessor | null {
   switch (property.node.type) {
@@ -367,7 +611,8 @@ function parseGridOptionVueAttributeAccessor(
   attribute: VAttribute | VDirective,
 ): PropertyAccessor | null {
   if (attribute.directive) {
-    if (attribute.key.name.name === 'bind') {
+    const directiveType = attribute.key.name.name;
+    if (directiveType === 'bind' || directiveType === 'on') {
       if (!attribute.key.argument) return null;
       if (attribute.key.argument.type !== 'VIdentifier') return null;
       return { key: t.identifier(attribute.key.argument.rawName), computed: false };
@@ -379,207 +624,167 @@ function parseGridOptionVueAttributeAccessor(
   }
 }
 
-interface PropertyValueTransformer {
-  (value: NodePath<PropertyValueNode>): PropertyValueNode | null;
+function transformPropertyValue<S extends AstTransformContext<AstCliContext>>(
+  transform: ObjectPropertyValueTransformer<S>,
+): ObjectPropertyTransformer<S> {
+  return migrateProperty(null, transform);
 }
 
-function transformPropertyValue<AstTransformContext>(
-  transform: PropertyValueTransformer,
-): PropertyTransformer<AstTransformContext> {
-  const transformer: PropertyTransformer<AstTransformContext> = {
-    init(path, context) {
-      if (path.shouldSkip) return;
-      const value = getPropertyInitializerValue(path);
-      const updatedValue = value && transform(value);
-      if (updatedValue) {
-        const key = path.get('key').node;
-        const computed = path.node.computed;
-        rewritePropertyInitializer(path, { key, computed }, updatedValue);
-      } else {
-        path.remove();
-      }
-      path.skip();
-    },
-    get(path, context) {
-      return;
-    },
-    set(path, context) {
-      if (path.shouldSkip) return;
-      const value = getPropertyAssignmentValue(path);
-      const updatedValue = value && transform(value);
-      if (updatedValue) {
-        const target = path.get('left');
-        const key = target.get('property').node;
-        const computed = target.node.computed;
-        rewritePropertyAssignment(path, { key, computed }, updatedValue);
-      } else {
-        removePropertyAssignment(path);
-      }
-      path.skip();
-    },
-    value(path, context) {
-      if (path.shouldSkip) return;
-      const updatedValue = transform(path);
-      if (updatedValue) {
-        path.replaceWith(updatedValue);
-      } else {
-        path.replaceWith(t.identifier('undefined'));
-      }
-      path.skip();
-    },
-    jsxAttribute(path, context) {
-      return;
-    },
-    angularAttribute(attributeNode, component, context) {
-      return;
-    },
-    vueAttribute(attributeNode, component, context) {
-      return;
-    },
-  };
-  return transformer;
-}
-
-function migrateProperty<AstTransformContext>(
-  targetKey: string | PropertyAccessor,
-  transform: PropertyValueTransformer,
-): PropertyTransformer<AstTransformContext> {
-  const targetAccessor =
+function migrateProperty<S extends AstTransformContext<AstCliContext>>(
+  targetKey: string | null,
+  transform: ObjectPropertyValueTransformer<S>,
+): ObjectPropertyTransformer<S> {
+  const renamedAccessor =
     typeof targetKey === 'string' ? { key: t.identifier(targetKey), computed: false } : targetKey;
-  const transformer: PropertyTransformer<AstTransformContext> = {
+  const transformer: ObjectPropertyTransformer<S> = {
     init(path, context) {
+      // Ensure this property is not transformed multiple times
       if (path.shouldSkip) return;
-      if (siblingPropertyInitializerExists(path, targetAccessor)) {
+      path.skip();
+      // If the property is being renamed to a new key that is already provided, remove the outdated property
+      if (renamedAccessor && siblingPropertyInitializerExists(path, renamedAccessor)) {
         path.remove();
         return;
       }
-      const value = getPropertyInitializerValue(path);
-      const updatedValue = value && transform(value);
-      if (updatedValue) {
-        rewritePropertyInitializer(path, targetAccessor, updatedValue);
-      } else {
+      const property = renamedAccessor ? renameObjectProperty(path, renamedAccessor) : path;
+      const propertyKey = { key: property.node.key, computed: property.node.computed };
+      const accessor = createStaticPropertyKey(propertyKey.key, propertyKey.computed);
+      const value = getPropertyInitializerValue(property);
+      if (!accessor || !value) return;
+      const updatedValue = value && transform.property(value, accessor, context);
+      if (updatedValue === property.node) return;
+      if (updatedValue === null) {
         path.remove();
+      } else {
+        rewriteObjectPropertyInitializer(property, propertyKey, updatedValue);
       }
-      path.skip();
     },
     get(path, context) {
+      if (!renamedAccessor || path.isIdentifier()) return;
+      // Ensure this property is not transformed multiple times
       if (path.shouldSkip) return;
-      if (path.isIdentifier()) {
-      } else if (path.isObjectProperty()) {
+      path.skip();
+      if (path.isObjectProperty()) {
         const { value, decorators } = path.node;
-        const { key, computed } = targetAccessor;
-        path.replaceWith(t.objectProperty(key, value, computed, false, decorators));
+        const { key, computed } = renamedAccessor;
+        const shorthand = false;
+        path.replaceWith(t.objectProperty(key, value, computed, shorthand, decorators));
       } else if (path.isMemberExpression()) {
         const object = path.get('object');
-        const { key, computed } = targetAccessor;
-        path.replaceWith(t.memberExpression(object.node, key, computed, false));
+        const { key, computed } = renamedAccessor;
+        const optional = false;
+        path.replaceWith(t.memberExpression(object.node, key, computed, optional));
       }
-      path.skip();
     },
     set(path, context) {
+      // Ensure this property is not transformed multiple times
       if (path.shouldSkip) return;
-      if (siblingPropertyAssignmentExists(path, targetAccessor)) {
+      path.skip();
+      const assignment = renamedAccessor
+        ? renameObjectPropertyAssignment(path, renamedAccessor)
+        : path;
+      const target = assignment.get('left');
+      const key = target.get('property');
+      const computed = target.node.computed;
+      const accessor = createPropertyKey(key, computed);
+      if (!accessor) return;
+      const value = path.get('right');
+      const updatedValue = transform.property(value, accessor, context);
+      if (updatedValue === null) {
         removePropertyAssignment(path);
+      } else {
+        rewritePropertyAssignment(path, { key: key.node, computed }, updatedValue);
+      }
+    },
+    jsxAttribute(path, element, context) {
+      // Ensure this attribute is not transformed multiple times
+      if (path.shouldSkip) return;
+      path.skip();
+      // If the attribute is being renamed to a new key that is already provided, remove the outdated attribute
+      if (renamedAccessor && hasJsxElementAttribute(element, renamedAccessor)) {
+        path.remove();
         return;
       }
-      const value = getPropertyAssignmentValue(path);
-      const updatedValue = value && transform(value);
-      if (updatedValue) {
-        rewritePropertyAssignment(path, targetAccessor, updatedValue);
-      } else {
-        removePropertyAssignment(path);
-      }
-      path.skip();
-    },
-    value(path, context) {
-      if (path.shouldSkip) return;
-      const updatedValue = transform(path);
-      if (updatedValue) {
-        path.replaceWith(updatedValue);
-      } else {
-        path.replaceWith(t.identifier('undefined'));
-      }
-      path.skip();
-    },
-    jsxAttribute(path, context) {
-      if (path.shouldSkip) return;
-      if (siblingJsxAttributeExists(path, targetAccessor)) {
+      const originalValue = path.get('value');
+      const value = parseJsxAttributeValue(originalValue);
+      if (!value) return;
+      const updatedValue = transform.jsxAttribute(value, element, path, context);
+      if (updatedValue === null) {
         path.remove();
-      }
-      const updatedName = formatJsxAttributeAccessor(targetAccessor);
-      if (updatedName) {
-        path.get('name').replaceWith(updatedName);
       } else {
-        path.remove();
-      }
-      path.skip();
-    },
-    angularAttribute(attributeNode, component, context) {
-      // Rewrite the element attribute name
-      const staticAttributeName =
-        !targetAccessor.computed && targetAccessor.key.type === 'Identifier'
-          ? targetAccessor.key.name
-          : null;
-      // TODO: Consider supporting dynamic attribute names when renaming Angular element attributes
-      if (!staticAttributeName) return;
-      const name = staticAttributeName;
-      if (isTypedAngularTemplateNode(Angular.TmplAstTextAttribute, attributeNode)) {
-        const { value, sourceSpan, keySpan, valueSpan, i18n } = attributeNode.node;
-        replaceTemplateNode(
-          attributeNode,
-          new Angular.TmplAstTextAttribute(name, value, sourceSpan, keySpan, valueSpan, i18n),
-        );
-      } else if (isTypedAngularTemplateNode(Angular.TmplAstBoundAttribute, attributeNode)) {
-        const { type, securityContext, value, unit, sourceSpan, keySpan, valueSpan, i18n } =
-          attributeNode.node;
-        replaceTemplateNode(
-          attributeNode,
-          new Angular.TmplAstBoundAttribute(
-            name,
-            type,
-            securityContext,
-            value,
-            unit,
-            sourceSpan,
-            keySpan,
-            valueSpan,
-            i18n,
-          ),
-        );
-      } else if (isTypedAngularTemplateNode(Angular.TmplAstBoundEvent, attributeNode)) {
-        const { type, handler, target, phase, sourceSpan, handlerSpan, keySpan } =
-          attributeNode.node;
-        replaceTemplateNode(
-          attributeNode,
-          new Angular.TmplAstBoundEvent(
-            name,
-            type,
-            handler,
-            target,
-            phase,
-            sourceSpan,
-            handlerSpan,
-            keySpan,
-          ),
-        );
+        const attributeName = targetKey ? t.jsxIdentifier(targetKey) : path.get('name').node;
+        const jsxValue = createJsxAttributeValue(updatedValue, originalValue);
+        rewriteJsxAttribute(path, attributeName, jsxValue);
       }
     },
-    vueAttribute(attributeNode, component, context) {
-      if (!isVueDirectiveAttribute(attributeNode)) return;
-      // Rewrite the element attribute name
-      const attributeKey = getVueTemplateNodeChild(attributeNode, 'key');
-      const attributeKeyName = getVueTemplateNodeChild(attributeKey, 'argument');
-      if (!attributeKeyName || attributeKeyName.node.type !== 'VIdentifier') return;
-      // TODO: Support complex target attribute names when renaming Vue element attributes
-      if (!targetAccessor.computed && targetAccessor.key.type === 'Identifier') {
-        replaceTemplateNode(
-          attributeKeyName,
-          createVueAstNode({
-            type: 'VIdentifier',
-            name: targetAccessor.key.name,
-            rawName: targetAccessor.key.name,
-          }),
-        );
+    angularAttribute(attributeNode, component, element, context) {
+      // If the attribute is being renamed to a new key that is already provided, remove the outdated attribute
+      if (targetKey && hasAngularElementAttribute(element, targetKey)) {
+        removeTemplateNode(attributeNode);
+        return;
+      }
+      // Rewrite the existing attribute
+      const attribute = parseAngularProperty(attributeNode);
+      if (!attribute) return;
+      const value = getAngularPropertyValue(attribute);
+      const updatedValue = transform.angularAttribute(
+        value,
+        component,
+        element,
+        attributeNode,
+        context,
+      );
+      if (updatedValue === null) {
+        removeTemplateNode(attributeNode);
+      } else {
+        const attributeName = targetKey || attributeNode.node.name;
+        const updatedNode = getRewrittenAngularAttribute(attribute, attributeName, updatedValue);
+        if (updatedNode !== attributeNode.node) replaceTemplateNode(attributeNode, updatedNode);
+      }
+    },
+    vueAttribute(attributeNode, component, element, context) {
+      // If the attribute is being renamed to a new key that is already provided, remove the outdated attribute
+      if (targetKey && hasVueElementAttribute(element, targetKey)) {
+        removeTemplateNode(attributeNode);
+        return;
+      }
+      // Rewrite the existing attribute
+      const attribute = parseVueProperty(attributeNode);
+      if (!attribute) return;
+      const value = getVuePropertyValue(attribute);
+      const updatedValue = transform.vueAttribute(
+        value,
+        component,
+        element,
+        attributeNode,
+        context,
+      );
+      if (updatedValue === null) {
+        removeTemplateNode(attributeNode);
+      } else {
+        const attributeName = targetKey
+          ? match(attribute, {
+              Attribute: ({ attribute }) =>
+                createVueAstNode({
+                  type: 'VIdentifier',
+                  name: targetKey,
+                  rawName: targetKey,
+                }),
+              Directive: ({ attribute }) =>
+                createVueAstNode({
+                  type: 'VDirectiveKey',
+                  name: attribute.node.key.name,
+                  argument: createVueAstNode({
+                    type: 'VIdentifier',
+                    name: targetKey,
+                    rawName: targetKey,
+                  }),
+                  modifiers: attribute.node.key.modifiers,
+                }),
+            })
+          : attributeNode.node.key;
+        const updatedNode = getRewrittenVueAttribute(attribute, attributeName, updatedValue);
+        if (updatedNode !== attributeNode.node) replaceTemplateNode(attributeNode, updatedNode);
       }
     },
   };
@@ -588,60 +793,49 @@ function migrateProperty<AstTransformContext>(
 
 function removeProperty(
   deprecationWarning: string,
-): PropertyTransformer<AstTransformContext<AstCliContext>> {
+): ObjectPropertyTransformer<AstTransformContext<AstCliContext>> {
   return {
     init(path, context) {
+      // Ensure this property is not transformed multiple times
       if (path.shouldSkip) return;
+      path.skip();
       if (!context.opts.applyDangerousEdits) {
         context.opts.warn(path, deprecationWarning);
-        path.skip();
         return;
       }
       path.remove();
-      path.skip();
     },
     get(path, context) {
+      // Ensure this property is not transformed multiple times
       if (path.shouldSkip) return;
+      path.skip();
       if (!context.opts.applyDangerousEdits) {
         context.opts.warn(path, deprecationWarning);
-        path.skip();
         return;
       }
       path.replaceWith(t.identifier('undefined'));
-      path.skip();
     },
     set(path, context) {
+      // Ensure this property is not transformed multiple times
       if (path.shouldSkip) return;
+      path.skip();
       if (!context.opts.applyDangerousEdits) {
         context.opts.warn(path, deprecationWarning);
-        path.skip();
         return;
       }
       removePropertyAssignment(path);
-      path.skip();
     },
-    value(path, context) {
+    jsxAttribute(path, element, context) {
+      // Ensure this property is not transformed multiple times
       if (path.shouldSkip) return;
-      const removed = getRemovedPropertyValueContainer(path);
-      if (!context.opts.applyDangerousEdits) {
-        context.opts.warn(removed, deprecationWarning);
-        path.skip();
-        return;
-      }
-      removed.remove();
       path.skip();
-    },
-    jsxAttribute(path, context) {
-      if (path.shouldSkip) return;
       if (!context.opts.applyDangerousEdits) {
         context.opts.warn(path, deprecationWarning);
-        path.skip();
         return;
       }
       path.remove();
-      path.skip();
     },
-    angularAttribute(attributeNode, component, context) {
+    angularAttribute(attributeNode, component, element, context) {
       if (!context.opts.applyDangerousEdits) {
         // FIXME: show Angular template element location in deprecation warnings
         context.opts.warn(null, deprecationWarning);
@@ -649,7 +843,7 @@ function removeProperty(
       }
       removeTemplateNode(attributeNode);
     },
-    vueAttribute(attributeNode, component, context) {
+    vueAttribute(attributeNode, component, element, context) {
       if (!context.opts.applyDangerousEdits) {
         // FIXME: show Vue template element location in deprecation warnings
         context.opts.warn(null, deprecationWarning);
@@ -660,51 +854,133 @@ function removeProperty(
   };
 }
 
-function getRemovedPropertyValueContainer(path: NodePath<PropertyValueNode>): NodePath {
-  if (path.parentPath.isJSXAttribute()) {
-    return path.parentPath;
-  } else if (
-    path.parentPath.isJSXExpressionContainer() &&
-    path.parentPath.parentPath.isJSXAttribute()
-  ) {
-    return path.parentPath.parentPath;
-  } else if (
-    path.parentPath.isObjectProperty() &&
-    path.parentPath.parentPath.isObjectExpression()
-  ) {
-    return path.parentPath;
-  } else if (
-    path.parentPath.isAssignmentExpression() &&
-    path.parentPath.get('right').node === path.node &&
-    path.parentPath.parentPath.isExpressionStatement()
-  ) {
-    return path.parentPath.parentPath;
-  } else {
-    return path;
-  }
+function migrateOptionalValue<
+  S extends AstTransformContext<AstCliContext>,
+>(): ObjectPropertyValueTransformer<S> {
+  return transformOptionalValue<S>({
+    property(value, accessor, context) {
+      return value.node;
+    },
+    jsxAttribute(value, element, attribute, context) {
+      return value === true ? value : value.node;
+    },
+    angularAttribute(value, component, element, attribute, context) {
+      return value;
+    },
+    vueAttribute(value, component, element, attribute, context) {
+      return value === true ? value : value.node;
+    },
+  });
 }
 
-function migrateOptionalValue(): PropertyValueTransformer {
-  return transformOptionalValue((value) => value.node);
-}
-
-function transformOptionalValue(transform: PropertyValueTransformer): PropertyValueTransformer {
-  return (value) => {
-    if (value.isNullLiteral() || isUndefinedLiteral(value)) return null;
-    return transform ? transform(value) : value.node;
+function transformOptionalValue<S extends AstTransformContext<AstCliContext>>(
+  transform: ObjectPropertyValueTransformer<S>,
+): ObjectPropertyValueTransformer<S> {
+  return {
+    property(value, accessor, context) {
+      if (value.isNullLiteral() || isUndefinedLiteral(value)) return value.node;
+      return transform.property(value, accessor, context);
+    },
+    jsxAttribute(value, element, attribute, context) {
+      if (isNullJsxAttributeValue(value)) return value === true ? value : value.node;
+      if (
+        value !== true &&
+        (value.isJSXEmptyExpression() || value.isNullLiteral() || isUndefinedLiteral(value))
+      ) {
+        return value.node;
+      }
+      return transform.jsxAttribute(value, element, attribute, context);
+    },
+    angularAttribute(value, component, element, attribute, context) {
+      if (isNullAngularAttributeValue(value)) {
+        return value;
+      }
+      return transform.angularAttribute(value, component, element, attribute, context);
+    },
+    vueAttribute(value, component, element, attribute, context) {
+      if (isNullVueAttributeValue(value)) return value === true ? value : value.node;
+      return transform.vueAttribute(value, component, element, attribute, context);
+    },
   };
 }
 
-function invertOptionalBooleanValue(): PropertyValueTransformer {
-  return transformOptionalValue((value) => {
-    const { node } = value;
-    if (t.isObjectMethod(node)) return t.booleanLiteral(false);
-    if (t.isJSXAttribute(node))
-      return t.booleanLiteral(isBooleanShorthandJsxAttribute(node) ? false : true);
-    if (t.isJSXEmptyExpression(node)) return t.booleanLiteral(true);
-    if (t.isBooleanLiteral(node)) return t.booleanLiteral(!node.value);
-    return t.unaryExpression('!', node);
+function isNullJsxAttributeValue(value: JsxPropertyValue): boolean {
+  if (value === true) return false;
+  return value.isJSXEmptyExpression() || value.isNullLiteral() || isUndefinedLiteral(value);
+}
+
+function isNullAngularAttributeValue(value: AngularPropertyValueNode | string): boolean {
+  if (typeof value === 'string') return false;
+  const expression = getAngularExpressionRoot(value);
+  return (
+    isTypedAngularExpressionNode(Angular.LiteralPrimitive, expression) && expression.value == null
+  );
+}
+
+function isNullVueAttributeValue(value: VuePropertyValue): boolean {
+  if (value === true) return false;
+  if (!isTypedVueTemplateNode('VExpressionContainer', value)) return false;
+  const expression = getVueTemplateNodeChild(value, 'expression');
+  if (!expression) return true;
+  return (
+    (isTypedVueTemplateNode('Literal', expression) && expression.node.value == null) ||
+    (isTypedVueTemplateNode('Identifier', expression) && expression.node.name == 'undefined')
+  );
+}
+
+function invertOptionalBooleanValue<
+  S extends AstTransformContext<AstCliContext>,
+>(): ObjectPropertyValueTransformer<S> {
+  return transformOptionalValue<S>({
+    property(value, accessor, context) {
+      const { node } = value;
+      if (t.isObjectMethod(node)) return t.booleanLiteral(false);
+      return invertBooleanExpressionNode(node);
+    },
+    jsxAttribute(value, element, attribute, context) {
+      if (value === true) return t.booleanLiteral(false);
+      const { node } = value;
+      if (t.isJSXEmptyExpression(node)) return t.booleanLiteral(true);
+      return invertBooleanExpressionNode(node);
+    },
+    angularAttribute(value, component, element, attribute, context) {
+      if (typeof value === 'string') return createAngularBooleanLiteral(false);
+      return invertAngularBooleanExpression(value);
+    },
+    vueAttribute(value, component, element, attribute, context) {
+      const invertedValue =
+        value === true
+          ? createVueBooleanLiteral(false)
+          : value.node.type === 'VLiteral'
+          ? createVueBooleanLiteral(value.node.value !== '')
+          : (() => {
+              const expression = getVueExpressionContainerExpression(value.node);
+              if (!expression) return null;
+              return invertVueBooleanExpression(expression);
+            })();
+      if (!invertedValue) {
+        context.opts.warn(
+          component,
+          `Unable to invert Vue attribute value: ${formatVueAttributeName(attribute.node)}`,
+        );
+      }
+      return createVueExpressionContainer(invertedValue);
+    },
   });
+}
+
+function invertBooleanExpressionNode(node: Expression): Expression {
+  const literalValue = getBooleanLiteralExpressionValue(node);
+  if (typeof literalValue === 'boolean') return t.booleanLiteral(!literalValue);
+  return t.unaryExpression('!', node);
+}
+
+function getBooleanLiteralExpressionValue(node: t.Expression): boolean | null {
+  if (t.isNullLiteral(node) || isUndefinedLiteralNode(node)) return false;
+  if (t.isBooleanLiteral(node)) return node.value;
+  if (t.isStringLiteral(node)) return node.value !== '';
+  if (t.isNumericLiteral(node)) return node.value !== 0;
+  return null;
 }
 
 function siblingPropertyInitializerExists(
@@ -716,49 +992,18 @@ function siblingPropertyInitializerExists(
     .get('properties')
     .map((existingProperty) => {
       if (!isPropertyInitializerNode(existingProperty)) return null;
-      return parseGridOptionInitializerAccessor(existingProperty);
+      return parseObjectPropertyInitializerAccessor(existingProperty);
     })
     .filter(nonNull)
     .some((existingAccessor) => arePropertyAccessorsEqual(accessor, existingAccessor));
 }
 
-function siblingPropertyAssignmentExists(
-  property: NodePath<PropertyAssignmentNode>,
+function hasJsxElementAttribute(
+  element: NodePath<JSXElement>,
   accessor: PropertyAccessor,
 ): boolean {
-  if (property.isAssignmentExpression()) {
-    // If the target of the assignment is a bound variable, find other assignments to the same object
-    // FIXME: improve checking for dynamically assigned sibling properties
-    const target = getDynamicPropertyAssignmentTarget(property);
-    if (!target || !target.isIdentifier()) return false;
-    const binding = target.scope.getBinding(target.node.name);
-    if (!binding) return false;
-    // For each reference to the target variable, check whether the reference is part of a property assignment that
-    // assigns to the same key as the current assignment expression
-    const assignmentExpression = property;
-    return binding.referencePaths.some((path) => {
-      if (!path.parentPath) return false;
-      if (!path.parentPath.isMemberExpression()) return false;
-      const refObject = path.parentPath.get('object');
-      const refProperty = path.parentPath.get('property');
-      if (refObject.node !== path.node || refObject.node === refProperty.node) return false;
-      if (!isPropertyAssignmentNode(path.parentPath.parentPath)) return false;
-      // Exclude the current assignment
-      if (path.parentPath.parentPath.node === assignmentExpression.node) return false;
-      const refAccessor = parseGridOptionAssignmentAccessor(path.parentPath.parentPath);
-      if (!refAccessor) return false;
-      return arePropertyAccessorsEqual(accessor, refAccessor);
-    });
-  }
-  return false;
-}
-
-function siblingJsxAttributeExists(
-  property: NodePath<JSXAttribute>,
-  accessor: PropertyAccessor,
-): boolean {
-  if (!property.parentPath.isJSXOpeningElement()) return false;
-  return property.parentPath
+  return element
+    .get('openingElement')
     .get('attributes')
     .map((attribute) => {
       if (!attribute.isJSXAttribute()) return null;
@@ -778,18 +1023,6 @@ function parseJsxAttributeAccessor(attribute: JSXAttribute): PropertyAccessor {
     };
   }
   return { key: t.identifier(key.name), computed: false };
-}
-
-function formatJsxAttributeAccessor(attribute: PropertyAccessor): JSXAttribute['name'] | null {
-  const { key, computed } = attribute;
-  if (!computed && t.isIdentifier(key)) return t.jsxIdentifier(key.name);
-  if (t.isMemberExpression(key) && t.isIdentifier(key.object) && t.isIdentifier(key.property)) {
-    return t.jSXNamespacedName(
-      t.jsxIdentifier(key.object.name),
-      t.jsxIdentifier(key.property.name),
-    );
-  }
-  return null;
 }
 
 function parseAngularAttributeAccessor(
@@ -827,7 +1060,7 @@ function arePropertyAccessorsEqual(left: PropertyAccessor, right: PropertyAccess
 
 function getPropertyInitializerValue(
   property: NodePath<PropertyInitializerNode>,
-): NodePath<PropertyValueNode> | null {
+): NodePath<ObjectPropertyValueNode> | null {
   if (property.isObjectProperty()) {
     const value = property.get('value');
     if (value.isExpression()) return value;
@@ -839,90 +1072,349 @@ function getPropertyInitializerValue(
   }
 }
 
-function getPropertyAssignmentValue(
-  property: NodePath<PropertyAssignmentNode>,
-): NodePath<PropertyValueNode> | null {
-  if (property.isAssignmentExpression()) {
-    const value = property.get('right');
-    return value;
+function renameObjectProperty(
+  property: NodePath<ObjectPropertyNode>,
+  targetAccessor: PropertyAccessor,
+): NodePath<ObjectPropertyNode> {
+  if (
+    property.node.key === targetAccessor.key &&
+    property.node.computed === targetAccessor.computed
+  ) {
+    return property;
   }
-  return null;
+  const { node } = property;
+  const value = t.isObjectMethod(node) ? node : t.isExpression(node.value) ? node.value : null;
+  if (!value) return property;
+  return rewriteObjectPropertyInitializer(property, targetAccessor, value);
 }
 
-function rewritePropertyInitializer(
-  property: NodePath<PropertyInitializerNode>,
+function rewriteObjectPropertyInitializer(
+  property: NodePath<ObjectPropertyNode>,
   targetAccessor: PropertyAccessor,
-  value: PropertyValueNode,
-): void {
+  value: ObjectPropertyValueNode,
+): NodePath<ObjectPropertyNode> {
   const { key, computed } = targetAccessor;
   if (t.isObjectMethod(value)) {
     if (t.isPrivateName(key)) {
-      property.replaceWith(
-        t.objectProperty(key, formatPropertyValueNodeExpression(value), computed),
+      const [transformed] = property.replaceWith(
+        t.objectProperty(key, getObjectPropertyValueExpressionNode(value), computed),
       );
+      return transformed;
     } else {
       const { kind, params, body, computed, generator, async } = value;
-      property.replaceWith(t.objectMethod(kind, key, params, body, computed, generator, async));
+      const [transformed] = property.replaceWith(
+        t.objectMethod(kind, key, params, body, computed, generator, async),
+      );
+      return transformed;
     }
   } else {
-    property.replaceWith(t.objectProperty(key, formatPropertyValueNodeExpression(value), computed));
+    const shorthand = property.isObjectProperty() ? property.node.shorthand : undefined;
+    const decorators = property.node.decorators;
+    const [transformed] = property.replaceWith(
+      t.objectProperty(key, value, computed, shorthand, decorators),
+    );
+    return transformed;
   }
+}
+
+function renameObjectPropertyAssignment(
+  assignment: NodePath<PropertyAssignmentNode>,
+  targetAccessor: PropertyAccessor,
+): NodePath<PropertyAssignmentNode> {
+  const existingTarget = assignment.get('left');
+  const existingKey = existingTarget.get('property');
+  if (
+    existingKey === targetAccessor.key &&
+    existingTarget.node.computed === targetAccessor.computed
+  ) {
+    return assignment;
+  }
+  const [updatedKey] =
+    existingKey !== targetAccessor.key
+      ? existingKey.replaceWith(targetAccessor.key)
+      : [existingKey];
+  const [updatedTarget] = existingTarget.replaceWith(
+    t.memberExpression(existingTarget.node.object, updatedKey.node, targetAccessor.computed),
+  );
+  const [transformed] = assignment.replaceWith(
+    t.assignmentExpression(assignment.node.operator, updatedTarget.node, assignment.node.right),
+  );
+  return transformed as NodePath<
+    AssignmentExpression & {
+      left: MemberExpression;
+    }
+  >;
 }
 
 function rewritePropertyAssignment(
   property: NodePath<PropertyAssignmentNode>,
   targetAccessor: PropertyAccessor,
-  value: PropertyValueNode,
+  value: ObjectPropertyValueNode,
 ): void {
-  const target = property.get('left');
-  if (target.isMemberExpression()) {
-    const object = target.get('object');
-    const { key, computed } = targetAccessor;
-    property.replaceWith(
-      t.assignmentExpression(
-        property.node.operator,
-        t.memberExpression(object.node, key, computed),
-        formatPropertyValueNodeExpression(value),
-      ),
-    );
+  const existingTarget = property.get('left');
+  const { key, computed } = targetAccessor;
+  const updatedTarget =
+    key === existingTarget.node.property && computed === existingTarget.node.computed
+      ? existingTarget.node
+      : t.memberExpression(existingTarget.node.object, key, computed);
+  property.replaceWith(
+    t.assignmentExpression(
+      property.node.operator,
+      updatedTarget,
+      getObjectPropertyValueExpressionNode(value),
+    ),
+  );
+}
+
+function rewriteJsxAttribute(
+  attribute: NodePath<JsxPropertyNode>,
+  attributeName: JSXIdentifier | JSXNamespacedName,
+  value: JSXAttribute['value'],
+): NodePath<JsxPropertyNode> {
+  const namesAreEqual = jsxAttributeNamesAreEqual(attribute.node.name, attributeName);
+  const valuesAreEqual = jsxAttributeValuesAreEqual(attribute.node.value, value);
+  if (namesAreEqual && valuesAreEqual) return attribute;
+  const existingName = attribute.get('name');
+  const existingValue = getOptionalNodeFieldValue(attribute.get('value'));
+  const updatedName = namesAreEqual ? existingName : existingName.replaceWith(attributeName)[0];
+  const updatedValue = valuesAreEqual ? existingValue && existingValue.node : value;
+  const [transformed] = attribute.replaceWith(t.jsxAttribute(updatedName.node, updatedValue));
+  return transformed;
+}
+
+function jsxAttributeNamesAreEqual(
+  left: JSXIdentifier | JSXNamespacedName,
+  right: JSXIdentifier | JSXNamespacedName,
+): boolean {
+  if (t.isJSXIdentifier(left) && t.isJSXIdentifier(right)) {
+    return left.name === right.name;
+  } else if (t.isJSXNamespacedName(left) && t.isJSXNamespacedName(right)) {
+    return left.namespace.name === right.namespace.name && left.name.name === right.name.name;
   } else {
-    property.remove();
+    return false;
   }
 }
 
-function formatPropertyValueNodeExpression(value: PropertyValueNode): Expression {
+function jsxAttributeValuesAreEqual(
+  left: JSXAttribute['value'],
+  right: JSXAttribute['value'],
+): boolean {
+  if (left === right) return true;
+  if (!left || !right) {
+    return !left && !right;
+  } else if (t.isJSXExpressionContainer(left) || t.isJSXExpressionContainer(right)) {
+    const leftValue = t.isJSXExpressionContainer(left) ? left.expression : left;
+    const rightValue = t.isJSXExpressionContainer(right) ? right.expression : right;
+    if (leftValue === rightValue) return true;
+    if (t.isJSXEmptyExpression(leftValue)) return t.isJSXEmptyExpression(rightValue);
+    if (t.isJSXEmptyExpression(rightValue)) return t.isJSXEmptyExpression(leftValue);
+    if (t.isLiteral(leftValue) && t.isLiteral(rightValue)) {
+      return areLiteralsEqual(leftValue, rightValue);
+    }
+    return false;
+  } else if (t.isStringLiteral(left) && t.isStringLiteral(right)) {
+    return left.value === right.value;
+  } else {
+    return left === right;
+  }
+}
+
+function getObjectPropertyValueExpressionNode(value: ObjectPropertyValueNode): Expression {
   if (t.isObjectMethod(value)) {
     const { key, params, body, computed, generator, async } = value;
     const id = !computed && t.isIdentifier(key) ? key : null;
     return t.functionExpression(id, params, body, generator, async);
   }
-  if (t.isJSXEmptyExpression(value)) return t.identifier('undefined');
-  if (t.isJSXAttribute(value) && !value.value) return t.booleanLiteral(true);
   return value;
 }
 
-function formatJsxAttributeValue(value: PropertyValueNode): JSXAttribute['value'] {
-  if (t.isObjectMethod(value)) {
-    return t.jsxExpressionContainer(formatPropertyValueNodeExpression(value));
-  }
-  if (t.isJSXAttribute(value) && isBooleanShorthandJsxAttribute(value)) return null;
-  return t.jsxExpressionContainer(value);
-}
-
 function removePropertyAssignment(property: NodePath<PropertyAssignmentNode>): void {
-  if (property.isAssignmentExpression() && property.parentPath.isExpressionStatement()) {
+  const parentPath = property.parentPath;
+  if (parentPath && parentPath.isExpressionStatement()) {
     property.parentPath.remove();
   } else {
-    property.remove();
+    property.replaceWith(t.identifier('undefined'));
   }
-}
-
-function isBooleanShorthandJsxAttribute(node: JSXAttribute): node is JsxBooleanShorthandAttribute {
-  return !node.value;
 }
 
 function isUndefinedLiteral(path: NodePath<AstNode>): path is NodePath<Identifier> {
-  return (
-    path.isIdentifier() && path.node.name === 'undefined' && !path.scope.getBinding('undefined')
-  );
+  return isUndefinedLiteralNode(path.node);
+}
+
+function isUndefinedLiteralNode(node: AstNode): node is Identifier {
+  return t.isIdentifier(node) && node.name === 'undefined';
+}
+
+function parseJsxAttributeValue(value: NodePath<JSXAttribute['value']>): JsxPropertyValue | null {
+  const attributeValue = getOptionalNodeFieldValue(value);
+  if (!attributeValue) return true;
+  if (attributeValue.isJSXExpressionContainer()) return attributeValue.get('expression');
+  if (attributeValue.isExpression()) return attributeValue;
+  return null;
+}
+
+function isNonNullJsxPropertyValue(
+  node: JsxPropertyValue,
+): node is NodePath<Exclude<Exclude<JsxPropertyValue, true>['node'], JSXEmptyExpression>> {
+  if (node === true || node.isJSXEmptyExpression()) return false;
+  return true;
+}
+
+function createJsxAttributeValue(
+  value: JsxPropertyValueNode | true,
+  existingValue: NodePath<JSXAttribute['value']>,
+): JSXAttribute['value'] {
+  if (value === true) return null;
+  if (t.isStringLiteral(value) && existingValue.isStringLiteral()) return value;
+  if (t.isJSXElement(value) && (existingValue.isJSXElement() || existingValue.isJSXFragment())) {
+    return value;
+  }
+  if (t.isJSXFragment(value) && (existingValue.isJSXElement() || existingValue.isJSXFragment())) {
+    return value;
+  }
+  return t.jsxExpressionContainer(value);
+}
+
+function hasAngularElementAttribute(
+  element: AngularTemplateNode<Angular.TmplAstElement>,
+  attributeName: string,
+) {
+  const attributes = [
+    ...getAngularTemplateNodeChild(element, 'attributes'),
+    ...getAngularTemplateNodeChild(element, 'inputs'),
+    ...getAngularTemplateNodeChild(element, 'outputs'),
+  ];
+  return attributes.some((attribute) => attribute.node.name === attributeName);
+}
+
+function getRewrittenAngularAttribute(
+  attribute: AngularProperty,
+  attributeName: string,
+  updatedValue: string | Angular.AST,
+): AngularPropertyNode {
+  const existingName = getAngularPropertyName(attribute);
+  const existingValue = getAngularPropertyValue(attribute);
+  const nameHasChanged = attributeName !== existingName;
+  const valueHasChanged = updatedValue !== existingValue;
+  if (!nameHasChanged && !valueHasChanged) return attribute.attribute.node;
+  if (typeof updatedValue === 'string') {
+    const sourceSpan = getAngularPropertySourceSpan(attribute);
+    const keySpan = getAngularPropertyKeySpan(attribute);
+    const valueSpan = getAngularPropertyValueSpan(attribute);
+    const i18n = getAngularPropertyI18n(attribute);
+    return new Angular.TmplAstTextAttribute(
+      attributeName,
+      updatedValue,
+      sourceSpan,
+      keySpan,
+      valueSpan,
+      i18n,
+    );
+  }
+  return match(attribute, {
+    Text: ({ attribute }) => {
+      return new Angular.TmplAstBoundAttribute(
+        attributeName,
+        BindingType.Attribute as number as Angular.BindingType,
+        SecurityContext.NONE as Angular.core.SecurityContext,
+        updatedValue,
+        null,
+        attribute.node.sourceSpan,
+        undefined!,
+        undefined,
+        attribute.node.i18n,
+      );
+    },
+    Bound: ({ attribute }) => {
+      const { type, securityContext, unit, sourceSpan, keySpan, valueSpan, i18n } = attribute.node;
+      return new Angular.TmplAstBoundAttribute(
+        attributeName,
+        type,
+        securityContext,
+        updatedValue,
+        unit,
+        sourceSpan,
+        keySpan,
+        valueSpan,
+        i18n,
+      );
+    },
+    Event: ({ attribute }) => {
+      const { type, target, phase, sourceSpan, handlerSpan, keySpan } = attribute.node;
+      return new Angular.TmplAstBoundEvent(
+        attributeName,
+        type,
+        updatedValue,
+        target,
+        phase,
+        sourceSpan,
+        handlerSpan,
+        keySpan,
+      );
+    },
+  });
+}
+
+function hasVueElementAttribute(element: VueTemplateNode<VElement>, attributeName: string) {
+  const startTag = getVueTemplateNodeChild(element, 'startTag');
+  const attributes = getVueTemplateNodeChild(startTag, 'attributes');
+  return attributes.some((attribute) => attribute.node.key.name === attributeName);
+}
+
+function getRewrittenVueAttribute(
+  attribute: VueProperty,
+  attributeName: VAttribute['key'] | VDirective['key'],
+  updatedValue: VuePropertyValueNode | true,
+): VuePropertyNode {
+  const existingName = getVuePropertyName(attribute);
+  const existingValue = getVuePropertyValue(attribute);
+  const nameHasChanged = attributeName !== existingName.node;
+  const valueHasChanged =
+    updatedValue !== (existingValue === true ? existingValue : existingValue.node);
+  if (!nameHasChanged && !valueHasChanged) return attribute.attribute.node;
+  return match(attribute, {
+    Attribute: ({ attribute }) => {
+      const { type, directive, key } = attribute.node;
+      return createVueAstNode({
+        type,
+        directive,
+        key: nameHasChanged ? attributeName : key,
+        value: valueHasChanged
+          ? updatedValue === true
+            ? null
+            : updatedValue
+          : existingValue === true
+          ? null
+          : existingValue.node,
+      });
+    },
+    Directive: ({ attribute }) => {
+      const { type, directive, key } = attribute.node;
+      return createVueAstNode({
+        type,
+        directive,
+        key: nameHasChanged ? attributeName : key,
+        value: valueHasChanged
+          ? updatedValue === true
+            ? null
+            : updatedValue
+          : existingValue === true
+          ? null
+          : existingValue.node,
+      });
+    },
+  });
+}
+
+function formatVueAttributeName(attribute: VuePropertyNode): string {
+  if (attribute.directive) {
+    return formatVueDirectiveName(attribute.key);
+  } else {
+    return attribute.key.name;
+  }
+}
+
+function formatVueDirectiveName(key: VDirectiveKey): string {
+  if (!key.argument) return key.name.name;
+  return `${key.name.name}:${key.argument.type === 'VIdentifier' ? key.argument.name : '[..]'}`;
 }

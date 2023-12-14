@@ -1,0 +1,9 @@
+<div>
+  <ag-grid-angular
+    [columnDefs]="columnDefs"
+    [rowData]="rowData"
+    enterMovesDown
+    enterMovesDownAfterEdit
+    (gridReady)="onGridReady($event)"
+  ></ag-grid-angular>
+</div>

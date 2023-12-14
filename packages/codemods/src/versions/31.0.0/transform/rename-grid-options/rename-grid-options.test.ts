@@ -13,12 +13,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 describe('transforms input files correctly', () => {
   describe('Plain JS', () => {
     describe('advancedFilterModel', () => {
-      test('specified', () => {
-        const scenarioPath = join(__dirname, './scenarios/js/advanced-filter-model/specified');
+      test('undefined value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/js/advanced-filter-model/undefined',
+        );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
           applyDangerousEdits: false,
@@ -26,16 +31,21 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
-          errors: [],
+          errors,
         });
       });
 
-      test('unspecified', () => {
-        const scenarioPath = join(__dirname, './scenarios/js/advanced-filter-model/unspecified');
+      test('null value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/js/advanced-filter-model/null',
+        );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
           applyDangerousEdits: false,
@@ -43,17 +53,66 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
-          errors: [],
+          errors,
+        });
+      });
+
+      test('static value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/js/advanced-filter-model/static',
+        );
+        const inputPath = join(scenarioPath, 'input.js');
+        const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('dynamic value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/js/advanced-filter-model/dynamic',
+        );
+        const inputPath = join(scenarioPath, 'input.js');
+        const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
         });
       });
     });
 
     test('defaultExcelExportParams', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/default-excel-export-params');
+      const scenarioPath = join(
+        __dirname,
+        './__fixtures__/scenarios/js/default-excel-export-params',
+      );
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       const actual = transformFile(input, [renameGridOptions], {
         filename: inputPath,
         applyDangerousEdits: false,
@@ -61,7 +120,7 @@ describe('transforms input files correctly', () => {
       });
       expect(actual).toEqual({
         source: expected === input ? null : expected,
-        errors: [],
+        errors,
       });
     });
 
@@ -69,12 +128,14 @@ describe('transforms input files correctly', () => {
       test('static value', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/js/enable-chart-tool-panels-button/static-value',
+          './__fixtures__/scenarios/js/enable-chart-tool-panels-button/static-value',
         );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
           applyDangerousEdits: false,
@@ -82,19 +143,21 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
-          errors: [],
+          errors,
         });
       });
 
       test('dynamic value', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/js/enable-chart-tool-panels-button/dynamic-value',
+          './__fixtures__/scenarios/js/enable-chart-tool-panels-button/dynamic-value',
         );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
           applyDangerousEdits: false,
@@ -102,17 +165,19 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
-          errors: [],
+          errors,
         });
       });
     });
 
     test('enterMovesDown', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/enter-moves-down');
+      const scenarioPath = join(__dirname, './__fixtures__/scenarios/js/enter-moves-down');
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       const actual = transformFile(input, [renameGridOptions], {
         filename: inputPath,
         applyDangerousEdits: false,
@@ -120,19 +185,21 @@ describe('transforms input files correctly', () => {
       });
       expect(actual).toEqual({
         source: expected === input ? null : expected,
-        errors: [],
+        errors,
       });
     });
 
     test('excludeHiddenColumnsFromQuickFilter', () => {
       const scenarioPath = join(
         __dirname,
-        './scenarios/js/exclude-hidden-columns-from-quick-filter',
+        './__fixtures__/scenarios/js/exclude-hidden-columns-from-quick-filter',
       );
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       const actual = transformFile(input, [renameGridOptions], {
         filename: inputPath,
         applyDangerousEdits: false,
@@ -140,16 +207,18 @@ describe('transforms input files correctly', () => {
       });
       expect(actual).toEqual({
         source: expected === input ? null : expected,
-        errors: [],
+        errors,
       });
     });
 
     test('functionsPassive', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/functions-passive');
+      const scenarioPath = join(__dirname, './__fixtures__/scenarios/js/functions-passive');
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       {
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
@@ -158,15 +227,7 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: null,
-          errors: [
-            new SyntaxError(`The grid option "functionsPassive" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-  5 |   columnDefs: [],
-  6 |   rowData: [],
-> 7 |   functionsPassive: true,
-    |   ^^^^^^^^^^^^^^^^^^^^^^
-  8 | });
-  9 |`),
-          ],
+          errors,
         });
       }
       {
@@ -183,11 +244,16 @@ describe('transforms input files correctly', () => {
     });
 
     test('getServerSideStoreParams', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/get-server-side-store-params');
+      const scenarioPath = join(
+        __dirname,
+        './__fixtures__/scenarios/js/get-server-side-store-params',
+      );
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       const actual = transformFile(input, [renameGridOptions], {
         filename: inputPath,
         applyDangerousEdits: false,
@@ -195,16 +261,18 @@ describe('transforms input files correctly', () => {
       });
       expect(actual).toEqual({
         source: expected === input ? null : expected,
-        errors: [],
+        errors,
       });
     });
 
     test('onColumnChangeRequest', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/on-column-change-request');
+      const scenarioPath = join(__dirname, './__fixtures__/scenarios/js/on-column-change-request');
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       {
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
@@ -213,39 +281,7 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: null,
-          errors: [
-            new SyntaxError(`The grid option "onColumnRowGroupChangeRequest" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-   5 |   columnDefs: [],
-   6 |   rowData: [],
->  7 |   onColumnRowGroupChangeRequest: () => {},
-     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   8 |   onColumnPivotChangeRequest: () => {},
-   9 |   onColumnValueChangeRequest: () => {},
-  10 |   onColumnAggFuncChangeRequest: () => {},`),
-            new SyntaxError(`The grid option "onColumnPivotChangeRequest" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-   6 |   rowData: [],
-   7 |   onColumnRowGroupChangeRequest: () => {},
->  8 |   onColumnPivotChangeRequest: () => {},
-     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   9 |   onColumnValueChangeRequest: () => {},
-  10 |   onColumnAggFuncChangeRequest: () => {},
-  11 | });`),
-            new SyntaxError(`The grid option "onColumnValueChangeRequest" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-   7 |   onColumnRowGroupChangeRequest: () => {},
-   8 |   onColumnPivotChangeRequest: () => {},
->  9 |   onColumnValueChangeRequest: () => {},
-     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  10 |   onColumnAggFuncChangeRequest: () => {},
-  11 | });
-  12 |`),
-            new SyntaxError(`The grid option "onColumnAggFuncChangeRequest" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-   8 |   onColumnPivotChangeRequest: () => {},
-   9 |   onColumnValueChangeRequest: () => {},
-> 10 |   onColumnAggFuncChangeRequest: () => {},
-     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  11 | });
-  12 |`),
-          ],
+          errors,
         });
       }
       {
@@ -262,11 +298,13 @@ describe('transforms input files correctly', () => {
     });
 
     test('onRowDataChanged', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/on-row-data-changed');
+      const scenarioPath = join(__dirname, './__fixtures__/scenarios/js/on-row-data-changed');
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       const actual = transformFile(input, [renameGridOptions], {
         filename: inputPath,
         applyDangerousEdits: false,
@@ -274,16 +312,18 @@ describe('transforms input files correctly', () => {
       });
       expect(actual).toEqual({
         source: expected === input ? null : expected,
-        errors: [],
+        errors,
       });
     });
 
     test('processSecondaryColDef', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/process-secondary-col-def');
+      const scenarioPath = join(__dirname, './__fixtures__/scenarios/js/process-secondary-col-def');
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       const actual = transformFile(input, [renameGridOptions], {
         filename: inputPath,
         applyDangerousEdits: false,
@@ -291,16 +331,21 @@ describe('transforms input files correctly', () => {
       });
       expect(actual).toEqual({
         source: expected === input ? null : expected,
-        errors: [],
+        errors,
       });
     });
 
     test('processSecondaryColGroupDef', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/process-secondary-col-group-def');
+      const scenarioPath = join(
+        __dirname,
+        './__fixtures__/scenarios/js/process-secondary-col-group-def',
+      );
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       const actual = transformFile(input, [renameGridOptions], {
         filename: inputPath,
         applyDangerousEdits: false,
@@ -308,16 +353,21 @@ describe('transforms input files correctly', () => {
       });
       expect(actual).toEqual({
         source: expected === input ? null : expected,
-        errors: [],
+        errors,
       });
     });
 
     test('rememberGroupStateWhenNewData', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/remember-group-state-when-new-data');
+      const scenarioPath = join(
+        __dirname,
+        './__fixtures__/scenarios/js/remember-group-state-when-new-data',
+      );
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       {
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
@@ -326,15 +376,7 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: null,
-          errors: [
-            new SyntaxError(`The grid option "rememberGroupStateWhenNewData" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-  5 |   columnDefs: [],
-  6 |   rowData: [],
-> 7 |   rememberGroupStateWhenNewData: true,
-    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  8 | });
-  9 |`),
-          ],
+          errors,
         });
       }
       {
@@ -351,11 +393,16 @@ describe('transforms input files correctly', () => {
     });
 
     test('rowDataChangeDetectionStrategy', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/row-data-change-detection-strategy');
+      const scenarioPath = join(
+        __dirname,
+        './__fixtures__/scenarios/js/row-data-change-detection-strategy',
+      );
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       {
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
@@ -364,15 +411,7 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: null,
-          errors: [
-            new SyntaxError(`The grid option "rowDataChangeDetectionStrategy" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-  5 |   columnDefs: [],
-  6 |   rowData: [],
-> 7 |   rowDataChangeDetectionStrategy: 'DeepEqualityCheck',
-    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  8 | });
-  9 |`),
-          ],
+          errors,
         });
       }
       {
@@ -392,12 +431,14 @@ describe('transforms input files correctly', () => {
       test('static value', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/js/server-side-filter-all-levels/static-value',
+          './__fixtures__/scenarios/js/server-side-filter-all-levels/static-value',
         );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
           applyDangerousEdits: false,
@@ -405,19 +446,21 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
-          errors: [],
+          errors,
         });
       });
 
       test('dynamic value', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/js/server-side-filter-all-levels/dynamic-value',
+          './__fixtures__/scenarios/js/server-side-filter-all-levels/dynamic-value',
         );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
           applyDangerousEdits: false,
@@ -425,17 +468,22 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
-          errors: [],
+          errors,
         });
       });
     });
 
     test('serverSideFilteringAlwaysResets', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/server-side-filtering-always-resets');
+      const scenarioPath = join(
+        __dirname,
+        './__fixtures__/scenarios/js/server-side-filtering-always-resets',
+      );
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       const actual = transformFile(input, [renameGridOptions], {
         filename: inputPath,
         applyDangerousEdits: false,
@@ -443,16 +491,21 @@ describe('transforms input files correctly', () => {
       });
       expect(actual).toEqual({
         source: expected === input ? null : expected,
-        errors: [],
+        errors,
       });
     });
 
     test('serverSideSortingAlwaysResets', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/server-side-sorting-always-resets');
+      const scenarioPath = join(
+        __dirname,
+        './__fixtures__/scenarios/js/server-side-sorting-always-resets',
+      );
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       const actual = transformFile(input, [renameGridOptions], {
         filename: inputPath,
         applyDangerousEdits: false,
@@ -460,7 +513,7 @@ describe('transforms input files correctly', () => {
       });
       expect(actual).toEqual({
         source: expected === input ? null : expected,
-        errors: [],
+        errors,
       });
     });
 
@@ -469,12 +522,14 @@ describe('transforms input files correctly', () => {
         test('static value', () => {
           const scenarioPath = join(
             __dirname,
-            './scenarios/js/server-side-store-type/full/static-value',
+            './__fixtures__/scenarios/js/server-side-store-type/full/static-value',
           );
           const inputPath = join(scenarioPath, 'input.js');
           const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
           const input = readFileSync(inputPath, 'utf-8');
           const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
           const actual = transformFile(input, [renameGridOptions], {
             filename: inputPath,
             applyDangerousEdits: false,
@@ -482,19 +537,21 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: expected === input ? null : expected,
-            errors: [],
+            errors,
           });
         });
 
         test('dynamic value', () => {
           const scenarioPath = join(
             __dirname,
-            './scenarios/js/server-side-store-type/full/dynamic-value',
+            './__fixtures__/scenarios/js/server-side-store-type/full/dynamic-value',
           );
           const inputPath = join(scenarioPath, 'input.js');
           const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
           const input = readFileSync(inputPath, 'utf-8');
           const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
           const actual = transformFile(input, [renameGridOptions], {
             filename: inputPath,
             applyDangerousEdits: false,
@@ -502,7 +559,7 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: expected === input ? null : expected,
-            errors: [],
+            errors,
           });
         });
       });
@@ -511,12 +568,14 @@ describe('transforms input files correctly', () => {
         test('static value', () => {
           const scenarioPath = join(
             __dirname,
-            './scenarios/js/server-side-store-type/partial/static-value',
+            './__fixtures__/scenarios/js/server-side-store-type/partial/static-value',
           );
           const inputPath = join(scenarioPath, 'input.js');
           const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
           const input = readFileSync(inputPath, 'utf-8');
           const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
           const actual = transformFile(input, [renameGridOptions], {
             filename: inputPath,
             applyDangerousEdits: false,
@@ -524,19 +583,21 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: expected === input ? null : expected,
-            errors: [],
+            errors,
           });
         });
 
         test('dynamic value', () => {
           const scenarioPath = join(
             __dirname,
-            './scenarios/js/server-side-store-type/partial/dynamic-value',
+            './__fixtures__/scenarios/js/server-side-store-type/partial/dynamic-value',
           );
           const inputPath = join(scenarioPath, 'input.js');
           const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
           const input = readFileSync(inputPath, 'utf-8');
           const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
           const actual = transformFile(input, [renameGridOptions], {
             filename: inputPath,
             applyDangerousEdits: false,
@@ -544,7 +605,7 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: expected === input ? null : expected,
-            errors: [],
+            errors,
           });
         });
       });
@@ -554,12 +615,14 @@ describe('transforms input files correctly', () => {
       test('static value', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/js/suppress-agg-at-root-level/static-value',
+          './__fixtures__/scenarios/js/suppress-agg-at-root-level/static-value',
         );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
           applyDangerousEdits: false,
@@ -567,19 +630,21 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
-          errors: [],
+          errors,
         });
       });
 
       test('dynamic value', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/js/suppress-agg-at-root-level/dynamic-value',
+          './__fixtures__/scenarios/js/suppress-agg-at-root-level/dynamic-value',
         );
         const inputPath = join(scenarioPath, 'input.js');
         const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
           applyDangerousEdits: false,
@@ -587,17 +652,19 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
-          errors: [],
+          errors,
         });
       });
     });
 
     test('suppressAsyncEvents', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/suppress-async-events');
+      const scenarioPath = join(__dirname, './__fixtures__/scenarios/js/suppress-async-events');
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       {
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
@@ -606,15 +673,7 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: null,
-          errors: [
-            new SyntaxError(`The grid option "suppressAsyncEvents" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-  5 |   columnDefs: [],
-  6 |   rowData: [],
-> 7 |   suppressAsyncEvents: true,
-    |   ^^^^^^^^^^^^^^^^^^^^^^^^^
-  8 | });
-  9 |`),
-          ],
+          errors,
         });
       }
       {
@@ -631,11 +690,16 @@ describe('transforms input files correctly', () => {
     });
 
     test('suppressParentsInRowNodes', () => {
-      const scenarioPath = join(__dirname, './scenarios/js/suppress-parents-in-row-nodes');
+      const scenarioPath = join(
+        __dirname,
+        './__fixtures__/scenarios/js/suppress-parents-in-row-nodes',
+      );
       const inputPath = join(scenarioPath, 'input.js');
       const outputPath = join(scenarioPath, 'output.js');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       {
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
@@ -644,15 +708,7 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: null,
-          errors: [
-            new SyntaxError(`The grid option "suppressParentsInRowNodes" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-  5 |   columnDefs: [],
-  6 |   rowData: [],
-> 7 |   suppressParentsInRowNodes: true,
-    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  8 | });
-  9 |`),
-          ],
+          errors,
         });
       }
       {
@@ -671,12 +727,17 @@ describe('transforms input files correctly', () => {
 
   describe('React', () => {
     describe('advancedFilterModel', () => {
-      test('specified', () => {
-        const scenarioPath = join(__dirname, './scenarios/react/advanced-filter-model/specified');
+      test('undefined value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/advanced-filter-model/undefined',
+        );
         const inputPath = join(scenarioPath, 'input.jsx');
         const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
           applyDangerousEdits: false,
@@ -684,16 +745,21 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
-          errors: [],
+          errors,
         });
       });
 
-      test('aliased', () => {
-        const scenarioPath = join(__dirname, './scenarios/react/advanced-filter-model/aliased');
+      test('null value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/advanced-filter-model/null',
+        );
         const inputPath = join(scenarioPath, 'input.jsx');
         const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
           applyDangerousEdits: false,
@@ -701,17 +767,378 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
-          errors: [],
+          errors,
+        });
+      });
+
+      test('static value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/advanced-filter-model/static',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('property value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/advanced-filter-model/property',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
         });
       });
     });
 
-    test('rowDataChangeDetectionStrategy', () => {
-      const scenarioPath = join(__dirname, './scenarios/react/row-data-change-detection-strategy');
+    describe('enableChartToolPanelsButton', () => {
+      test('undefined value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enable-chart-tool-panels-button/undefined',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('null value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enable-chart-tool-panels-button/null',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('false value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enable-chart-tool-panels-button/false',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('true value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enable-chart-tool-panels-button/true',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('shorthand value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enable-chart-tool-panels-button/shorthand',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('property value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enable-chart-tool-panels-button/property',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('dynamic value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enable-chart-tool-panels-button/dynamic',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+    });
+
+    describe('enterMovesDown', () => {
+      test('undefined value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enter-moves-down/undefined',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('null value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enter-moves-down/null',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('false value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enter-moves-down/false',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('true value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enter-moves-down/true',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('shorthand value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enter-moves-down/shorthand',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('property value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enter-moves-down/property',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      test('dynamic value', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/enter-moves-down/dynamic',
+        );
+        const inputPath = join(scenarioPath, 'input.jsx');
+        const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+    });
+
+    test('onColumnRowGroupChangeRequest', () => {
+      const scenarioPath = join(
+        __dirname,
+        './__fixtures__/scenarios/react/on-column-row-group-change-request',
+      );
       const inputPath = join(scenarioPath, 'input.jsx');
       const outputPath = join(scenarioPath, 'output.jsx');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
       const input = readFileSync(inputPath, 'utf-8');
       const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
       {
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
@@ -720,16 +1147,61 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: null,
-          errors: [
-            new SyntaxError(`The grid option "rowDataChangeDetectionStrategy" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-   5 |   return (
-   6 |     <div>
->  7 |       <AgGridReact columnDefs={[]} rowData={[]} rowDataChangeDetectionStrategy="DeepValueCheck" />
-     |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   8 |     </div>
-   9 |   );
-  10 | }`),
-          ],
+          errors,
+        });
+      }
+      {
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: true,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors: [],
+        });
+      }
+    });
+
+    test('onRowDataChanged', () => {
+      const scenarioPath = join(__dirname, './__fixtures__/scenarios/react/on-row-data-changed');
+      const inputPath = join(scenarioPath, 'input.jsx');
+      const outputPath = join(scenarioPath, 'output.jsx');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
+      const input = readFileSync(inputPath, 'utf-8');
+      const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
+      const actual = transformFile(input, [renameGridOptions], {
+        filename: inputPath,
+        applyDangerousEdits: false,
+        fs: createFsHelpers(memfs),
+      });
+      expect(actual).toEqual({
+        source: expected === input ? null : expected,
+        errors,
+      });
+    });
+
+    test('rowDataChangeDetectionStrategy', () => {
+      const scenarioPath = join(
+        __dirname,
+        './__fixtures__/scenarios/react/row-data-change-detection-strategy',
+      );
+      const inputPath = join(scenarioPath, 'input.jsx');
+      const outputPath = join(scenarioPath, 'output.jsx');
+      const errorsPath = join(scenarioPath, 'output.errors.cjs');
+      const input = readFileSync(inputPath, 'utf-8');
+      const expected = readFileSync(outputPath, 'utf-8');
+      const errors = require(errorsPath);
+      {
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: null,
+          errors,
         });
       }
       {
@@ -747,11 +1219,16 @@ describe('transforms input files correctly', () => {
 
     describe('suppressReactUi', () => {
       test('shorthand', () => {
-        const scenarioPath = join(__dirname, './scenarios/react/suppress-react-ui/shorthand');
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/suppress-react-ui/shorthand',
+        );
         const inputPath = join(scenarioPath, 'input.jsx');
         const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         {
           const actual = transformFile(input, [renameGridOptions], {
             filename: inputPath,
@@ -760,16 +1237,7 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: null,
-            errors: [
-              new SyntaxError(`The grid option "suppressReactUi" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-   5 |   return (
-   6 |     <div>
->  7 |       <AgGridReact columnDefs={[]} rowData={[]} suppressReactUi />
-     |                                                 ^^^^^^^^^^^^^^^
-   8 |     </div>
-   9 |   );
-  10 | }`),
-            ],
+            errors,
           });
         }
         {
@@ -786,11 +1254,16 @@ describe('transforms input files correctly', () => {
       });
 
       test('boolean', () => {
-        const scenarioPath = join(__dirname, './scenarios/react/suppress-react-ui/boolean');
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/react/suppress-react-ui/boolean',
+        );
         const inputPath = join(scenarioPath, 'input.jsx');
         const outputPath = join(scenarioPath, 'output.jsx');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         {
           const actual = transformFile(input, [renameGridOptions], {
             filename: inputPath,
@@ -799,16 +1272,7 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: null,
-            errors: [
-              new SyntaxError(`The grid option "suppressReactUi" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-   5 |   return (
-   6 |     <div>
->  7 |       <AgGridReact columnDefs={[]} rowData={[]} suppressReactUi={true} />
-     |                                                 ^^^^^^^^^^^^^^^^^^^^^^
-   8 |     </div>
-   9 |   );
-  10 | }`),
-            ],
+            errors,
           });
         }
         {
@@ -828,15 +1292,17 @@ describe('transforms input files correctly', () => {
 
   describe('Angular', () => {
     describe('Inline template', () => {
-      test('advancedFilterModel', () => {
+      test('Unrelated components', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/angular/inline-template/advanced-filter-model',
+          './__fixtures__/scenarios/angular/inline-template/unrelated-components',
         );
         const inputPath = join(scenarioPath, 'input.component.ts');
         const outputPath = join(scenarioPath, 'output.component.ts');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
           applyDangerousEdits: false,
@@ -844,23 +1310,423 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
-          errors: [
-            new SyntaxError(
-              'Angular components are not yet fully supported via codemods and may require manual fixes',
-            ),
-          ],
+          errors,
         });
       });
 
-      test('rowDataChangeDetectionStrategy', () => {
+      describe('advancedFilterModel', () => {
+        test('undefined value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/advanced-filter-model/undefined',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('null value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/advanced-filter-model/null',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('static value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/advanced-filter-model/static',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('property value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/advanced-filter-model/property',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+      });
+
+      describe('enableChartToolPanelsButton', () => {
+        test('undefined value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enable-chart-tool-panels-button/undefined',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('null value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enable-chart-tool-panels-button/null',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('false value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enable-chart-tool-panels-button/false',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('true value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enable-chart-tool-panels-button/true',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('shorthand value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enable-chart-tool-panels-button/shorthand',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('property value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enable-chart-tool-panels-button/property',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('dynamic value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enable-chart-tool-panels-button/dynamic',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+      });
+
+      describe('enterMovesDown', () => {
+        test('undefined value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enter-moves-down/undefined',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('null value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enter-moves-down/null',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('false value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enter-moves-down/false',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('true value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enter-moves-down/true',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('shorthand value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enter-moves-down/shorthand',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('property value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enter-moves-down/property',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('dynamic value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/enter-moves-down/dynamic',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+      });
+
+      test('onColumnRowGroupChangeRequest', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/angular/inline-template/row-data-change-detection-strategy',
+          './__fixtures__/scenarios/angular/inline-template/on-column-row-group-change-request',
         );
         const inputPath = join(scenarioPath, 'input.component.ts');
         const outputPath = join(scenarioPath, 'output.component.ts');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         {
           const actual = transformFile(input, [renameGridOptions], {
             filename: inputPath,
@@ -869,14 +1735,7 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: null,
-            errors: [
-              new SyntaxError(
-                'Angular components are not yet fully supported via codemods and may require manual fixes',
-              ),
-              new SyntaxError(
-                'The grid option "rowDataChangeDetectionStrategy" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/',
-              ),
-            ],
+            errors,
           });
         }
         {
@@ -887,13 +1746,68 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: expected === input ? null : expected,
-            errors: [
-              new SyntaxError(
-                'Angular components are not yet fully supported via codemods and may require manual fixes',
-              ),
-            ],
+            errors: [],
           });
         }
+      });
+
+      test('onRowDataChanged', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/angular/inline-template/on-row-data-changed',
+        );
+        const inputPath = join(scenarioPath, 'input.component.ts');
+        const outputPath = join(scenarioPath, 'output.component.ts');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      describe('rowDataChangeDetectionStrategy', () => {
+        test('literal value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/inline-template/row-data-change-detection-strategy/literal',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          {
+            const actual = transformFile(input, [renameGridOptions], {
+              filename: inputPath,
+              applyDangerousEdits: false,
+              fs: createFsHelpers(memfs),
+            });
+            expect(actual).toEqual({
+              source: null,
+              errors,
+            });
+          }
+          {
+            const actual = transformFile(input, [renameGridOptions], {
+              filename: inputPath,
+              applyDangerousEdits: true,
+              fs: createFsHelpers(memfs),
+            });
+            expect(actual).toEqual({
+              source: expected === input ? null : expected,
+              errors: [],
+            });
+          }
+        });
       });
     });
 
@@ -902,13 +1816,14 @@ describe('transforms input files correctly', () => {
         vol.reset();
       });
 
-      test('advancedFilterModel', () => {
+      test('Unrelated components', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/angular/external-template/advanced-filter-model',
+          './__fixtures__/scenarios/angular/external-template/unrelated-components',
         );
         const inputPath = join(scenarioPath, 'input.component.ts');
         const outputPath = join(scenarioPath, 'output.component.ts');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const inputTemplatePath = join(scenarioPath, 'input.component.html');
         const outputTemplatePath = join(scenarioPath, 'output.component.html');
         const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
@@ -918,6 +1833,7 @@ describe('transforms input files correctly', () => {
         });
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         const actual = transformFile(input, [renameGridOptions], {
           filename: inputPath,
           applyDangerousEdits: false,
@@ -925,24 +1841,603 @@ describe('transforms input files correctly', () => {
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
-          errors: [
-            new SyntaxError(
-              'Angular components are not yet fully supported via codemods and may require manual fixes',
-            ),
-          ],
+          errors,
         });
         expect(vol.toJSON()).toEqual({
           [inputTemplatePath]: outputTemplate,
         });
       });
 
-      test('rowDataChangeDetectionStrategy', () => {
+      describe('advancedFilterModel', () => {
+        test('undefined value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/advanced-filter-model/undefined',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('null value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/advanced-filter-model/null',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('static value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/advanced-filter-model/static',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('property value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/advanced-filter-model/property',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+      });
+
+      describe('enableChartToolPanelsButton', () => {
+        test('undefined value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enable-chart-tool-panels-button/undefined',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('null value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enable-chart-tool-panels-button/null',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('false value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enable-chart-tool-panels-button/false',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('true value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enable-chart-tool-panels-button/true',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('shorthand value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enable-chart-tool-panels-button/shorthand',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('property value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enable-chart-tool-panels-button/property',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('dynamic value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enable-chart-tool-panels-button/dynamic',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+      });
+
+      describe('enterMovesDown', () => {
+        test('undefined value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enter-moves-down/undefined',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('null value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enter-moves-down/null',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('false value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enter-moves-down/false',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('true value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enter-moves-down/true',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('shorthand value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enter-moves-down/shorthand',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('property value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enter-moves-down/property',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+
+        test('dynamic value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/enter-moves-down/dynamic',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+          expect(vol.toJSON()).toEqual({
+            [inputTemplatePath]: outputTemplate,
+          });
+        });
+      });
+
+      test('onColumnRowGroupChangeRequest', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/angular/external-template/row-data-change-detection-strategy',
+          './__fixtures__/scenarios/angular/external-template/on-column-row-group-change-request',
         );
         const inputPath = join(scenarioPath, 'input.component.ts');
         const outputPath = join(scenarioPath, 'output.component.ts');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const inputTemplatePath = join(scenarioPath, 'input.component.html');
         const outputTemplatePath = join(scenarioPath, 'output.component.html');
         const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
@@ -952,6 +2447,7 @@ describe('transforms input files correctly', () => {
         });
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         {
           const actual = transformFile(input, [renameGridOptions], {
             filename: inputPath,
@@ -960,14 +2456,7 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: null,
-            errors: [
-              new SyntaxError(
-                'Angular components are not yet fully supported via codemods and may require manual fixes',
-              ),
-              new SyntaxError(
-                'The grid option "rowDataChangeDetectionStrategy" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/',
-              ),
-            ],
+            errors,
           });
           expect(vol.toJSON()).toEqual({
             [inputTemplatePath]: inputTemplate,
@@ -981,16 +2470,94 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: expected === input ? null : expected,
-            errors: [
-              new SyntaxError(
-                'Angular components are not yet fully supported via codemods and may require manual fixes',
-              ),
-            ],
+            errors: [],
           });
           expect(vol.toJSON()).toEqual({
             [inputTemplatePath]: outputTemplate,
           });
         }
+      });
+
+      test('onRowDataChanged', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/angular/external-template/on-row-data-changed',
+        );
+        const inputPath = join(scenarioPath, 'input.component.ts');
+        const outputPath = join(scenarioPath, 'output.component.ts');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const inputTemplatePath = join(scenarioPath, 'input.component.html');
+        const outputTemplatePath = join(scenarioPath, 'output.component.html');
+        const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+        const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+        vol.fromJSON({
+          [inputTemplatePath]: inputTemplate,
+        });
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+        expect(vol.toJSON()).toEqual({
+          [inputTemplatePath]: outputTemplate,
+        });
+      });
+
+      describe('rowDataChangeDetectionStrategy', () => {
+        test('literal value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/angular/external-template/row-data-change-detection-strategy/literal',
+          );
+          const inputPath = join(scenarioPath, 'input.component.ts');
+          const outputPath = join(scenarioPath, 'output.component.ts');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const inputTemplatePath = join(scenarioPath, 'input.component.html');
+          const outputTemplatePath = join(scenarioPath, 'output.component.html');
+          const inputTemplate = readFileSync(inputTemplatePath, 'utf-8');
+          const outputTemplate = readFileSync(outputTemplatePath, 'utf-8');
+          vol.fromJSON({
+            [inputTemplatePath]: inputTemplate,
+          });
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          {
+            const actual = transformFile(input, [renameGridOptions], {
+              filename: inputPath,
+              applyDangerousEdits: false,
+              fs: createFsHelpers(memfs),
+            });
+            expect(actual).toEqual({
+              source: null,
+              errors,
+            });
+            expect(vol.toJSON()).toEqual({
+              [inputTemplatePath]: inputTemplate,
+            });
+          }
+          {
+            const actual = transformFile(input, [renameGridOptions], {
+              filename: inputPath,
+              applyDangerousEdits: true,
+              fs: createFsHelpers(memfs),
+            });
+            expect(actual).toEqual({
+              source: expected === input ? null : expected,
+              errors: [],
+            });
+            expect(vol.toJSON()).toEqual({
+              [inputTemplatePath]: outputTemplate,
+            });
+          }
+        });
       });
     });
   });
@@ -998,15 +2565,17 @@ describe('transforms input files correctly', () => {
   describe('Vue', () => {
     describe('JS components', () => {
       describe('advancedFilterModel', () => {
-        test('specified', () => {
+        test('undefined value', () => {
           const scenarioPath = join(
             __dirname,
-            './scenarios/vue/js/advanced-filter-model/specified',
+            './__fixtures__/scenarios/vue/js/advanced-filter-model/undefined',
           );
           const inputPath = join(scenarioPath, 'input.js');
           const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
           const input = readFileSync(inputPath, 'utf-8');
           const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
           const actual = transformFile(input, [renameGridOptions], {
             filename: inputPath,
             applyDangerousEdits: false,
@@ -1014,27 +2583,21 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: expected === input ? null : expected,
-            errors: [
-              new SyntaxError(
-                'Vue components are not yet fully supported via codemods and may require manual fixes',
-              ),
-            ],
+            errors,
           });
         });
-      });
-    });
 
-    describe('SFC components', () => {
-      describe('advancedFilterModel', () => {
-        test('specified', () => {
+        test('null value', () => {
           const scenarioPath = join(
             __dirname,
-            './scenarios/vue/sfc/advanced-filter-model/specified',
+            './__fixtures__/scenarios/vue/js/advanced-filter-model/null',
           );
-          const inputPath = join(scenarioPath, 'input.vue');
-          const outputPath = join(scenarioPath, 'output.vue');
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
           const input = readFileSync(inputPath, 'utf-8');
           const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
           const actual = transformFile(input, [renameGridOptions], {
             filename: inputPath,
             applyDangerousEdits: false,
@@ -1042,24 +2605,378 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: expected === input ? null : expected,
-            errors: [
-              new SyntaxError(
-                'Vue components are not yet fully supported via codemods and may require manual fixes',
-              ),
-            ],
+            errors,
+          });
+        });
+
+        test('property value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/advanced-filter-model/property',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('static value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/advanced-filter-model/static',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
           });
         });
       });
 
-      test('rowDataChangeDetectionStrategy', () => {
+      describe('enableChartToolPanelsButton', () => {
+        test('undefined value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enable-chart-tool-panels-button/undefined',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('null value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enable-chart-tool-panels-button/null',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('false value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enable-chart-tool-panels-button/false',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('true value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enable-chart-tool-panels-button/true',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('shorthand value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enable-chart-tool-panels-button/shorthand',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('property value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enable-chart-tool-panels-button/property',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('dynamic value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enable-chart-tool-panels-button/dynamic',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+      });
+
+      describe('enterMovesDown', () => {
+        test('undefined value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enter-moves-down/undefined',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('null value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enter-moves-down/null',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('false value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enter-moves-down/false',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('true value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enter-moves-down/true',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('shorthand value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enter-moves-down/shorthand',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('property value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enter-moves-down/property',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+
+        test('dynamic value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/enter-moves-down/dynamic',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+      });
+
+      test('onColumnRowGroupChangeRequest', () => {
         const scenarioPath = join(
           __dirname,
-          './scenarios/vue/sfc/row-data-change-detection-strategy',
+          './__fixtures__/scenarios/vue/js/on-column-row-group-change-request',
         );
-        const inputPath = join(scenarioPath, 'input.vue');
-        const outputPath = join(scenarioPath, 'output.vue');
+        const inputPath = join(scenarioPath, 'input.js');
+        const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
         {
           const actual = transformFile(input, [renameGridOptions], {
             filename: inputPath,
@@ -1068,30 +2985,7 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: null,
-            errors: [
-              new SyntaxError(
-                'Vue components are not yet fully supported via codemods and may require manual fixes',
-              ),
-              new SyntaxError(`The grid option "rowDataChangeDetectionStrategy" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-   9 |       columnDefs: [],
-  10 |       rowData: [],
-> 11 |       rowDataChangeDetectionStrategy: 'DeepValueCheck',
-     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  12 |     };
-  13 |   },
-  14 |   methods: {`),
-              new SyntaxError(`The grid option "rowDataChangeDetectionStrategy" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/
-  14 |   methods: {
-  15 |     onGridReady(params) {
-> 16 |       this.rowDataChangeDetectionStrategy = 'DeepValueCheck';
-     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  17 |     },
-  18 |   },
-  19 | };`),
-              new SyntaxError(
-                'The grid option "rowDataChangeDetectionStrategy" is deprecated. Please refer to the migration guide for more details: https://ag-grid.com/javascript-data-grid/upgrade-to-ag-grid-31/',
-              ),
-            ],
+            errors,
           });
         }
         {
@@ -1102,11 +2996,124 @@ describe('transforms input files correctly', () => {
           });
           expect(actual).toEqual({
             source: expected === input ? null : expected,
-            errors: [
-              new SyntaxError(
-                'Vue components are not yet fully supported via codemods and may require manual fixes',
-              ),
-            ],
+            errors: [],
+          });
+        }
+      });
+
+      test('onRowDataChanged', () => {
+        const scenarioPath = join(__dirname, './__fixtures__/scenarios/vue/js/on-row-data-changed');
+        const inputPath = join(scenarioPath, 'input.js');
+        const outputPath = join(scenarioPath, 'output.js');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        const actual = transformFile(input, [renameGridOptions], {
+          filename: inputPath,
+          applyDangerousEdits: false,
+          fs: createFsHelpers(memfs),
+        });
+        expect(actual).toEqual({
+          source: expected === input ? null : expected,
+          errors,
+        });
+      });
+
+      describe('rowDataChangeDetectionStrategy', () => {
+        test('literal value', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/js/row-data-change-detection-strategy/literal',
+          );
+          const inputPath = join(scenarioPath, 'input.js');
+          const outputPath = join(scenarioPath, 'output.js');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          {
+            const actual = transformFile(input, [renameGridOptions], {
+              filename: inputPath,
+              applyDangerousEdits: false,
+              fs: createFsHelpers(memfs),
+            });
+            expect(actual).toEqual({
+              source: null,
+              errors,
+            });
+          }
+          {
+            const actual = transformFile(input, [renameGridOptions], {
+              filename: inputPath,
+              applyDangerousEdits: true,
+              fs: createFsHelpers(memfs),
+            });
+            expect(actual).toEqual({
+              source: expected === input ? null : expected,
+              errors: [],
+            });
+          }
+        });
+      });
+    });
+
+    describe('SFC components', () => {
+      describe('advancedFilterModel', () => {
+        test('specified', () => {
+          const scenarioPath = join(
+            __dirname,
+            './__fixtures__/scenarios/vue/sfc/advanced-filter-model/specified',
+          );
+          const inputPath = join(scenarioPath, 'input.vue');
+          const outputPath = join(scenarioPath, 'output.vue');
+          const errorsPath = join(scenarioPath, 'output.errors.cjs');
+          const input = readFileSync(inputPath, 'utf-8');
+          const expected = readFileSync(outputPath, 'utf-8');
+          const errors = require(errorsPath);
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors,
+          });
+        });
+      });
+
+      test('rowDataChangeDetectionStrategy', () => {
+        const scenarioPath = join(
+          __dirname,
+          './__fixtures__/scenarios/vue/sfc/row-data-change-detection-strategy',
+        );
+        const inputPath = join(scenarioPath, 'input.vue');
+        const outputPath = join(scenarioPath, 'output.vue');
+        const errorsPath = join(scenarioPath, 'output.errors.cjs');
+        const input = readFileSync(inputPath, 'utf-8');
+        const expected = readFileSync(outputPath, 'utf-8');
+        const errors = require(errorsPath);
+        {
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: false,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: null,
+            errors,
+          });
+        }
+        {
+          const actual = transformFile(input, [renameGridOptions], {
+            filename: inputPath,
+            applyDangerousEdits: true,
+            fs: createFsHelpers(memfs),
+          });
+          expect(actual).toEqual({
+            source: expected === input ? null : expected,
+            errors: [],
           });
         }
       });
