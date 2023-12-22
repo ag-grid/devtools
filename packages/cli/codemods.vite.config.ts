@@ -10,6 +10,7 @@ export default mergeConfig(
   defineConfig({
     build: {
       outDir: resolve(__dirname, 'dist', 'node_modules', pkg.name),
+      sourcemap: false,
     },
   }),
 );
