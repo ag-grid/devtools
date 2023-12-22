@@ -1,4 +1,10 @@
 {
-  "extends": ["../build-config/templates/tsc/tsconfig.json"],
-  "include": ["src", "index.ts", "*.config.ts", "package.json"]
+  "extends": "../build-config/templates/tsc/tsconfig.json",
+  "include": [
+    "src",
+    "index.ts",
+    "*.config.ts",
+    "package.json",
+    "../codemod-utils/src/taskHelpers.ts"
+  ]
 }

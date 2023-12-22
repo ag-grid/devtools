@@ -1,5 +1,5 @@
 {
-  "extends": ["./packages/build-config/templates/tsc/tsconfig.json"],
+  "extends": "./packages/build-config/templates/tsc/tsconfig.json",
   "include": ["*.config.ts"],
   "compilerOptions": {
     "paths": {

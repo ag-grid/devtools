@@ -1,3 +1,4 @@
+import { Enum, match } from '@ag-grid-devtools/utils';
 import {
   parseArgs as parseMigrateCommandArgs,
   cli as migrate,
@@ -11,18 +12,15 @@ import { log } from './utils/stdio';
 
 export { CliError } from './utils/cli';
 
-const enum CommandType {
-  Migrate = 'migrate',
-}
+type CliCommand = Enum<{
+  Migrate: {
+    args: MigrateCommandArgs;
+  };
+}>;
 
-interface MigrateCommand extends CommandBase<CommandType.Migrate, MigrateCommandArgs> {}
-
-type CliCommand = MigrateCommand;
-
-interface CommandBase<T, A extends object> {
-  type: T;
-  args: A;
-}
+const CliCommand = Enum.create<CliCommand>({
+  Migrate: true,
+});
 
 interface Args {
   /**
@@ -72,13 +70,10 @@ export async function cli(args: Array<string>, cli: CliOptions): Promise<void> {
     await printUsage(stdout, env);
     throw null;
   }
-  const command = (() => {
-    switch (options.command.type) {
-      case CommandType.Migrate:
-        return migrate(options.command.args, cli);
-    }
-  })();
-  await command;
+  const task = match(options.command, {
+    Migrate: ({ args }) => migrate(args, cli),
+  });
+  await task;
 }
 
 function parseArgs(args: string[], env: CliEnv): Args {
@@ -99,10 +94,9 @@ function parseArgs(args: string[], env: CliEnv): Args {
         options.help = true;
         break;
       case 'migrate': {
-        options.command = {
-          type: CommandType.Migrate,
+        options.command = CliCommand.Migrate({
           args: parseMigrateCommandArgs(args, env),
-        };
+        });
         break;
       }
       default:

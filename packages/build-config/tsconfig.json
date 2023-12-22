@@ -1,5 +1,5 @@
 {
-  "extends": ["./templates/tsc/tsconfig.json"],
+  "extends": "./templates/tsc/tsconfig.json",
   "include": ["templates"],
   "compilerOptions": {
     "composite": true

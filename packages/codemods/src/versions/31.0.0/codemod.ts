@@ -1,3 +1,4 @@
+import { transformFile } from '@ag-grid-devtools/codemod-utils';
 import {
   type Codemod,
   type CodemodInput,
@@ -5,10 +6,17 @@ import {
   type CodemodResult,
 } from '@ag-grid-devtools/types';
 
-import transformsManifest from './transform/manifest';
-import { transformFile } from '@ag-grid-devtools/codemod-utils';
+import migrateLegacyJsGridConstructor from './transform/migrate-legacy-js-grid-constructor';
+import migrateLegacyColumnApi from './transform/migrate-legacy-column-api';
+import renameGridApiMethods from './transform/rename-grid-api-methods';
+import renameGridOptions from './transform/rename-grid-options';
 
-const transforms = transformsManifest.map(({ transform }) => transform);
+const transforms = [
+  migrateLegacyJsGridConstructor,
+  migrateLegacyColumnApi,
+  renameGridApiMethods,
+  renameGridOptions,
+];
 
 const codemod: Codemod = function transform(
   file: CodemodInput,

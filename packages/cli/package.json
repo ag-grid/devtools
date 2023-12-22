@@ -9,11 +9,15 @@
     "type": "git",
     "url": "https://github.com/ag-grid/devtools.git"
   },
+  "type": "module",
   "main": "./index.ts",
   "scripts": {
-    "build": "pnpm run build:lib && pnpm run build:pkg",
+    "build": "pnpm run build:lib && pnpm run build:codemods && pnpm run build:pkg",
     "build:lib": "vite build",
     "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
+    "build:codemods": "pnpm run build:codemods:lib && pnpm run build:codemods:pkg",
+    "build:codemods:lib": "vite build --config codemods.vite.config.js",
+    "build:codemods:pkg": "pnpm run --filter build-tools pkg $PWD/../codemods $PWD/dist/node_modules/@ag-grid-community/codemods/package.json",
     "lint": "pnpm run '/^lint:.*/'",
     "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
     "lint:typescript": "tsc --noEmit",
@@ -23,14 +27,20 @@
     "publish": "npm publish ./dist --access public"
   },
   "pkg": {
-    "main": "./index.js",
-    "bin": "./index.js"
+    "main": "./index.cjs",
+    "bin": "./index.cjs"
+  },
+  "bundleDependencies": [
+    "@ag-grid-community/codemods"
+  ],
+  "dependencies": {
+    "@ag-grid-community/codemods": "workspace:*"
   },
   "devDependencies": {
     "@ag-grid-devtools/build-config": "workspace:*",
-    "@ag-grid-devtools/codemods": "workspace:*",
     "@ag-grid-devtools/types": "workspace:*",
     "@ag-grid-devtools/utils": "workspace:*",
+    "@ag-grid-devtools/worker-utils": "workspace:*",
     "@types/diff": "5.0.8",
     "@types/graceful-fs": "4.1.9",
     "@types/semver": "7.5.6",

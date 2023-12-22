@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "@ag-grid-devtools/codemods",
+  "name": "@ag-grid-community/codemods",
   "version": "31.0.0",
   "license": "MIT",
   "description": "AG Grid codemods",
@@ -23,29 +23,26 @@
     "test:watch": "vitest watch"
   },
   "pkg": {
-    "type": "module",
     "main": "./lib/lib.cjs",
-    "module": "/lib/lib.js",
-    "types": "./lib.d.ts",
     "exports": {
       ".": {
-        "import": "./lib/lib.js",
         "require": "./lib/lib.cjs"
       },
-      "./version/31.0.0": {
-        "import": "./version/31.0.0.js",
-        "require": "./version/31.0.0.cjs"
+      "./version/31.0.0/codemod.cjs": {
+        "require": "./version/31.0.0/codemod.cjs"
+      },
+      "./version/31.0.0/worker.cjs": {
+        "require": "./version/31.0.0/worker.cjs"
       }
     }
   },
-  "dependencies": {
+  "devDependencies": {
     "@ag-grid-devtools/ast": "workspace:*",
+    "@ag-grid-devtools/build-config": "workspace:*",
     "@ag-grid-devtools/codemod-utils": "workspace:*",
     "@ag-grid-devtools/types": "workspace:*",
-    "@ag-grid-devtools/utils": "workspace:*"
-  },
-  "devDependencies": {
-    "@ag-grid-devtools/build-config": "workspace:*",
+    "@ag-grid-devtools/utils": "workspace:*",
+    "@ag-grid-devtools/worker-utils": "workspace:*",
     "memfs": "4.6.0"
   },
   "peerDependencies": {
