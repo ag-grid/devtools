@@ -1,3 +1,6 @@
+import { type FsUtils } from './fs';
+import { type Task } from './task';
+
 export interface Codemod {
   (file: CodemodInput, options: CodemodOptions): CodemodResult;
 }
@@ -9,7 +12,7 @@ export interface CodemodInput {
 
 export interface CodemodOptions {
   applyDangerousEdits: boolean;
-  fs: CodemodFsUtils;
+  fs: FsUtils;
 }
 
 export interface CodemodResult {
@@ -17,8 +20,25 @@ export interface CodemodResult {
   errors: Array<Error>;
 }
 
-export interface CodemodFsUtils {
-  readFileSync(filename: string, encoding: 'utf-8'): string;
-  readFileSync(filename: string, encoding: BufferEncoding): string | Buffer;
-  writeFileSync(filename: string, data: string | Buffer): void;
+export interface CodemodTask extends Task<CodemodTaskInput, CodemodTaskResult> {}
+
+export interface CodemodTaskInput {
+  inputFilePath: string;
+  dryRun: boolean;
+  applyDangerousEdits: boolean;
 }
+
+export interface CodemodTaskResult {
+  result: { source: string; updated: string | null };
+  errors: Array<Error>;
+}
+
+export type CodemodTaskWorkerResult =
+  | {
+      success: true;
+      value: CodemodTaskResult;
+    }
+  | {
+      success: false;
+      error: any;
+    };

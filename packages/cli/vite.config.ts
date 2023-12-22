@@ -3,7 +3,7 @@ import { defineConfig, mergeConfig } from 'vite';
 
 import base from '../build-config/templates/vite/cli.vite.config';
 
-import pkg from './package.json';
+import pkg from './package.json' assert { type: 'json' };
 
 export default mergeConfig(
   base,
@@ -16,6 +16,9 @@ export default mergeConfig(
         fileName: 'index',
       },
       sourcemap: false,
+      rollupOptions: {
+        external: ['@ag-grid-community/codemods'],
+      },
     },
   }),
 );
