@@ -42,7 +42,7 @@ export function initTaskWorker<I, O>(
       runWorkerTask(task, data, runner)
         .then(
           (result) => ({ success: true as const, value: result }),
-          (error) => ({ success: false as const, error: error.message }),
+          (error) => ({ success: false as const, error: serializeWorkerError(error) }),
         )
         .then((output) => channel.postMessage(output));
     });
@@ -73,5 +73,27 @@ function runWorkerTask<I, O>(
     return task.run(input, runner);
   } catch (error) {
     return Promise.reject(error);
+  }
+}
+
+export function serializeWorkerError(error: unknown): Error {
+  if (error instanceof Error) {
+    if (isSerializable(error)) return error;
+    const { name, message, stack, ...properties } = error;
+    return Object.assign(new Error(message), {
+      name,
+      stack,
+      ...properties,
+    });
+  }
+  return new Error(String(error));
+}
+
+function isSerializable(value: unknown): boolean {
+  try {
+    structuredClone(value);
+    return true;
+  } catch {
+    return false;
   }
 }
