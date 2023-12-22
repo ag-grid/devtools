@@ -1,4 +1,4 @@
-import { type CodemodFsUtils } from '@ag-grid-devtools/types';
+import { type FsUtils } from '@ag-grid-devtools/types';
 import type { NodePath, PluginObj, PluginPass, Visitor } from '@babel/core';
 
 import { type AstNode } from './ast';
@@ -27,7 +27,7 @@ export interface AstCliContext extends FsContext {
 }
 
 export interface FsContext {
-  fs: CodemodFsUtils;
+  fs: FsUtils;
 }
 
 export type AstTransformResult = { source: string | null; errors: Array<Error> };

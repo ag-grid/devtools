@@ -1,19 +1,30 @@
-import codemod from '@ag-grid-devtools/codemods/src/versions/31.0.0/codemod';
-import versions from '@ag-grid-devtools/codemods/src/versions/manifest';
-import { type CodemodFsUtils, type VersionManifest } from '@ag-grid-devtools/types';
+import codemods from '@ag-grid-community/codemods';
+import {
+  Codemod,
+  CodemodTaskInput,
+  CodemodTaskWorkerResult,
+  type VersionManifest,
+} from '@ag-grid-devtools/types';
+import { createFsHelpers } from '@ag-grid-devtools/worker-utils';
 import { nonNull } from '@ag-grid-devtools/utils';
 import { createTwoFilesPatch } from 'diff';
-import gracefulFs from 'graceful-fs';
+import { join } from 'node:path';
+import { cpus } from 'node:os';
 import semver from 'semver';
 
 import { type CliEnv, type CliOptions } from '../types/cli';
 import { type WritableStream } from '../types/io';
 import { CliArgsError, CliError } from '../utils/cli';
-import { findInDirectory, isFsErrorCode, readFile, writeFile } from '../utils/fs';
+import { findInDirectory } from '../utils/fs';
 import { findInGitRepository, getGitProjectRoot, getUncommittedGitFiles } from '../utils/git';
 import { basename, extname, resolve, relative } from '../utils/path';
 import { getCliCommand } from '../utils/pkg';
 import { green, indentErrorMessage, log } from '../utils/stdio';
+import { Worker, WorkerTaskQueue } from '../utils/worker';
+import { requireDynamicModule, resolveDynamicModule } from '../utils/module';
+import { createCodemodTask } from '../../../codemod-utils/src/taskHelpers';
+
+const { versions } = codemods;
 
 const SOURCE_FILE_EXTENSIONS = ['.cjs', '.js', '.mjs', '.jsx', '.ts', '.tsx', '.vue'];
 const LATEST_VERSION = versions[versions.length - 1].version;
@@ -22,11 +33,11 @@ export interface MigrateCommandArgs {
   /**
    * Semver version to migrate from
    */
-  from: VersionManifest<any>['version'];
+  from: VersionManifest['version'];
   /**
    * Semver version to migrate to
    */
-  to: VersionManifest<any>['version'];
+  to: VersionManifest['version'];
   /**
    * Allow operating on files outside a git repository
    */
@@ -39,6 +50,10 @@ export interface MigrateCommandArgs {
    * Automatically apply fixes that potentially change application behavior
    */
   applyDangerousEdits: boolean;
+  /**
+   * Number of worker threads to spawn (defaults to the number of system cores)
+   */
+  numThreads: number | undefined;
   /**
    * Show a diff output of the changes that would be made
    */
@@ -63,8 +78,6 @@ function usage(env: CliEnv): string {
 Upgrade project source files to ensure compatibility with a specific AG Grid version
 
 Options:
-  Required arguments:
-
   Optional arguments:
     --to=<version>            AG Grid semver version to migrate to (defaults to ${green(
       LATEST_VERSION,
@@ -74,6 +87,7 @@ Options:
     --allow-untracked, -u     Allow operating on files outside a git repository
     --allow-dirty, -d         Allow operating on repositories with uncommitted changes in the working tree
     --apply-dangerous-edits   Automatically apply fixes that potentially change application behavior
+    --num-threads             Number of worker threads to spawn (defaults to the number of system cores)
     --dry-run                 Show a diff output of the changes that would be made
 
   Additional arguments:
@@ -92,6 +106,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     allowUntracked: false,
     allowDirty: false,
     applyDangerousEdits: false,
+    numThreads: undefined,
     dryRun: false,
     verbose: false,
     help: false,
@@ -150,6 +165,18 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
       case '--allow-dangerous-edits':
         options.applyDangerousEdits = true;
         break;
+      case '--num-threads': {
+        const value = args.shift();
+        if (!value || value.startsWith('-')) {
+          throw new CliArgsError(`Missing value for ${arg}`, usage(env));
+        }
+        const numThreads = Number(value);
+        if (isNaN(numThreads) || numThreads < 0) {
+          throw new CliArgsError(`Invalid value for ${arg}: ${value}`, usage(env));
+        }
+        options.numThreads = numThreads;
+        break;
+      }
       case '--dry-run':
         options.dryRun = true;
         break;
@@ -195,8 +222,17 @@ async function migrate(
   args: Omit<MigrateCommandArgs, 'help'>,
   options: CliOptions,
 ): Promise<Array<string>> {
-  const { from, to, allowUntracked, allowDirty, applyDangerousEdits, dryRun, input, verbose } =
-    args;
+  const {
+    from,
+    to,
+    allowUntracked,
+    allowDirty,
+    applyDangerousEdits,
+    numThreads,
+    dryRun,
+    verbose,
+    input,
+  } = args;
   const { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
 
@@ -251,44 +287,108 @@ async function migrate(
     }
   }
 
+  const version = versions.find(({ version }) => version === to);
+  if (!version) throw new CliError(`Unknown version: ${green(to, env)}`);
+
   await log(
     stderr,
     `Migrating${from ? ` from version ${green(from, env)}` : ''} to version ${green(to, env)}...`,
   );
 
   const startTime = Date.now();
-  const results = await Promise.all(
-    inputFilePaths.map((inputFilePath) => {
-      if (verbose) {
-        log(stderr, `Processing ${relative(cwd, inputFilePath)}`);
-      }
-      return readFile(inputFilePath, 'utf-8')
-        .catch((error) =>
-          Promise.reject(
-            isFsErrorCode('ENOENT', error) ? new Error(`File not found: ${inputFilePath}`) : error,
-          ),
-        )
-        .then((source) => {
-          const { source: updated, errors } = codemod(
-            { path: inputFilePath, source },
-            {
-              applyDangerousEdits,
-              fs: createFsHelpers(gracefulFs),
-            },
-          );
-          const isUnchanged = updated === source;
-          const result = { source, updated: isUnchanged ? null : updated };
-          if (dryRun || !updated || isUnchanged) return { result, errors };
-          return writeFile(inputFilePath, updated).then(() => ({ result, errors }));
-        })
-        .then(({ result, errors }) => ({ path: inputFilePath, result, errors }))
-        .catch((error) => ({
-          path: inputFilePath,
-          result: { source: null, updated: null },
-          errors: [error],
-        }));
-    }),
-  );
+
+  // Process the tasks either in-process or via a worker pool
+  const isSingleThreaded = numThreads === 0;
+  const results = await (isSingleThreaded
+    ? (() => {
+        // Load the codemod and wrap it in a task helper
+        const codemod = requireDynamicModule(
+          join('@ag-grid-community/codemods', version.codemodPath),
+          import.meta,
+        ) as Codemod;
+        const task = createCodemodTask(codemod);
+        const runner = { fs: createFsHelpers() };
+        if (verbose) {
+          log(stderr, 'Running in single-threaded mode');
+        }
+        // Run the codemod for each input file
+        return Promise.all(
+          inputFilePaths.map((inputFilePath) => {
+            const startTime = Date.now();
+            log(stderr, `Processing ${relative(cwd, inputFilePath)}`);
+            return task
+              .run({ inputFilePath, dryRun, applyDangerousEdits }, runner)
+              .then(({ result, errors }) => ({ path: inputFilePath, result, errors }))
+              .catch((error) => ({
+                path: inputFilePath,
+                result: { source: null, updated: null },
+                errors: [error],
+              }))
+              .then((result) => {
+                if (verbose) {
+                  const runningTime = Date.now() - startTime;
+                  log(stderr, `Processed ${relative(cwd, inputFilePath)} in ${runningTime}ms`);
+                }
+                return result;
+              });
+          }),
+        );
+      })()
+    : (() => {
+        // Create a worker pool to run the codemods in parallel
+        const workerPath = resolveDynamicModule(
+          join('@ag-grid-community/codemods', version.workerPath),
+          import.meta,
+        );
+        const numWorkers = numThreads || cpus().length;
+        const workers = Array.from({ length: numWorkers }, () => new Worker(workerPath));
+        const workerPool = new WorkerTaskQueue<CodemodTaskInput, CodemodTaskWorkerResult>(workers);
+        if (verbose) {
+          log(stderr, `Running in multi-threaded mode with ${numWorkers} workers`);
+        }
+        // Process the tasks by dispatching them to the worker pool
+        return Promise.all(
+          inputFilePaths.map((inputFilePath) => {
+            return workerPool
+              .run(
+                { inputFilePath, dryRun, applyDangerousEdits },
+                {
+                  onQueue: verbose
+                    ? () => {
+                        log(stderr, `Queueing ${relative(cwd, inputFilePath)}`);
+                      }
+                    : undefined,
+                  onStart: () => {
+                    log(stderr, `Processing ${relative(cwd, inputFilePath)}`);
+                  },
+                  onComplete: verbose
+                    ? ({ runningTime }) => {
+                        log(
+                          stderr,
+                          `Processed ${relative(cwd, inputFilePath)} in ${runningTime}ms`,
+                        );
+                      }
+                    : undefined,
+                },
+              )
+              .then((workerResult) => {
+                if (workerResult.success) return workerResult.value;
+                throw workerResult.error;
+              })
+              .then(({ result, errors }) => ({ path: inputFilePath, result, errors }))
+              .catch((error) => ({
+                path: inputFilePath,
+                result: { source: null, updated: null },
+                errors: [error],
+              }));
+          }),
+        ).then((results) => {
+          // Terminate the worker pool threads so that the main process can exit cleanly
+          workerPool.terminate();
+          return results;
+        });
+      })());
+
   const elapsedTime = Date.now() - startTime;
 
   const successResults = results
@@ -300,6 +400,7 @@ async function migrate(
   const changedResults = successResults.filter((result) => result.result.updated);
   const unchangedResults = successResults.filter((result) => !result.result.updated);
 
+  // If this is a dry run, generate a unified diff of the changes
   if (dryRun) {
     const fileDiffs = successResults
       .map((result) => {
@@ -372,21 +473,4 @@ function getUnifiedDiff(
   return createTwoFilesPatch(from.path, to.path, from.source, to.source, undefined, undefined, {
     context: 3,
   });
-}
-
-function createFsHelpers(fs: typeof gracefulFs): CodemodFsUtils {
-  return {
-    readFileSync,
-    writeFileSync,
-  };
-
-  function readFileSync(filename: string, encoding: 'utf-8'): string;
-  function readFileSync(filename: string, encoding: BufferEncoding): string | Buffer;
-  function readFileSync(filename: string, encoding: BufferEncoding): string | Buffer {
-    return fs.readFileSync(filename, encoding);
-  }
-
-  function writeFileSync(filename: string, data: string | Buffer): void {
-    return fs.writeFileSync(filename, data);
-  }
 }
