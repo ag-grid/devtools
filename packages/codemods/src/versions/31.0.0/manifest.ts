@@ -1,12 +1,11 @@
-import { type AstCliContext, type AstTransform } from '@ag-grid-devtools/ast';
 import { type VersionManifest } from '@ag-grid-devtools/types';
 
-import codemod from './codemod';
 import transforms from './transform/manifest';
 
-const manifest: VersionManifest<AstTransform<AstCliContext>> = {
+const manifest: VersionManifest = {
   version: '31.0.0',
-  codemod,
+  codemodPath: 'version/31.0.0/codemod.cjs',
+  workerPath: 'version/31.0.0/worker.cjs',
   transforms,
 };
 

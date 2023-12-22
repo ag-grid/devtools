@@ -1,4 +1,4 @@
 {
-  "extends": ["../build-config/templates/tsc/tsconfig.json"],
+  "extends": "../build-config/templates/tsc/tsconfig.json",
   "include": ["src", "lib.ts", "*.config.ts", "package.json"]
 }

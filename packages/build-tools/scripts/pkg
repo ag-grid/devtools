@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-const fs = require('fs');
-const path = require('path');
-const process = require('process');
+const fs = require('node:fs');
+const path = require('node:path');
+const process = require('node:process');
+const { createRequire } = require('node:module');
 
 const [inputPath, outputPath] = process.argv.slice(2);
 
@@ -41,26 +42,25 @@ try {
     repository,
     keywords,
     dependencies,
+    bundleDependencies,
+    optionalDependencies,
     pkg: overrides,
   } = pkg;
-  const json = `${JSON.stringify(
-    {
-      name,
-      version,
-      license,
-      description,
-      author,
-      repository,
-      keywords,
-      ...overrides,
-      dependencies: dependencies
-        ? // This assumes all workspace packages share the same version number
-          fixWorkspaceDependencyVersions(dependencies, version)
-        : undefined,
-    },
-    null,
-    2,
-  )}\n`;
+  const pkgFields = {
+    name,
+    version,
+    license,
+    description,
+    author,
+    repository,
+    keywords,
+    dependencies,
+    bundleDependencies,
+    optionalDependencies,
+    ...overrides,
+  };
+  const updatedPkg = fixPackageWorkspaceDependencies(pkgFields, inputPkgPath);
+  const json = `${JSON.stringify(updatedPkg, null, 2)}\n`;
   if (outputPath) {
     try {
       fs.writeFileSync(outputPath, json);
@@ -85,14 +85,38 @@ try {
   }
 }
 
-function fixWorkspaceDependencyVersions(dependencies, workspaceVersion) {
+function fixPackageWorkspaceDependencies(pkg, inputPkgPath) {
+  const require = createRequire(path.resolve(process.cwd(), inputPkgPath));
+  return Object.fromEntries(
+    Object.entries(pkg).map(([key, value]) => {
+      if (!isDependenciesPackageField(key) || !value) return [key, value];
+      return [key, fixWorkspaceDependencyVersions(value, require)];
+    }),
+  );
+}
+
+function fixWorkspaceDependencyVersions(dependencies, require) {
   return Object.fromEntries(
     Object.entries(dependencies).map((dependency) => {
       const [name, version] = dependency;
-      if (version === 'workspace:*') return [name, workspaceVersion];
+      if (version === 'workspace:*') {
+        const workspaceVersion = require(path.join(name, 'package.json')).version;
+        return [name, workspaceVersion];
+      }
       return dependency;
     }),
   );
+}
+
+function isDependenciesPackageField(key) {
+  switch (key) {
+    case 'dependencies':
+    case 'devDependencies':
+    case 'peerDependencies':
+      return true;
+    default:
+      return false;
+  }
 }
 
 function exit(code, message) {

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# This script fetches the AG Grid component event names from the eventKeys.ts file
+
+# Get the desired Git commit from the first CLI argument, exiting with an error message if there is no argument specified
+VERSION=${1:?"No git commit specified"}
+
+REPOSITORY="ag-grid/ag-grid"
+FILEPATH="grid-community-modules/core/src/ts/eventKeys.ts"
+
+echo 1>&2 "Fetching event keys from $REPOSITORY at $VERSION..."
+curl -s "https://raw.githubusercontent.com/"$REPOSITORY"/"$VERSION"/"$FILEPATH""
