@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@ag-grid-community/codemods",
-  "version": "31.0.1-beta.0",
+  "version": "31.0.1",
   "license": "MIT",
   "description": "AG Grid codemods",
   "author": "AG Grid <info@ag-grid.com>",
