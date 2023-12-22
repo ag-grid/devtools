@@ -3,7 +3,7 @@ import { defineConfig, mergeConfig } from 'vite';
 
 import base from '../build-config/templates/vite/base.vite.config';
 
-import pkg from './package.json';
+import pkg from './package.json' assert { type: 'json' };
 
 export default mergeConfig(
   base,

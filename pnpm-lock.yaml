@@ -144,6 +144,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@ag-grid-community/codemods':
+        specifier: workspace:*
+        version: link:../codemods
       eslint:
         specifier: ^8
         version: 8.48.0
@@ -163,15 +166,15 @@ importers:
       '@ag-grid-devtools/build-config':
         specifier: workspace:*
         version: link:../build-config
-      '@ag-grid-devtools/codemods':
-        specifier: workspace:*
-        version: link:../codemods
       '@ag-grid-devtools/types':
         specifier: workspace:*
         version: link:../types
       '@ag-grid-devtools/utils':
         specifier: workspace:*
         version: link:../utils
+      '@ag-grid-devtools/worker-utils':
+        specifier: workspace:*
+        version: link:../worker-utils
       '@types/diff':
         specifier: 5.0.8
         version: 5.0.8
@@ -242,18 +245,6 @@ importers:
 
   packages/codemods:
     dependencies:
-      '@ag-grid-devtools/ast':
-        specifier: workspace:*
-        version: link:../ast
-      '@ag-grid-devtools/codemod-utils':
-        specifier: workspace:*
-        version: link:../codemod-utils
-      '@ag-grid-devtools/types':
-        specifier: workspace:*
-        version: link:../types
-      '@ag-grid-devtools/utils':
-        specifier: workspace:*
-        version: link:../utils
       eslint:
         specifier: ^8
         version: 8.48.0
@@ -270,9 +261,24 @@ importers:
         specifier: ^0.34
         version: 0.34.3
     devDependencies:
+      '@ag-grid-devtools/ast':
+        specifier: workspace:*
+        version: link:../ast
       '@ag-grid-devtools/build-config':
         specifier: workspace:*
         version: link:../build-config
+      '@ag-grid-devtools/codemod-utils':
+        specifier: workspace:*
+        version: link:../codemod-utils
+      '@ag-grid-devtools/types':
+        specifier: workspace:*
+        version: link:../types
+      '@ag-grid-devtools/utils':
+        specifier: workspace:*
+        version: link:../utils
+      '@ag-grid-devtools/worker-utils':
+        specifier: workspace:*
+        version: link:../worker-utils
       memfs:
         specifier: 4.6.0
         version: 4.6.0(quill-delta@5.1.0)(rxjs@7.8.1)(tslib@2.6.2)
@@ -320,6 +326,43 @@ importers:
       '@ag-grid-devtools/build-config':
         specifier: workspace:*
         version: link:../build-config
+
+  packages/worker-utils:
+    dependencies:
+      '@ag-grid-devtools/types':
+        specifier: workspace:*
+        version: link:../types
+      '@ag-grid-devtools/utils':
+        specifier: workspace:*
+        version: link:../utils
+      '@types/graceful-fs':
+        specifier: 4.1.9
+        version: 4.1.9
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      graceful-fs:
+        specifier: 4.2.11
+        version: 4.2.11
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@ag-grid-devtools/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+      memfs:
+        specifier: 4.6.0
+        version: 4.6.0(quill-delta@5.1.0)(rxjs@7.8.1)(tslib@2.6.2)
 
 packages:
 
@@ -1157,7 +1200,6 @@ packages:
     resolution: {integrity: sha512-olP3sd1qOEe5dXTSaFvQG+02VdRXcdytWLAZsAq1PecU8uqQAhkrnbli7DagjtXKW/Bl7YJbUsa8MPcuc8LHEQ==}
     dependencies:
       '@types/node': 20.5.9
-    dev: true
 
   /@types/istanbul-lib-coverage@2.0.4:
     resolution: {integrity: sha512-z/QT1XN4K4KYuslS23k62yDIDLwLFkzxOuMplDtObz0+y7VqJCaO2o+SPwHCvLFZh7xazvvoor2tA/hPz9ee7g==}

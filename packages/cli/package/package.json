@@ -1,0 +1,19 @@
+{
+  "name": "@ag-grid-community/cli",
+  "version": "31.0.0",
+  "license": "MIT",
+  "description": "AG Grid developer toolkit",
+  "author": "AG Grid <info@ag-grid.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ag-grid/devtools.git"
+  },
+  "dependencies": {
+    "@ag-grid-community/codemods": "31.0.0"
+  },
+  "bundleDependencies": [
+    "@ag-grid-community/codemods"
+  ],
+  "main": "./index.js",
+  "bin": "./index.js"
+}

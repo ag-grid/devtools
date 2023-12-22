@@ -1,18 +1,16 @@
-import { type Codemod } from './codemod';
-
-export interface PackageManifest<T> {
+export interface PackageManifest {
   name: string;
-  versions: Array<VersionManifest<T>>;
+  versions: Array<VersionManifest>;
 }
 
-export interface VersionManifest<T> {
+export interface VersionManifest {
   version: string;
-  codemod: Codemod;
-  transforms: Array<TransformManifest<T>>;
+  codemodPath: string;
+  workerPath: string;
+  transforms: Array<TransformManifest>;
 }
 
-export interface TransformManifest<T> {
+export interface TransformManifest {
   name: string;
   description: string;
-  transform: T;
 }
