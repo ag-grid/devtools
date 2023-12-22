@@ -7,5 +7,6 @@ test('module exports', () => {
     configureWorkerTask: lib.configureWorkerTask,
     createFsHelpers: lib.createFsHelpers,
     initTaskWorker: lib.initTaskWorker,
+    serializeWorkerError: lib.serializeWorkerError,
   });
 });
