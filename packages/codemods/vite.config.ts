@@ -43,7 +43,6 @@ export default mergeConfig(
         formats: ['cjs'],
         fileName: '[name]',
       },
-      sourcemap: false,
     },
   }),
 );
