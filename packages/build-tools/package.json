@@ -5,10 +5,15 @@
   "license": "MIT",
   "description": "Custom build tools",
   "author": "AG Grid <info@ag-grid.com>",
+  "homepage": "https://www.ag-grid.com/",
   "repository": {
     "type": "git",
     "url": "https://github.com/ag-grid/devtools.git"
   },
+  "bugs": {
+    "url": "https://github.com/ag-grid/devtools/issues"
+  },
+  "type": "commonjs",
   "scripts": {
     "pkg": "./scripts/pkg",
     "lint": "eslint --ext cjs ."

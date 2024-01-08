@@ -5,9 +5,13 @@
   "license": "MIT",
   "description": "AST transformation tools",
   "author": "AG Grid <info@ag-grid.com>",
+  "homepage": "https://www.ag-grid.com/",
   "repository": {
     "type": "git",
     "url": "https://github.com/ag-grid/devtools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ag-grid/devtools/issues"
   },
   "type": "module",
   "main": "./lib.ts",
