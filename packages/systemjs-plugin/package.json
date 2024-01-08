@@ -1,0 +1,50 @@
+{
+  "private": true,
+  "name": "@ag-grid-community/systemjs-plugin",
+  "version": "0.1.0",
+  "description": "SystemJS plugin for TypeScript/JSX/CSS source files",
+  "license": "MIT",
+  "author": "AG Grid <info@ag-grid.com>",
+  "homepage": "https://www.ag-grid.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ag-grid/devtools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ag-grid/devtools/issues"
+  },
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "build": "pnpm run build:lib && pnpm run build:pkg",
+    "build:lib": "vite build",
+    "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
+    "lint": "pnpm run '/^lint:.*/'",
+    "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
+    "lint:typescript": "tsc --noEmit"
+  },
+  "pkg": {
+    "main": "./index.js"
+  },
+  "devDependencies": {
+    "@ag-grid-devtools/build-config": "workspace:*",
+    "@babel/core": "^7.23.7",
+    "@babel/plugin-proposal-dynamic-import": "^7.18.6",
+    "@babel/plugin-proposal-export-default-from": "^7.23.3",
+    "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
+    "@babel/plugin-proposal-numeric-separator": "^7.18.6",
+    "@babel/plugin-syntax-class-properties": "^7.12.13",
+    "@babel/plugin-transform-modules-systemjs": "^7.23.3",
+    "@babel/plugin-transform-react-jsx": "^7.23.4",
+    "@babel/plugin-transform-typescript": "^7.23.6",
+    "@types/babel__core": "^7.20.5",
+    "@typescript-eslint/eslint-plugin": "6.17.0",
+    "@typescript-eslint/parser": "6.17.0"
+  },
+  "peerDependencies": {
+    "eslint": "^8",
+    "typescript": "^5",
+    "vite": "^4",
+    "vite-plugin-node-polyfills": "^0.19"
+  }
+}

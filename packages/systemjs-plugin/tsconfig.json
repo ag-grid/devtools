@@ -1,0 +1,4 @@
+{
+  "extends": "../build-config/templates/tsc/browser.tsconfig.json",
+  "include": ["src", "index.ts", "*.config.ts", "package.json"]
+}
