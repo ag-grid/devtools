@@ -17,8 +17,9 @@
   "main": "./lib.ts",
   "module": "./lib.ts",
   "scripts": {
-    "build": "pnpm run build:lib && pnpm run build:pkg",
+    "build": "pnpm run build:lib && pnpm run build:readme && pnpm run build:pkg",
     "build:lib": "vite build",
+    "build:readme": "cp README.md dist/README.md",
     "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
     "build:tasks": "pnpm run --filter @ag-grid-devtools/ast --filter @ag-grid-devtools/codemod-utils --filter @ag-grid-devtools/test-utils build",
     "lint": "pnpm run '/^lint:.*/'",
