@@ -44,6 +44,6 @@
     "eslint": "^8",
     "typedoc": "^0.25",
     "typescript": "^5",
-    "vite": "^4"
+    "vite": "^5"
   }
 }
