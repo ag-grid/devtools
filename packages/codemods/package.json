@@ -53,7 +53,7 @@
     "eslint": "^8",
     "typedoc": "^0.25",
     "typescript": "^5",
-    "vite": "^4",
-    "vitest": "^0.34"
+    "vite": "^5",
+    "vitest": "^1"
   }
 }

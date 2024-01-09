@@ -22,10 +22,14 @@
     "publish": "pnpm run --filter @ag-grid-community/cli publish"
   },
   "peerDependencies": {
-    "@vitest/coverage-v8": "^0.34",
+    "@vitest/coverage-v8": "^1",
     "typedoc": "^0.25",
     "typescript": "^5",
-    "vite": "^4",
-    "vitest": "^0.34"
+    "vite": "^5",
+    "vitest": "^1"
+  },
+  "devDependencies": {
+    "@types/glob": "8.1.0",
+    "glob": "10.3.10"
   }
 }
