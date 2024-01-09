@@ -44,7 +44,7 @@
   "peerDependencies": {
     "eslint": "^8",
     "typescript": "^5",
-    "vite": "^4",
+    "vite": "^5",
     "vite-plugin-node-polyfills": "^0.19"
   }
 }
