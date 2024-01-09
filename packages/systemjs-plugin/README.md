@@ -47,9 +47,6 @@ For example, the following configuration will only transform local non-JSON reso
 <script src="path/to/ag-grid-systemjs-plugin/dist/index.js"/>
 ```
 
-### Developing
+## Contributing
 
-This package following npm scripts:
-
-- `build`: Lint and build the package (outputs the compiled package into the `./dist` directory)
-- `lint`: Lint the source code
+See the [Developer Guide](./DEVELOPER.md) for more details.

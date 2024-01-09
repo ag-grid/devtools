@@ -1,8 +1,6 @@
-# `<%= filename %>`
+# `transform-grid-options-v31`
 
-> _<%= description %>_
-
-See the [`<%= plugin %>`](../../plugins/<%= plugin %>/) plugin for usage instructions.
+See the [`transform-grid-options`](../../plugins/transform-grid-options/) plugin for usage instructions.
 
 ## Common tasks
 
@@ -15,7 +13,7 @@ Replacement rules are specified in [`replacements.ts`](./replacements.ts)
 Create a new unit test scenario for this transform:
 
 ```
-pnpm run task:create-test --type transform --target <%= filename %>
+pnpm run task:create-test --type transform --target transform-grid-options-v31
 ```
 
 ### Add to a codemod release
@@ -23,5 +21,5 @@ pnpm run task:create-test --type transform --target <%= filename %>
 Add this source code transformation to a codemod release:
 
 ```
-pnpm run task:include-transform --transform <%= filename %>
+pnpm run task:include-transform --transform transform-grid-options-v31
 ```
