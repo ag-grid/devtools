@@ -43,8 +43,7 @@
     "graceful-fs": "4.2.11"
   },
   "devDependencies": {
-    "@ag-grid-devtools/build-config": "workspace:*",
-    "memfs": "4.6.0"
+    "@ag-grid-devtools/build-config": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^8",

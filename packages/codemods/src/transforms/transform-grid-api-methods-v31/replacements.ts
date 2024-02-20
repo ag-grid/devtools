@@ -1,63 +1,12 @@
+import { ast, matchNode, pattern as p, replace, template } from '@ag-grid-devtools/ast';
 import {
-  ast,
-  matchNode,
-  node as t,
-  pattern as p,
-  replace,
-  template,
-  type AstCliContext,
-  type AstTransform,
-  type Types,
-} from '@ag-grid-devtools/ast';
-import { isGridApiReference } from '@ag-grid-devtools/codemod-utils';
-import { nonNull } from '@ag-grid-devtools/utils';
+  getGridOptionSetterReplacements,
+  invertBooleanValue,
+  type GridApiDeprecation,
+  type GridApiReplacement,
+} from '../../plugins/transform-grid-api-methods';
 
-type Expression = Types.Expression;
-
-const COLUMNS_API_REPLACEMENTS = [
-  replace(
-    matchNode(({ api }) => ast.expression`${api}.getAllColumns()`, {
-      api: p.expression(),
-    }),
-    template(({ api }) => ast.expression`${api}.getColumns()`),
-  ),
-  replace(
-    matchNode(({ api }) => ast.expression`${api}.getPrimaryColumns()`, {
-      api: p.expression(),
-    }),
-    template(({ api }) => ast.expression`${api}.getColumns()`),
-  ),
-  replace(
-    matchNode(({ api }) => ast.expression`${api}.getSecondaryColumns()`, {
-      api: p.expression(),
-    }),
-    template(({ api }) => ast.expression`${api}.getPivotResultColumns()`),
-  ),
-  replace(
-    matchNode(({ api, colDefs }) => ast.expression`${api}.setSecondaryColumns(${colDefs})`, {
-      api: p.expression(),
-      colDefs: p.expression(),
-    }),
-    template(({ api, colDefs }) => ast.expression`${api}.setPivotResultColumns(${colDefs})`),
-  ),
-  replace(
-    matchNode(
-      ({ api, pivotKeys, valueColKey }) =>
-        ast.expression`${api}.getSecondaryPivotColumn(${pivotKeys}, ${valueColKey})`,
-      {
-        api: p.expression(),
-        pivotKeys: p.expression(),
-        valueColKey: p.expression(),
-      },
-    ),
-    template(
-      ({ api, pivotKeys, valueColKey }) =>
-        ast.expression`${api}.getPivotResultColumn(${pivotKeys}, ${valueColKey})`,
-    ),
-  ),
-];
-
-const GRID_API_REPLACEMENTS = [
+const GRID_API_REPLACEMENTS: Array<GridApiReplacement> = [
   replace(
     matchNode(({ api }) => ast.expression`${api}.refreshServerSideStore()`, {
       api: p.expression(),
@@ -109,15 +58,56 @@ const GRID_API_REPLACEMENTS = [
   ),
 ];
 
-const RENAMED_GRID_OPTIONS: Record<
-  string,
-  {
-    option: string;
-    optionalValue: boolean;
-    transformValue: ((value: Expression) => Expression) | null;
-    allowCustomSource: boolean;
-  }
-> = {
+const GRID_API_DEPRECATIONS: Array<GridApiDeprecation> = [
+  matchNode(({ api }) => ast.expression`${api}.setGetRowId()`, {
+    api: p.expression(),
+  }),
+];
+
+const COLUMNS_API_REPLACEMENTS: Array<GridApiReplacement> = [
+  replace(
+    matchNode(({ api }) => ast.expression`${api}.getAllColumns()`, {
+      api: p.expression(),
+    }),
+    template(({ api }) => ast.expression`${api}.getColumns()`),
+  ),
+  replace(
+    matchNode(({ api }) => ast.expression`${api}.getPrimaryColumns()`, {
+      api: p.expression(),
+    }),
+    template(({ api }) => ast.expression`${api}.getColumns()`),
+  ),
+  replace(
+    matchNode(({ api }) => ast.expression`${api}.getSecondaryColumns()`, {
+      api: p.expression(),
+    }),
+    template(({ api }) => ast.expression`${api}.getPivotResultColumns()`),
+  ),
+  replace(
+    matchNode(({ api, colDefs }) => ast.expression`${api}.setSecondaryColumns(${colDefs})`, {
+      api: p.expression(),
+      colDefs: p.expression(),
+    }),
+    template(({ api, colDefs }) => ast.expression`${api}.setPivotResultColumns(${colDefs})`),
+  ),
+  replace(
+    matchNode(
+      ({ api, pivotKeys, valueColKey }) =>
+        ast.expression`${api}.getSecondaryPivotColumn(${pivotKeys}, ${valueColKey})`,
+      {
+        api: p.expression(),
+        pivotKeys: p.expression(),
+        valueColKey: p.expression(),
+      },
+    ),
+    template(
+      ({ api, pivotKeys, valueColKey }) =>
+        ast.expression`${api}.getPivotResultColumn(${pivotKeys}, ${valueColKey})`,
+    ),
+  ),
+];
+
+const RENAMED_GRID_OPTION_SETTERS: Array<GridApiReplacement> = getGridOptionSetterReplacements({
   paginationSetPageSize: {
     option: 'paginationPageSize',
     optionalValue: true,
@@ -634,108 +624,12 @@ const RENAMED_GRID_OPTIONS: Record<
     transformValue: null,
     allowCustomSource: false,
   },
-};
+});
 
-const GRID_OPTIONS_REPLACEMENTS = [
-  ...Object.entries(RENAMED_GRID_OPTIONS).flatMap(
-    ([method, { option, optionalValue, transformValue, allowCustomSource }]) => {
-      const transform = transformValue || ((value: Expression) => value);
-      // Generate a zero-arg method replacement if method's value is optional
-      const nullaryMethod = optionalValue
-        ? replace(
-            matchNode(({ api }) => ast.expression`${api}.${t.identifier(method)}()`, {
-              api: p.expression(),
-            }),
-            template(
-              ({ api }) =>
-                ast.expression`${api}.setGridOption(${t.stringLiteral(option)}, undefined)`,
-            ),
-          )
-        : null;
-      // Generate a one-arg method replacement for all replaced methods
-      const unaryMethod = replace(
-        matchNode(({ api, value }) => ast.expression`${api}.${t.identifier(method)}(${value})`, {
-          api: p.expression(),
-          value: p.expression(),
-        }),
-        template(
-          ({ api, value }) =>
-            ast.expression`${api}.setGridOption(${t.stringLiteral(option)}, ${transform(value)})`,
-        ),
-      );
-      // Generate a two-arg method replacement if method allows an optional custom source parameter
-      const binaryMethod = allowCustomSource
-        ? replace(
-            matchNode(
-              ({ api, value, source }) =>
-                ast.expression`${api}.${t.identifier(method)}(${value}, ${source})`,
-              {
-                api: p.expression(),
-                value: p.expression(),
-                source: p.expression(),
-              },
-            ),
-            template(
-              ({ api, value, source }) =>
-                ast.expression`${api}.updateGridOptions({ options: { ${t.identifier(
-                  option,
-                )}: ${transform(value)} }, source: ${source} })`,
-            ),
-          )
-        : null;
-      return [nullaryMethod, unaryMethod, binaryMethod].filter(nonNull);
-    },
-  ),
-];
-
-const METHOD_REPLACEMENTS = [
-  ...COLUMNS_API_REPLACEMENTS,
+export const replacements: Array<GridApiReplacement> = [
   ...GRID_API_REPLACEMENTS,
-  ...GRID_OPTIONS_REPLACEMENTS,
+  ...COLUMNS_API_REPLACEMENTS,
+  ...RENAMED_GRID_OPTION_SETTERS,
 ];
 
-const GRID_API_DEPRECATIONS = [
-  matchNode(({ api }) => ast.expression`${api}.setGetRowId()`, {
-    api: p.expression(),
-  }),
-];
-
-const transform: AstTransform<AstCliContext> = {
-  visitor: {
-    // Transform deprecated Grid API method invocations
-    CallExpression(path, context) {
-      // Iterate over each of the replacements until a match is found
-      for (const replacement of METHOD_REPLACEMENTS) {
-        // Attempt to apply the replacement to the current AST node, skipping if the node doesn't match this pattern
-        const result = replacement.exec(path);
-        if (!result) continue;
-
-        // If this is an incidental match (naming collision with an identically-named user method), skip the replacement
-        const { node, refs } = result;
-        if (!isGridApiReference(refs.api, context)) continue;
-
-        // We've found a match, so replace the current AST node with the rewritten node and stop processing this node
-        // FIXME: Match quote style in generated option key string literal
-        path.replaceWith(node);
-        return;
-      }
-      for (const deprecation of GRID_API_DEPRECATIONS) {
-        // Attempt to apply the replacement to the current AST node, skipping if the node doesn't match this pattern
-        const result = deprecation.match(path);
-        if (!result) continue;
-
-        // If this is an incidental match (naming collision with an identically-named user method), skip the replacement
-        const { api } = result;
-        if (!isGridApiReference(api, context)) continue;
-
-        throw path.buildCodeFrameError('This method has been deprecated');
-      }
-    },
-  },
-};
-
-export default transform;
-
-function invertBooleanValue(value: Expression): Expression {
-  return t.isBooleanLiteral(value) ? t.booleanLiteral(!value.value) : ast.expression`!${value}`;
-}
+export const deprecations: Array<GridApiDeprecation> = GRID_API_DEPRECATIONS;
