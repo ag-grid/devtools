@@ -1,0 +1,5 @@
+{
+  "extends": ["../build-config/templates/typedoc/base.typedoc.json"],
+  "entryPoints": ["lib.ts"],
+  "out": "./dist/docs"
+}
