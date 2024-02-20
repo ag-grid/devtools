@@ -83,7 +83,7 @@ test('module exports', () => {
     printTemplate: lib.printTemplate,
     removeTemplateNode: lib.removeTemplateNode,
     replaceTemplateNode: lib.replaceTemplateNode,
-    transformFile: lib.transformFile,
+    transformFileAst: lib.transformFileAst,
     updateAngularComponentTemplate: lib.updateAngularComponentTemplate,
     visitGridOptionsProperties: lib.visitGridOptionsProperties,
   });

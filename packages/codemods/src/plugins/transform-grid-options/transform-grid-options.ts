@@ -1,12 +1,10 @@
 import {
   AccessorKey,
   areLiteralsEqual,
-  ast,
   createPropertyKey,
   createStaticPropertyKey,
   getLiteralPropertyKey,
   getLocatedPath,
-  getNamedObjectLiteralStaticProperty,
   getOptionalNodeFieldValue,
   node as t,
   type AstCliContext,
@@ -80,189 +78,131 @@ type AngularPropertyNode =
   | Angular.TmplAstBoundAttribute
   | Angular.TmplAstBoundEvent;
 
-type ObjectPropertyValue = NodePath<ObjectPropertyValueNode>;
-type JsxPropertyValue = NodePath<JsxPropertyValueNode> | true;
-type AngularPropertyValue = AngularPropertyValueNode | string;
-type VuePropertyValue = VueTemplateNode<VuePropertyValueNode> | true;
+export type ObjectPropertyValue = NodePath<ObjectPropertyValueNode>;
+export type JsxPropertyValue = NodePath<JsxPropertyValueNode> | true;
+export type AngularPropertyValue = AngularPropertyValueNode | string;
+export type VuePropertyValue = VueTemplateNode<VuePropertyValueNode> | true;
 
 type ObjectPropertyValueNode = Expression | ObjectMethod;
 type JsxPropertyValueNode = Expression | JSXEmptyExpression;
 type VuePropertyValueNode = VLiteral | VExpressionContainer;
 type AngularPropertyValueNode = Angular.AST;
 
-const MIGRATION_URL_V31 = 'https://ag-grid.com/javascript-data-grid/upgrading-to-ag-grid-31/';
+export interface GridOptionReplacement {
+  accessor: {
+    key: Identifier;
+    computed: boolean;
+  };
+  transform: GridOptionTransformer;
+}
 
-const GRID_OPTION_REPLACEMENTS = Object.entries({
-  advancedFilterModel: migrateProperty(
-    'initialState',
-    transformOptionalValue(
-      (() => {
-        const warnings = frameworkWarning(
-          getManualInterventionMessage('advancedFilterModel', MIGRATION_URL_V31),
-        );
-        return {
-          property(value) {
-            return transform(value);
-          },
-          jsxAttribute(value) {
-            if (isNonNullJsxPropertyValue(value)) return transform(value);
-            return null;
-          },
-          angularAttribute: warnings.angularAttribute,
-          vueAttribute: warnings.vueAttribute,
-        };
-        function transform(value: ObjectPropertyValue): Expression {
-          return ast.expression`{ filter: { advancedFilterModel: ${value.node} }}`;
-        }
-      })(),
-    ),
-  ),
-  defaultExcelExportParams: transformPropertyValue(
-    transformOptionalValue(
-      (() => {
-        const warnings = frameworkWarning(
-          getManualInterventionMessage('advancedFilterModel', MIGRATION_URL_V31),
-        );
-        return {
-          property(value) {
-            if (!value.isExpression()) return value.node;
-            return transform(value);
-          },
-          jsxAttribute(value) {
-            if (isNonNullJsxPropertyValue(value)) return transform(value);
-            return null;
-          },
-          angularAttribute: warnings.angularAttribute,
-          vueAttribute: warnings.vueAttribute,
-        };
-        function transform(value: NodePath<Expression>): Expression {
-          if (!value.isObjectExpression()) return value.node;
-          const exportMode = getNamedObjectLiteralStaticProperty(value, 'exportMode');
-          const suppressTextAsCDATA = getNamedObjectLiteralStaticProperty(
-            value,
-            'suppressTextAsCDATA',
-          );
-          if (!exportMode && !suppressTextAsCDATA) return value.node;
-          return t.objectExpression(
-            value.node.properties.filter((property) => {
-              if (exportMode && property === exportMode.node) return false;
-              if (suppressTextAsCDATA && property === suppressTextAsCDATA.node) return false;
-              return true;
-            }),
-          );
-        }
-      })(),
-    ),
-  ),
-  enableChartToolPanelsButton: migrateProperty(
-    'suppressChartToolPanelsButton',
-    invertOptionalBooleanValue(),
-  ),
-  enterMovesDown: migrateProperty('enterNavigatesVertically', migrateOptionalValue()),
-  enterMovesDownAfterEdit: migrateProperty(
-    'enterNavigatesVerticallyAfterEdit',
-    migrateOptionalValue(),
-  ),
-  excludeHiddenColumnsFromQuickFilter: migrateProperty(
-    'includeHiddenColumnsInQuickFilter',
-    invertOptionalBooleanValue(),
-  ),
-  functionsPassive: removeProperty(getDeprecationMessage('functionsPassive', MIGRATION_URL_V31)),
-  getServerSideStoreParams: migrateProperty(
-    'getServerSideGroupLevelParams',
-    migrateOptionalValue(),
-  ),
-  processSecondaryColDef: migrateProperty('processPivotResultColDef', migrateOptionalValue()),
-  processSecondaryColGroupDef: migrateProperty(
-    'processPivotResultColGroupDef',
-    migrateOptionalValue(),
-  ),
-  rememberGroupStateWhenNewData: removeProperty(
-    getDeprecationMessage('rememberGroupStateWhenNewData', MIGRATION_URL_V31),
-  ),
-  rowDataChangeDetectionStrategy: removeProperty(
-    getDeprecationMessage('rowDataChangeDetectionStrategy', MIGRATION_URL_V31),
-  ),
-  serverSideFilterAllLevels: migrateProperty(
-    'serverSideOnlyRefreshFilteredGroups',
-    invertOptionalBooleanValue(),
-  ),
-  serverSideFilteringAlwaysResets: migrateProperty(
-    'serverSideOnlyRefreshFilteredGroups',
-    migrateOptionalValue(),
-  ),
-  serverSideSortingAlwaysResets: migrateProperty('serverSideSortAllLevels', migrateOptionalValue()),
-  serverSideStoreType: migrateProperty(
-    'suppressServerSideInfiniteScroll',
-    transformOptionalValue(
-      (() => {
-        const warnings = frameworkWarning(
-          getManualInterventionMessage('suppressServerSideInfiniteScroll', MIGRATION_URL_V31),
-        );
-        return {
-          property(value) {
-            return transformPropertyValue(value.node);
-          },
-          jsxAttribute(value, element, attribute, context) {
-            if (value === true) return null;
-            const { node } = value;
-            if (t.isJSXEmptyExpression(node)) return null;
-            return transformPropertyValue(node);
-          },
-          angularAttribute: warnings.angularAttribute,
-          vueAttribute: warnings.vueAttribute,
-        };
-        function transformPropertyValue(value: Expression | ObjectMethod): Expression {
-          if (t.isStringLiteral(value)) return t.booleanLiteral(value.value !== 'partial');
-          if (!t.isExpression(value)) return t.booleanLiteral(false);
-          return t.binaryExpression('!==', value, t.stringLiteral('partial'));
-        }
-      })(),
-    ),
-  ),
-  suppressAggAtRootLevel: migrateProperty(
-    'alwaysAggregateAtRootLevel',
-    invertOptionalBooleanValue(),
-  ),
-  suppressAsyncEvents: removeProperty(
-    getDeprecationMessage('suppressAsyncEvents', MIGRATION_URL_V31),
-  ),
-  suppressParentsInRowNodes: removeProperty(
-    getDeprecationMessage('suppressParentsInRowNodes', MIGRATION_URL_V31),
-  ),
-  suppressReactUi: removeProperty(getDeprecationMessage('suppressReactUi', MIGRATION_URL_V31)),
-  ...frameworkEvent('columnRowGroupChangeRequest', (eventName) =>
-    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
-  ),
-  ...frameworkEvent('columnPivotChangeRequest', (eventName) =>
-    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
-  ),
-  ...frameworkEvent('columnValueChangeRequest', (eventName) =>
-    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
-  ),
-  ...frameworkEvent('columnAggFuncChangeRequest', (eventName) =>
-    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
-  ),
-  ...frameworkEvent('rowDataChanged', (eventName) =>
-    migrateProperty(
-      eventName.replace(/changed$/, 'updated').replace(/Changed$/, 'Updated'),
-      migrateOptionalValue(),
-    ),
-  ),
-} as Record<string, ObjectPropertyTransformer<AstTransformContext<AstCliContext>>>).map(
-  ([key, transform]) => ({
+export type GridOptionTransformer = ObjectPropertyTransformer<AstTransformContext<AstCliContext>>;
+
+export function transformGridOptions(
+  replacements: Array<GridOptionReplacement>,
+): AstTransform<AstCliContext> {
+  return function transformGridOptions(babel) {
+    return {
+      visitor: visitGridOptionsProperties({
+        init(path, context) {
+          const accessor = parseObjectPropertyInitializerAccessor(path);
+          if (!accessor) return;
+          // Iterate over each of the replacements until a match is found
+          for (const { accessor: replacedAccessor, transform } of replacements) {
+            // Skip over any properties that do not match any of the defined replacement patterns
+            if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+            // If a match was found, apply the appropriate transformation
+            transform.init(path, context);
+            // Skip all other replacements
+            break;
+          }
+        },
+        get(path, context) {
+          const accessor = parseObjectPropertyGetterAccessor(path);
+          if (!accessor) return;
+          // Iterate over each of the replacements until a match is found
+          for (const { accessor: replacedAccessor, transform } of replacements) {
+            // Skip over any properties that do not match any of the defined replacement patterns
+            if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+            // If a match was found, apply the appropriate transformation
+            transform.get(path, context);
+            // Skip all other replacements
+            break;
+          }
+        },
+        set(path, context) {
+          const accessor = parseObjectPropertyAssignmentAccessor(path);
+          if (!accessor) return;
+          // Iterate over each of the replacements until a match is found
+          for (const { accessor: replacedAccessor, transform } of replacements) {
+            // Skip over any properties that do not match any of the defined replacement patterns
+            if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+            // If a match was found, apply the appropriate transformation
+            transform.set(path, context);
+            // Skip all other replacements
+            break;
+          }
+        },
+        jsxAttribute(path, element, context) {
+          const accessor = parseJsxAttributeAccessor(path.node);
+          if (!accessor) return;
+          // Iterate over each of the replacements until a match is found
+          for (const { accessor: replacedAccessor, transform } of replacements) {
+            // Skip over any properties that do not match any of the defined replacement patterns
+            if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+            // If a match was found, apply the appropriate transformation
+            transform.jsxAttribute(path, element, context);
+            // Skip all other replacements
+            break;
+          }
+        },
+        angularAttribute(attributeNode, component, element, context) {
+          const accessor = parseAngularAttributeAccessor(attributeNode);
+          // Iterate over each of the replacements until a match is found
+          for (const { accessor: replacedAccessor, transform } of replacements) {
+            // Skip over any properties that do not match any of the defined replacement patterns
+            if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+            transform.angularAttribute(attributeNode, component, element, context);
+            // Skip all other replacements
+            break;
+          }
+        },
+        vueAttribute(attributeNode, component, element, context) {
+          const accessor = parseGridOptionVueAttributeAccessor(attributeNode.node);
+          if (!accessor) return;
+          // Iterate over each of the replacements until a match is found
+          for (const { accessor: replacedAccessor, transform } of replacements) {
+            // Skip over any properties that do not match any of the defined replacement patterns
+            if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+            transform.vueAttribute(attributeNode, component, element, context);
+            // Skip all other replacements
+            break;
+          }
+        },
+      }),
+    };
+  };
+}
+
+export function getGridOptionReplacements(
+  transforms: Record<string, GridOptionTransformer>,
+): Array<GridOptionReplacement> {
+  return Object.entries(transforms).map(([key, transform]) => ({
     accessor: { key: t.identifier(key), computed: false },
     transform,
-  }),
-);
+  }));
+}
 
-function frameworkEvent<T>(key: string, factory: (frameworkKey: string) => T): Record<string, T> {
+export function frameworkEvent<T>(
+  key: string,
+  factory: (frameworkKey: string) => T,
+): Record<string, T> {
   return Object.fromEntries(
     Object.values(getFrameworkEventNames(key)).map((eventName) => [eventName, factory(eventName)]),
   );
 }
 
-function frameworkWarning<S extends AstTransformContext<AstCliContext>>(
+export function frameworkWarning<S extends AstTransformContext<AstCliContext>>(
   message: string,
 ): Omit<ObjectPropertyValueTransformer<S>, 'property'> {
   return {
@@ -281,95 +221,13 @@ function frameworkWarning<S extends AstTransformContext<AstCliContext>>(
   };
 }
 
-function getDeprecationMessage(key: string, migrationUrl: string): string {
+export function getDeprecationMessage(key: string, migrationUrl: string): string {
   return `The grid option "${key}" is deprecated. Please refer to the migration guide for more details: ${migrationUrl}`;
 }
 
-function getManualInterventionMessage(key: string, migrationUrl: string): string {
+export function getManualInterventionMessage(key: string, migrationUrl: string): string {
   return `The grid option "${key}" cannot be automatically migrated. Please refer to the migration guide for more details: ${migrationUrl}`;
 }
-
-const transform: AstTransform<AstCliContext> = {
-  visitor: visitGridOptionsProperties({
-    init(path, context) {
-      const accessor = parseObjectPropertyInitializerAccessor(path);
-      if (!accessor) return;
-      // Iterate over each of the replacements until a match is found
-      for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
-        // Skip over any properties that do not match any of the defined replacement patterns
-        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-        // If a match was found, apply the appropriate transformation
-        transform.init(path, context);
-        // Skip all other replacements
-        break;
-      }
-    },
-    get(path, context) {
-      const accessor = parseObjectPropertyGetterAccessor(path);
-      if (!accessor) return;
-      // Iterate over each of the replacements until a match is found
-      for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
-        // Skip over any properties that do not match any of the defined replacement patterns
-        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-        // If a match was found, apply the appropriate transformation
-        transform.get(path, context);
-        // Skip all other replacements
-        break;
-      }
-    },
-    set(path, context) {
-      const accessor = parseObjectPropertyAssignmentAccessor(path);
-      if (!accessor) return;
-      // Iterate over each of the replacements until a match is found
-      for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
-        // Skip over any properties that do not match any of the defined replacement patterns
-        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-        // If a match was found, apply the appropriate transformation
-        transform.set(path, context);
-        // Skip all other replacements
-        break;
-      }
-    },
-    jsxAttribute(path, element, context) {
-      const accessor = parseJsxAttributeAccessor(path.node);
-      if (!accessor) return;
-      // Iterate over each of the replacements until a match is found
-      for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
-        // Skip over any properties that do not match any of the defined replacement patterns
-        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-        // If a match was found, apply the appropriate transformation
-        transform.jsxAttribute(path, element, context);
-        // Skip all other replacements
-        break;
-      }
-    },
-    angularAttribute(attributeNode, component, element, context) {
-      const accessor = parseAngularAttributeAccessor(attributeNode);
-      // Iterate over each of the replacements until a match is found
-      for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
-        // Skip over any properties that do not match any of the defined replacement patterns
-        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-        transform.angularAttribute(attributeNode, component, element, context);
-        // Skip all other replacements
-        break;
-      }
-    },
-    vueAttribute(attributeNode, component, element, context) {
-      const accessor = parseGridOptionVueAttributeAccessor(attributeNode.node);
-      if (!accessor) return;
-      // Iterate over each of the replacements until a match is found
-      for (const { accessor: replacedAccessor, transform } of GRID_OPTION_REPLACEMENTS) {
-        // Skip over any properties that do not match any of the defined replacement patterns
-        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-        transform.vueAttribute(attributeNode, component, element, context);
-        // Skip all other replacements
-        break;
-      }
-    },
-  }),
-};
-
-export default transform;
 
 interface PropertyAccessor {
   key: Identifier | Literal | PrivateName | Expression;
@@ -624,13 +482,13 @@ function parseGridOptionVueAttributeAccessor(
   }
 }
 
-function transformPropertyValue<S extends AstTransformContext<AstCliContext>>(
+export function transformPropertyValue<S extends AstTransformContext<AstCliContext>>(
   transform: ObjectPropertyValueTransformer<S>,
 ): ObjectPropertyTransformer<S> {
   return migrateProperty(null, transform);
 }
 
-function migrateProperty<S extends AstTransformContext<AstCliContext>>(
+export function migrateProperty<S extends AstTransformContext<AstCliContext>>(
   targetKey: string | null,
   transform: ObjectPropertyValueTransformer<S>,
 ): ObjectPropertyTransformer<S> {
@@ -791,7 +649,7 @@ function migrateProperty<S extends AstTransformContext<AstCliContext>>(
   return transformer;
 }
 
-function removeProperty(
+export function removeProperty(
   deprecationWarning: string,
 ): ObjectPropertyTransformer<AstTransformContext<AstCliContext>> {
   return {
@@ -854,7 +712,7 @@ function removeProperty(
   };
 }
 
-function migrateOptionalValue<
+export function migrateOptionalValue<
   S extends AstTransformContext<AstCliContext>,
 >(): ObjectPropertyValueTransformer<S> {
   return transformOptionalValue<S>({
@@ -873,7 +731,7 @@ function migrateOptionalValue<
   });
 }
 
-function transformOptionalValue<S extends AstTransformContext<AstCliContext>>(
+export function transformOptionalValue<S extends AstTransformContext<AstCliContext>>(
   transform: ObjectPropertyValueTransformer<S>,
 ): ObjectPropertyValueTransformer<S> {
   return {
@@ -928,7 +786,7 @@ function isNullVueAttributeValue(value: VuePropertyValue): boolean {
   );
 }
 
-function invertOptionalBooleanValue<
+export function invertOptionalBooleanValue<
   S extends AstTransformContext<AstCliContext>,
 >(): ObjectPropertyValueTransformer<S> {
   return transformOptionalValue<S>({
@@ -1253,7 +1111,7 @@ function parseJsxAttributeValue(value: NodePath<JSXAttribute['value']>): JsxProp
   return null;
 }
 
-function isNonNullJsxPropertyValue(
+export function isNonNullJsxPropertyValue(
   node: JsxPropertyValue,
 ): node is NodePath<Exclude<Exclude<JsxPropertyValue, true>['node'], JSXEmptyExpression>> {
   if (node === true || node.isJSXEmptyExpression()) return false;

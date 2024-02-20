@@ -1,8 +1,8 @@
 import { type TransformManifest } from '@ag-grid-devtools/types';
 
 const manifest: TransformManifest = {
-  name: 'Rename grid options',
-  description: 'Transform deprecated grid options',
+  name: 'Transform Grid options',
+  description: 'Transform deprecated Grid options',
 };
 
 export default manifest;
