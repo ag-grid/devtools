@@ -1,9 +1,9 @@
 {
   "private": true,
-  "name": "@ag-grid-devtools/codemod-utils",
+  "name": "@ag-grid-devtools/test-utils",
   "version": "0.0.1",
   "license": "MIT",
-  "description": "Codemod utility helpers",
+  "description": "Automated testing helpers",
   "author": "AG Grid <info@ag-grid.com>",
   "homepage": "https://www.ag-grid.com/",
   "repository": {
@@ -25,8 +25,7 @@
     "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
     "lint:typescript": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest watch",
-    "update-event-keys": "./scripts/update-event-keys ./src/eventKeys.ts"
+    "test:watch": "vitest watch"
   },
   "pkg": {
     "type": "module",
@@ -47,12 +46,10 @@
     "@angular-eslint/template-parser": "17.0.1",
     "@angular/compiler": "17.0.1",
     "@typescript-eslint/types": "6.6.0",
-    "recast": "0.23.4",
-    "vue-eslint-parser": "9.3.2"
+    "memfs": "4.6.0"
   },
   "devDependencies": {
-    "@ag-grid-devtools/build-config": "workspace:*",
-    "@ag-grid-devtools/test-utils": "workspace:*"
+    "@ag-grid-devtools/build-config": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^8",

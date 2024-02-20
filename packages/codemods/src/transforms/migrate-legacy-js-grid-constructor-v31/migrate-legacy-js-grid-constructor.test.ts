@@ -1,6 +1,5 @@
-import { transformFile } from '@ag-grid-devtools/codemod-utils';
-import { type FsUtils } from '@ag-grid-devtools/types';
-import { fs as memfs } from 'memfs';
+import { transformFileAst } from '@ag-grid-devtools/codemod-utils';
+import { createMockFsHelpers, fs as memfs } from '@ag-grid-devtools/test-utils';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,10 +23,10 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const errors = require(errorsPath);
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+        const actual = transformFileAst(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
+          fs: createMockFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
@@ -46,10 +45,10 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const errors = require(errorsPath);
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+        const actual = transformFileAst(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
+          fs: createMockFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
@@ -70,10 +69,10 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const errors = require(errorsPath);
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+        const actual = transformFileAst(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
+          fs: createMockFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
@@ -96,10 +95,10 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const errors = require(errorsPath);
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+        const actual = transformFileAst(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
+          fs: createMockFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
@@ -118,10 +117,10 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const errors = require(errorsPath);
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+        const actual = transformFileAst(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
+          fs: createMockFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
@@ -142,10 +141,10 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const errors = require(errorsPath);
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+        const actual = transformFileAst(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
+          fs: createMockFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
@@ -164,10 +163,10 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const errors = require(errorsPath);
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+        const actual = transformFileAst(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
+          fs: createMockFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
@@ -190,10 +189,10 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const errors = require(errorsPath);
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+        const actual = transformFileAst(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
+          fs: createMockFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
@@ -212,10 +211,10 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const errors = require(errorsPath);
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+        const actual = transformFileAst(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
+          fs: createMockFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
@@ -236,10 +235,10 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const errors = require(errorsPath);
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+        const actual = transformFileAst(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
+          fs: createMockFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
@@ -258,10 +257,10 @@ describe('transforms input files correctly', () => {
         const input = readFileSync(inputPath, 'utf-8');
         const expected = readFileSync(outputPath, 'utf-8');
         const errors = require(errorsPath);
-        const actual = transformFile(input, [migrateLegacyJsGridConstructor], {
+        const actual = transformFileAst(input, [migrateLegacyJsGridConstructor], {
           filename: inputPath,
           applyDangerousEdits: false,
-          fs: createFsHelpers(memfs),
+          fs: createMockFsHelpers(memfs),
         });
         expect(actual).toEqual({
           source: expected === input ? null : expected,
@@ -271,32 +270,3 @@ describe('transforms input files correctly', () => {
     });
   });
 });
-
-function createFsHelpers(fs: typeof memfs): FsUtils {
-  return {
-    readFile,
-    readFileSync,
-    writeFile,
-    writeFileSync,
-  };
-
-  function readFile(filename: string, encoding: 'utf-8'): Promise<string>;
-  function readFile(filename: string, encoding: BufferEncoding): Promise<string | Buffer>;
-  function readFile(filename: string, encoding: BufferEncoding): Promise<string | Buffer> {
-    return fs.promises.readFile(filename, encoding);
-  }
-
-  function readFileSync(filename: string, encoding: 'utf-8'): string;
-  function readFileSync(filename: string, encoding: BufferEncoding): string | Buffer;
-  function readFileSync(filename: string, encoding: BufferEncoding): string | Buffer {
-    return fs.readFileSync(filename, encoding);
-  }
-
-  function writeFile(filename: string, data: string | Buffer): Promise<void> {
-    return fs.promises.writeFile(filename, data);
-  }
-
-  function writeFileSync(filename: string, data: string | Buffer): void {
-    return fs.writeFileSync(filename, data);
-  }
-}

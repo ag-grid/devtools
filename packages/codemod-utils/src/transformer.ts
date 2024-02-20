@@ -14,7 +14,7 @@ import {
 } from './transform';
 import { type AstTransformJsOptions, type AstTransformOptions } from './types';
 
-export function transformFile(
+export function transformFileAst(
   source: string,
   transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>,
   options: AstTransformOptions & AstTransformJsOptions,

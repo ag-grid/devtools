@@ -1,11 +1,15 @@
 import { type FsUtils } from '@ag-grid-devtools/types';
 import type { NodePath, PluginObj, PluginPass, Visitor } from '@babel/core';
+import type * as BabelCore from '@babel/core';
 
 import { type AstNode } from './ast';
 
 export type { Binding, BindingKind, NodePath, Scope, Visitor } from '@babel/traverse';
 
-export type AstTransform<S extends object> = PluginObj<PluginPass & AstTransformContext<S>>;
+type Babel = typeof BabelCore;
+type BabelPlugin<S = PluginPass> = (babel: Babel) => PluginObj<S>;
+
+export type AstTransform<S extends object> = BabelPlugin<PluginPass & AstTransformContext<S>>;
 
 export type AstTransformWithOptions<S extends object = object, T extends object = object> = [
   AstTransform<S>,
