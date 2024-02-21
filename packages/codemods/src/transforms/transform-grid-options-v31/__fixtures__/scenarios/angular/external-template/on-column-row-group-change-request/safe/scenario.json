@@ -1,0 +1,13 @@
+{
+  "input": "input.component.ts",
+  "output": null,
+  "errors": "output.errors.cjs",
+  "files": {
+    "input": {
+      "component.html": "input.component.html"
+    },
+    "expected": {
+      "component.html": "input.component.html"
+    }
+  }
+}

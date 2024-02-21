@@ -1,0 +1,8 @@
+{
+  "input": "input.vue",
+  "output": "output.vue",
+  "errors": null,
+  "options": {
+    "lineEndings": "crlf"
+  }
+}
