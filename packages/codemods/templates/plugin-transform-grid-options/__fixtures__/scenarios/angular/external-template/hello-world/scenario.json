@@ -1,0 +1,16 @@
+{
+  "input": "input.component.ts",
+  "output": "output.component.ts",
+  "errors": null,
+  "files": {
+    "input": {
+      "component.html": "input.component.html"
+    },
+    "expected": {
+      "component.html": "output.component.html"
+    }
+  },
+  "options": {
+    "applyDangerousEdits": true
+  }
+}

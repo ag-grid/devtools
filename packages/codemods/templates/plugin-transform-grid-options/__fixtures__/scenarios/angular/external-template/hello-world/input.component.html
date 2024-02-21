@@ -1,0 +1,10 @@
+<div>
+  <ag-grid-angular
+    [columnDefs]="columnDefs"
+    [rowData]="rowData"
+    [hello]="user"
+    [goodbye]="user"
+    [friendly]="true"
+    (gridReady)="onGridReady($event)"
+  ></ag-grid-angular>
+</div>

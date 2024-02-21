@@ -284,6 +284,9 @@ importers:
       '@ag-grid-devtools/build-config':
         specifier: workspace:*
         version: link:../build-config
+      '@ag-grid-devtools/build-tools':
+        specifier: workspace:*
+        version: link:../build-tools
       '@ag-grid-devtools/codemod-utils':
         specifier: workspace:*
         version: link:../codemod-utils
