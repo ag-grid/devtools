@@ -1,0 +1,8 @@
+{
+  "input": "input.jsx",
+  "output": "output.jsx",
+  "errors": null,
+  "options": {
+    "applyDangerousEdits": true
+  }
+}

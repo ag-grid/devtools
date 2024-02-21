@@ -1,0 +1,5 @@
+{
+  "input": "input.js",
+  "output": null,
+  "errors": "output.errors.cjs"
+}
