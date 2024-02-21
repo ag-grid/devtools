@@ -1,0 +1,32 @@
+<template>
+  <div>
+    <ag-grid-vue
+      :columnDefs="columnDefs"
+      :rowData="rowData"
+      :rowDataChangeDetectionStrategy="rowDataChangeDetectionStrategy"
+      @grid-ready="onGridReady"
+    ></ag-grid-vue>
+  </div>
+</template>
+
+<script>
+import { AgGridVue } from '@ag-grid-community/vue';
+
+export default {
+  components: {
+    'ag-grid-vue': AgGridVue,
+  },
+  data() {
+    return {
+      columnDefs: [],
+      rowData: [],
+      rowDataChangeDetectionStrategy: 'DeepValueCheck',
+    };
+  },
+  methods: {
+    onGridReady(params) {
+      this.rowDataChangeDetectionStrategy = 'DeepValueCheck';
+    },
+  },
+};
+</script>

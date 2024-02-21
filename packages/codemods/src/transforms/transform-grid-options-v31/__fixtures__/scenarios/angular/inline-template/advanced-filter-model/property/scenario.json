@@ -1,0 +1,5 @@
+{
+  "input": "input.component.ts",
+  "output": "output.component.ts",
+  "errors": "output.errors.cjs"
+}

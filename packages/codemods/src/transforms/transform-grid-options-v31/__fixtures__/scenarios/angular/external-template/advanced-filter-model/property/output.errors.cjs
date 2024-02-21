@@ -5,6 +5,6 @@ module.exports = [
 >  9 | @Component({
      | ^
   10 |   selector: 'my-app',
-  11 |   templateUrl: './input.component.html',
+  11 |   templateUrl: './component.html',
   12 | })`),
 ];

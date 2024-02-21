@@ -1,0 +1,8 @@
+{
+  "input": "input.component.ts",
+  "output": "output.component.ts",
+  "errors": null,
+  "options": {
+    "applyDangerousEdits": true
+  }
+}
