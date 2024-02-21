@@ -1,2 +1,4 @@
+/templates/
 /dist/
+**/__fixtures__/
 /vitest.config.ts.timestamp-*.mjs
