@@ -24,7 +24,9 @@
     "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
     "lint:typescript": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest watch"
+    "test:watch": "vitest watch",
+    "task:create-version": "pnpm run --filter build-tools task $PWD/tasks/create-version.cjs",
+    "task:create-transform": "pnpm run --filter build-tools task $PWD/tasks/create-transform.cjs"
   },
   "pkg": {
     "main": "./lib/lib.cjs",
@@ -43,6 +45,7 @@
   "devDependencies": {
     "@ag-grid-devtools/ast": "workspace:*",
     "@ag-grid-devtools/build-config": "workspace:*",
+    "@ag-grid-devtools/build-tools": "workspace:*",
     "@ag-grid-devtools/codemod-utils": "workspace:*",
     "@ag-grid-devtools/test-utils": "workspace:*",
     "@ag-grid-devtools/types": "workspace:*",
