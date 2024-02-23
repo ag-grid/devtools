@@ -1,4 +1,3 @@
-/* eslint-disable */
 const { Grid: AgGrid } = require('@ag-grid-community/core');
 (() => {
   const gridOptions = { foo: 'bar' };

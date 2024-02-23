@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { AgGridVue } from '@ag-grid-community/vue';
 
 const AppComponent = {

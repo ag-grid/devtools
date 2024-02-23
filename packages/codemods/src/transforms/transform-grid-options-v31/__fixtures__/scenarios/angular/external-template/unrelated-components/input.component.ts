@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint-disable */
 import { Component } from '@angular/core';
 
 @Component({
