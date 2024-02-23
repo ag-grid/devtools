@@ -18,6 +18,7 @@
     "test:watch": "vitest watch",
     "coverage": "vitest run --coverage",
     "coverage:report": "vitest run --coverage --config ./report.vitest.config.ts",
+    "clean": "rm -rf docs coverages packages/*/dist",
     "version": "pnpm --filter @ag-grid-community/cli exec -- pnpm run --silent version",
     "publish": "pnpm run --filter @ag-grid-community/cli publish"
   },
