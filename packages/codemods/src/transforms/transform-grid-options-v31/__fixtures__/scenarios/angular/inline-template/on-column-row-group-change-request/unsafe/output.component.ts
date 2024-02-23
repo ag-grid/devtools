@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint-disable */
 import { ColDef, ColGroupDef, GridReadyEvent, ColumnRowGroupChangeRequestEvent } from '@ag-grid-community/core';
 import { AgGridAngular } from '@ag-grid-community/angular';
 import { HttpClient } from '@angular/common/http';

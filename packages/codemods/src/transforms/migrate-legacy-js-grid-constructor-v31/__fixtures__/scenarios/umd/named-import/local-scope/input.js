@@ -1,4 +1,3 @@
-/* eslint-disable */
 const { Grid } = agGrid;
 (() => {
   const gridOptions = { foo: 'bar' };

@@ -1,4 +1,3 @@
-/* eslint-disable */
 import * as AgGrid from '@ag-grid-community/core';
 (() => {
   const gridOptions = { foo: 'bar' };

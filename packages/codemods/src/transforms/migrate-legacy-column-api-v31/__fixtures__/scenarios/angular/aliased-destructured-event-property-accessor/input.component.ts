@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint-disable */
 import { ColDef, ColGroupDef, GridReadyEvent } from '@ag-grid-community/core';
 import { HttpClient } from '@angular/common/http';
 import { Component } from '@angular/core';
