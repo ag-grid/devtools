@@ -1,5 +1,6 @@
 {
   "input": "input.ts",
   "output": "output.ts",
-  "errors": null
+  "errors": null,
+  "warnings": null
 }

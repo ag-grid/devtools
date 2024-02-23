@@ -1,5 +1,6 @@
 {
   "input": "input.component.ts",
   "output": null,
-  "errors": null
+  "errors": null,
+  "warnings": null
 }

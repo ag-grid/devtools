@@ -34,6 +34,10 @@ export interface FsContext {
   fs: FsUtils;
 }
 
-export type AstTransformResult = { source: string | null; errors: Array<Error> };
+export type AstTransformResult = {
+  source: string | null;
+  errors: Array<Error>;
+  warnings: Array<Error>;
+};
 
 export type AstNodeVisitor<S extends AstTransformContext<object>> = Visitor<S>;

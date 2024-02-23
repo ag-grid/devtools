@@ -318,11 +318,17 @@ async function migrate(
             log(stderr, `Processing ${relative(cwd, inputFilePath)}`);
             return task
               .run({ inputFilePath, dryRun, applyDangerousEdits }, runner)
-              .then(({ result, errors }) => ({ path: inputFilePath, result, errors }))
-              .catch((error) => ({
+              .then(({ result, errors, warnings }) => ({
+                path: inputFilePath,
+                result,
+                errors,
+                warnings,
+              }))
+              .catch((error: Error) => ({
                 path: inputFilePath,
                 result: { source: null, updated: null },
                 errors: [error],
+                warnings: new Array<Error>(),
               }))
               .then((result) => {
                 if (verbose) {
@@ -375,11 +381,17 @@ async function migrate(
                 if (workerResult.success) return workerResult.value;
                 throw workerResult.error;
               })
-              .then(({ result, errors }) => ({ path: inputFilePath, result, errors }))
-              .catch((error) => ({
+              .then(({ result, errors, warnings }) => ({
+                path: inputFilePath,
+                result,
+                errors,
+                warnings,
+              }))
+              .catch((error: Error) => ({
                 path: inputFilePath,
                 result: { source: null, updated: null },
                 errors: [error],
+                warnings: new Array<Error>(),
               }));
           }),
         ).then((results) => {
@@ -392,7 +404,10 @@ async function migrate(
   const elapsedTime = Date.now() - startTime;
 
   const successResults = results
-    .map((result) => (result.errors.length === 0 ? result : null))
+    .map((result) => (result.errors.length === 0 && result.warnings.length === 0 ? result : null))
+    .filter(nonNull);
+  const warningResults = results
+    .map((result) => (result.warnings.length > 0 ? result : null))
     .filter(nonNull);
   const errorResults = results
     .map((result) => (result.errors.length > 0 ? result : null))
@@ -423,25 +438,55 @@ async function migrate(
 
   await log(
     stderr,
-    `Migration completed in ${elapsedTime}ms (${changedResults.length} modified, ${unchangedResults.length} unmodified, ${errorResults.length} failed, ${results.length} total)`,
+    `Migration completed in ${elapsedTime}ms (${[
+      `${changedResults.length} modified`,
+      `${unchangedResults.length} unmodified`,
+      `${warningResults.length} warnings`,
+      `${errorResults.length} failed`,
+      `${results.length} total`,
+    ].join(', ')})`,
   );
+
+  if (warningResults.length > 0) {
+    await log(stderr, '');
+    throw new CliError(
+      `Encountered warnings in ${warningResults.length} ${
+        warningResults.length === 1 ? 'file' : 'files'
+      }`,
+      formatFileErrors(
+        warningResults.map(({ path, warnings: errors }) => ({
+          path: relative(cwd, path),
+          errors,
+        })),
+      ),
+    );
+  }
 
   if (errorResults.length > 0) {
     await log(stderr, '');
     throw new CliError(
       `Failed to process ${errorResults.length} ${errorResults.length === 1 ? 'file' : 'files'}`,
-      errorResults
-        .map(
-          ({ path, errors }) =>
-            `${relative(cwd, path)}:\n\n${errors
-              .map((error) => indentErrorMessage(error.message, { indent: '  ' }))
-              .join('\n\n')}\n`,
-        )
-        .join('\n'),
+      formatFileErrors(
+        errorResults.map(({ path, errors }) => ({
+          path: relative(cwd, path),
+          errors,
+        })),
+      ),
     );
   }
 
   return successResults.map(({ path }) => path);
+}
+
+function formatFileErrors(warningResults: Array<{ path: string; errors: Error[] }>): string {
+  return warningResults
+    .map(
+      ({ path, errors }) =>
+        `${path}:\n\n${errors
+          .map((error) => indentErrorMessage(error.message, { indent: '  ' }))
+          .join('\n\n')}\n`,
+    )
+    .join('\n');
 }
 
 function getProjectSourceFiles(projectRoot: string): Promise<Array<string>> {

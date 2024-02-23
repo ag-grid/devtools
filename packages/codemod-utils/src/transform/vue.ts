@@ -60,7 +60,11 @@ export function transformVueSfcFile(
   };
   // Transform the <script> section of the SFC
   const scriptSource = source.slice(scriptStart, scriptEnd);
-  const { source: updatedScriptSource, errors } = transformJsFile(
+  const {
+    source: updatedScriptSource,
+    errors,
+    warnings,
+  } = transformJsFile(
     scriptSource,
     transforms.map((transform): AstTransformWithOptions<AstCliContext & VueComponentCliContext> => {
       const [plugin, options] = Array.isArray(transform) ? transform : [transform, {}];
@@ -83,7 +87,7 @@ export function transformVueSfcFile(
       : null;
   // If there were no changes, bail out
   if (updatedScriptSource === null && updatedTemplateSource === null) {
-    return { source: null, errors };
+    return { source: null, errors, warnings };
   }
   // Otherwise splice the chunks of the template back together in the original
   const [templateStart, templateEnd] = templateRoot ? templateRoot.range : [scriptEnd, scriptEnd];
@@ -109,5 +113,6 @@ export function transformVueSfcFile(
       secondChunk.start,
     )}${secondChunk.replacement}${source.slice(secondChunk.end)}`,
     errors,
+    warnings,
   };
 }

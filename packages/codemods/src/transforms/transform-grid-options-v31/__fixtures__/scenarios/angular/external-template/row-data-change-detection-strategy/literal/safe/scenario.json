@@ -1,7 +1,8 @@
 {
   "input": "input.component.ts",
   "output": null,
-  "errors": "output.errors.cjs",
+  "errors": null,
+  "warnings": "output.warnings.cjs",
   "files": {
     "input": {
       "component.html": "input.component.html"
