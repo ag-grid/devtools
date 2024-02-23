@@ -5,4 +5,5 @@ const gridApi = createGrid(document.body, {
   rowData: [],
 });
 
-gridApi.sayHello('world');
+gridApi.sayHello("world");
+gridApi.goodbyeWorld();
