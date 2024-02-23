@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { AgGridReact } from '@ag-grid-community/react';
 import { useRef } from 'react';
 
