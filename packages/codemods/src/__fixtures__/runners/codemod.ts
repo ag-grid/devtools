@@ -11,14 +11,14 @@ export function loadCodemodExampleScenarios(
   const { codemod } = options;
   return loadExampleScenarios(scenariosPath, {
     runner: (input) => {
-      const { source, errors } = codemod(
+      const { source, errors, warnings } = codemod(
         { path: input.path, source: input.source },
         {
           applyDangerousEdits: input.options.applyDangerousEdits,
           fs: createMockFsHelpers(memfs),
         },
       );
-      return { source, errors };
+      return { source, errors, warnings };
     },
   });
 }

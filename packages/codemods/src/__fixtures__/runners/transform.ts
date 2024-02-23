@@ -16,12 +16,12 @@ export function loadTransformScenarios(
   const { transforms } = options;
   return loadExampleScenarios(scenariosPath, {
     runner: (input) => {
-      const { source, errors } = transformFileAst(input.source, transforms, {
+      const { source, errors, warnings } = transformFileAst(input.source, transforms, {
         filename: input.path,
         applyDangerousEdits: input.options.applyDangerousEdits,
         fs: createMockFsHelpers(memfs),
       });
-      return { source, errors };
+      return { source, errors, warnings };
     },
   });
 }

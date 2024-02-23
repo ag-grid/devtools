@@ -9,6 +9,7 @@ export interface CodemodExampleScenarioData {
   input: string;
   output: string | null;
   errors: string | null;
+  warnings: string | null;
   files?: {
     input: Record<string, string>;
     expected: Record<string, string>;
@@ -34,6 +35,7 @@ export interface CodemodExampleScenarioInput {
 export interface CodemodExampleScenarioOutput {
   source: string | null;
   errors: Array<Error>;
+  warnings: Array<Error>;
   fs: Record<string, string | null> | null;
 }
 
@@ -48,7 +50,16 @@ export function loadExampleScenarios(
     describe,
     loader: (scenarioPath) => {
       const scenario = loadJsonFile<CodemodExampleScenarioData>(scenarioPath);
-      const { only = false, skip = false, input, output, errors, files, options } = scenario;
+      const {
+        only = false,
+        skip = false,
+        input,
+        output,
+        errors,
+        warnings,
+        files,
+        options,
+      } = scenario;
       const lineEndings = options?.lineEndings;
       if (!isValidLineEndingsModeOption(lineEndings)) {
         throw new Error(`Invalid line endings mode: ${lineEndings}`);
@@ -73,8 +84,10 @@ export function loadExampleScenarios(
             )
           : null;
       const errorsPath = errors == null ? null : getScenarioFilePath(scenarioPath, errors);
+      const warningsPath = warnings == null ? null : getScenarioFilePath(scenarioPath, warnings);
       const outputSource = output == null ? null : loadScenarioFile(scenarioPath, output);
       const outputErrors = errorsPath == null ? [] : require(errorsPath);
+      const outputWarnings = warningsPath == null ? [] : require(warningsPath);
       const outputFs =
         files && Object.keys(files.expected).length > 0
           ? Object.fromEntries(
@@ -101,6 +114,7 @@ export function loadExampleScenarios(
         expected: transformExpected({
           source: outputSource === inputSource ? null : outputSource,
           errors: outputErrors,
+          warnings: outputWarnings,
           fs: outputFs,
         }),
       };

@@ -1,5 +1,6 @@
 {
   "input": "input.jsx",
   "output": "output.jsx",
-  "errors": null
+  "errors": null,
+  "warnings": null
 }

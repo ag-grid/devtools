@@ -1,7 +1,8 @@
 {
   "input": "input.vue",
   "output": "output.vue",
-  "errors": "output.errors.cjs",
+  "errors": null,
+  "warnings": "output.warnings.cjs",
   "options": {
     "lineEndings": "crlf",
     "applyDangerousEdits": true

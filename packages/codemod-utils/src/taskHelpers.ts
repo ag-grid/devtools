@@ -19,7 +19,11 @@ export function createCodemodTask(codemod: Codemod): CodemodTask {
           ),
         )
         .then((source) => {
-          const { source: updated, errors } = codemod(
+          const {
+            source: updated,
+            errors,
+            warnings,
+          } = codemod(
             { path: inputFilePath, source },
             {
               applyDangerousEdits,
@@ -28,8 +32,8 @@ export function createCodemodTask(codemod: Codemod): CodemodTask {
           );
           const isUnchanged = updated === source;
           const result = { source, updated: isUnchanged ? null : updated };
-          if (dryRun || !updated || isUnchanged) return { result, errors };
-          return writeFile(inputFilePath, updated).then(() => ({ result, errors }));
+          if (dryRun || !updated || isUnchanged) return { result, errors, warnings };
+          return writeFile(inputFilePath, updated).then(() => ({ result, errors, warnings }));
         });
     },
   };
