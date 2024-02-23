@@ -68,7 +68,7 @@ export function transformGridApiMethods(options: {
             const { api } = result;
             if (!isGridApiReference(api, context)) continue;
 
-            throw path.buildCodeFrameError('This method has been deprecated');
+            context.opts.fail(path, 'This method has been deprecated');
           }
         },
       },
