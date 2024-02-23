@@ -18,6 +18,7 @@ export interface CodemodOptions {
 export interface CodemodResult {
   source: string | null;
   errors: Array<Error>;
+  warnings: Array<Error>;
 }
 
 export interface CodemodTask extends Task<CodemodTaskInput, CodemodTaskResult> {}
@@ -31,6 +32,7 @@ export interface CodemodTaskInput {
 export interface CodemodTaskResult {
   result: { source: string; updated: string | null };
   errors: Array<Error>;
+  warnings: Array<Error>;
 }
 
 export type CodemodTaskWorkerResult =

@@ -51,6 +51,6 @@ export function transformFileAst(
     case '.vue':
       return transformVueSfcFile(source, transforms, options);
     default:
-      return { source: null, errors: [] };
+      return { source: null, errors: [], warnings: [] };
   }
 }

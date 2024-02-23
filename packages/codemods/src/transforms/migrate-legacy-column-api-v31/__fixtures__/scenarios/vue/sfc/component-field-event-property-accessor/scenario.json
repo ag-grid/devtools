@@ -1,5 +1,6 @@
 {
   "input": "input.vue",
   "output": "output.vue",
-  "errors": null
+  "errors": null,
+  "warnings": null
 }

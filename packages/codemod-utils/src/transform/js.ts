@@ -11,6 +11,7 @@ import {
   type ParserOptions,
   type ParserPlugin,
 } from '@ag-grid-devtools/ast';
+import { partition } from '@ag-grid-devtools/utils';
 import { parse, print } from 'recast';
 
 import {
@@ -87,34 +88,39 @@ export function transformJsFile(
     },
   }) as ReturnType<typeof parseAst>;
   // Transform the AST
-  const uniqueErrors = new Map<string, SyntaxError>();
+  const uniqueErrors = new Map<string, { fatal: boolean; error: SyntaxError }>();
   const transformContext: AstTransformContext<AstCliContext> = {
     filename,
     opts: {
       applyDangerousEdits,
       warn(node: NodePath<AstNode> | null, message: string) {
-        const error = node ? node.buildCodeFrameError(message) : new SyntaxError(message);
-        uniqueErrors.set(error.message, error);
+        const error = createSourceCodeError(node, message);
+        uniqueErrors.set(error.message, { error, fatal: false });
       },
       fail(node: NodePath<AstNode> | null, message: string) {
-        const error = node ? node.buildCodeFrameError(message) : new SyntaxError(message);
-        uniqueErrors.set(error.message, error);
+        const error = createSourceCodeError(node, message);
+        uniqueErrors.set(error.message, { error, fatal: true });
       },
       fs,
     },
   };
   const transformedAst = transformAst(ast, transforms, transformContext, { source });
   // If there were no modifications to the AST, return a null result
-  if (!transformedAst && uniqueErrors.size === 0) return { source: null, errors: [] };
+  if (!transformedAst && uniqueErrors.size === 0) return { source: null, errors: [], warnings: [] };
   // Print the transformed AST
   const transformedSource = transformedAst
     ? print(transformedAst, {
         lineTerminator,
       }).code
     : null;
-  // FIXME: differentiate between errors and warnings
+  const [errors, warnings] = partition(Array.from(uniqueErrors.values()), (error) => error.fatal);
   return {
     source: transformedSource === source ? null : transformedSource,
-    errors: Array.from(uniqueErrors.values()),
+    errors: errors.map(({ error }) => error),
+    warnings: warnings.map(({ error }) => error),
   };
+}
+
+function createSourceCodeError(node: NodePath<AstNode> | null, message: string): Error {
+  return node ? node.buildCodeFrameError(message) : new SyntaxError(message);
 }
