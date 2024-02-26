@@ -7,7 +7,7 @@ import {
   type ParserOptions,
   type ParserPlugin,
 } from '@ag-grid-devtools/ast';
-import { parse, print } from 'recast';
+import { parse, print, type Options } from 'recast';
 
 export interface BabelTransformJsOptions {
   js?: Omit<ParserOptions, 'sourceFilename' | 'sourceType'>;
@@ -20,15 +20,22 @@ export interface BabelTransformJsxOptions {
 const JS_PARSER_PLUGINS: Array<ParserPlugin> = ['typescript', 'decorators-legacy'];
 const JSX_PARSER_PLUGINS: Array<ParserPlugin> = ['jsx', ...JS_PARSER_PLUGINS];
 
+export function createBabelPlugin<S>(plugin: BabelPlugin<S>): BabelPlugin<S> {
+  // No-op function that exists to provide type hints when create a Babel plugin from untyped code
+  return plugin;
+}
+
 export function applyBabelTransform<S, T extends object = object>(
   source: string,
   plugins: Array<BabelPlugin<S> | BabelPluginWithOptions<S, T>>,
   context: FileMetadata &
     BabelTransformJsOptions &
     BabelTransformJsxOptions &
-    Required<Pick<ParserOptions, 'sourceType'>>,
+    Required<Pick<ParserOptions, 'sourceType'>> & {
+      print?: Options;
+    },
 ): string | null {
-  const { filename, jsx, sourceType, js: parserOptions = {} } = context;
+  const { filename, jsx, sourceType, js: parserOptions = {}, print: printOptions = {} } = context;
   const defaultPlugins = jsx ? JSX_PARSER_PLUGINS : JS_PARSER_PLUGINS;
   // Attempt to determine input file line endings, defaulting to the operating system default
   const crlfLineEndings = source.includes('\r\n');
@@ -56,6 +63,7 @@ export function applyBabelTransform<S, T extends object = object>(
   const transformedSource = transformedAst
     ? print(transformedAst, {
         lineTerminator,
+        ...printOptions,
       }).code
     : null;
   return transformedSource;

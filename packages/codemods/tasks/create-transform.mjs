@@ -13,6 +13,7 @@ import {
 } from '@ag-grid-devtools/build-tools';
 
 import {
+  addTransformToVersion,
   getLatestReleaseVersion,
   retrieveExistingVersions,
   parseReleaseVersion,
@@ -45,6 +46,12 @@ const VARIABLES = [
     validate: validateDirectory,
   },
   {
+    name: 'versionsDir',
+    label: 'Codemod versions directory',
+    value: ({ projectRoot }) => join(projectRoot, PROJECT_VERSIONS_DIR),
+    validate: validateDirectory,
+  },
+  {
     name: 'plugin',
     label: 'Plugin template (optional)',
     parse: parseOptionalString,
@@ -54,8 +61,8 @@ const VARIABLES = [
   {
     name: 'name',
     label: 'Enter a human-readable name for the transform',
-    default: ({ plugin, pluginsDir, projectRoot }) =>
-      plugin ? generatePluginTransformName({ plugin, pluginsDir, projectRoot }) : '',
+    default: ({ plugin, pluginsDir, versionsDir }) =>
+      plugin ? generatePluginTransformName({ plugin, pluginsDir, versionsDir }) : '',
     validate: validateTransformLabel,
   },
   {
@@ -81,16 +88,44 @@ const VARIABLES = [
     value: ({ transformsDir, filename }) => join(transformsDir, filename),
     validate: validateEmptyPath,
   },
+  {
+    name: 'release',
+    label: 'Add to codemod release version (optional)',
+    default: ({ versionsDir }) => getProjectLatestReleaseVersion(versionsDir),
+    validate: validateReleaseVersion,
+  },
 ];
 
 export default async function task(...args) {
   const variables = await prompt(VARIABLES, { args, input: stdin, output: stderr });
   if (!variables) throw null;
-  const { outputPath, filename, pluginsDir, plugin } = variables;
+  const { outputPath, filename, identifier, pluginsDir, plugin, versionsDir, release } = variables;
   const pluginTemplate = plugin ? getPluginTemplatePath({ pluginsDir, plugin }) : null;
   const templateDir = pluginTemplate ?? TEMPLATE_DIR;
   await copyTemplateFiles(templateDir, outputPath, variables);
-  process.stderr.write(`\nCreated transform ${green(filename)} in ${outputPath}\n`);
+  if (release) {
+    const versionPath = join(versionsDir, release);
+    const transformsPath = join(versionPath, 'transforms.ts');
+    const manifestPath = join(versionPath, 'manifest.ts');
+    const transformPath = outputPath;
+    const transformManifestPath = join(transformPath, 'manifest.ts');
+    const transformIdentifier = identifier;
+    await addTransformToVersion({
+      transformsPath,
+      manifestPath,
+      transformPath,
+      transformManifestPath,
+      transformIdentifier,
+    });
+  }
+  process.stderr.write(
+    [
+      '',
+      `Created transform ${green(filename)} in ${outputPath}`,
+      ...(release ? [`Added transform ${green(filename)} to version ${green(release)}`] : []),
+      '',
+    ].join('\n'),
+  );
 }
 
 function validateTransformLabel(value) {
@@ -121,9 +156,15 @@ function validatePluginName(value, { pluginsDir }) {
   return null;
 }
 
-function generatePluginTransformName({ plugin, pluginsDir, projectRoot }) {
+function validateReleaseVersion(value, { versionsDir }) {
+  const versions = getProjectReleaseVersions(versionsDir);
+  if (!versions.includes(value)) return `Codemod version does not exist: ${value}`;
+  return null;
+}
+
+function generatePluginTransformName({ plugin, pluginsDir, versionsDir }) {
   const { name } = loadPluginManifest({ plugin, pluginsDir });
-  const latestVersion = getProjectReleaseVersion(projectRoot);
+  const latestVersion = getProjectLatestReleaseVersion(versionsDir);
   const latestMinorVersion = latestVersion
     ? parseReleaseVersion(latestVersion).slice(0, 2).join('.')
     : null;
@@ -136,11 +177,15 @@ function generatePluginTransformDescription({ plugin, pluginsDir }) {
   return description;
 }
 
-function getProjectReleaseVersion(projectRoot) {
-  const versionsDir = join(projectRoot, PROJECT_VERSIONS_DIR);
+function getProjectLatestReleaseVersion(versionsDir) {
+  const versions = getProjectReleaseVersions(versionsDir);
+  if (!versions) return null;
+  return getLatestReleaseVersion(versions);
+}
+
+function getProjectReleaseVersions(versionsDir) {
   try {
-    const versions = retrieveExistingVersions(versionsDir);
-    return getLatestReleaseVersion(versions);
+    return retrieveExistingVersions(versionsDir);
   } catch {
     return null;
   }
