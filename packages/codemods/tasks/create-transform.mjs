@@ -1,7 +1,7 @@
-const { readdirSync, readFileSync } = require('node:fs');
-const { join, dirname } = require('node:path');
-const { stdin, stderr } = require('node:process');
-const {
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { stdin, stderr } from 'node:process';
+import {
   copyTemplateFiles,
   formatOptionalString,
   getPackageJsonPath,
@@ -10,14 +10,15 @@ const {
   prompt,
   validateDirectory,
   validateEmptyPath,
-} = require('@ag-grid-devtools/build-tools');
+} from '@ag-grid-devtools/build-tools';
 
-const {
+import {
   getLatestReleaseVersion,
   retrieveExistingVersions,
   parseReleaseVersion,
-} = require('./src/version.cjs');
+} from './src/version.mjs';
 
+const __dirname = dirname(new URL(import.meta.url).pathname);
 const TEMPLATE_DIR = join(__dirname, '../templates/create-transform');
 
 const PROJECT_PLUGINS_DIR = './src/plugins';
@@ -82,7 +83,7 @@ const VARIABLES = [
   },
 ];
 
-module.exports = async function task(...args) {
+export default async function task(...args) {
   const variables = await prompt(VARIABLES, { args, input: stdin, output: stderr });
   if (!variables) throw null;
   const { outputPath, filename, pluginsDir, plugin } = variables;
@@ -90,7 +91,7 @@ module.exports = async function task(...args) {
   const templateDir = pluginTemplate ?? TEMPLATE_DIR;
   await copyTemplateFiles(templateDir, outputPath, variables);
   process.stderr.write(`\nCreated transform ${green(filename)} in ${outputPath}\n`);
-};
+}
 
 function validateTransformLabel(value) {
   if (typeof value !== 'string' || value.length === 0) return `Invalid transform name: "${value}"`;
