@@ -4,6 +4,7 @@ import base from './base.vite.config';
 
 const NODE_MODULES = [
   'assert',
+  'async_hooks',
   'buffer',
   'child_process',
   'constants',

@@ -1,6 +1,8 @@
 {
-  "input": "input.vue",
-  "output": null,
-  "errors": null,
-  "warnings": "output.warnings.cjs"
+  "scenario": {
+    "input": "input.vue",
+    "output": null,
+    "errors": null,
+    "warnings": "output.warnings.cjs"
+  }
 }

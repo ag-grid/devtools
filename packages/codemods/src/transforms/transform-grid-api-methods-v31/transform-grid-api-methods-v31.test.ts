@@ -1,7 +1,7 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe } from 'vitest';
-import { loadTransformScenarios } from '../../__fixtures__/runners/transform';
+import { describe, expect, onTestFinished, test } from 'vitest';
+import { loadTransformScenarios } from '../../test/runners/transform';
 
 import transformGridApiMethodsV31 from './transform-grid-api-methods-v31';
 
@@ -11,5 +11,6 @@ describe(transformGridApiMethodsV31, () => {
   const scenariosPath = join(__dirname, './__fixtures__/scenarios');
   loadTransformScenarios(scenariosPath, {
     transforms: [transformGridApiMethodsV31],
+    vitest: { describe, expect, test, onTestFinished },
   });
 });

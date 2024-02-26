@@ -5,6 +5,11 @@ import * as lib from './lib';
 test('module exports', () => {
   expect({ ...lib }).toEqual({
     createMockFsHelpers: lib.createMockFsHelpers,
-    scenarios: lib.scenarios,
+    loadAstTransformExampleScenarios: lib.loadAstTransformExampleScenarios,
+    loadExampleScenarios: lib.loadExampleScenarios,
+    loadScenarios: lib.loadScenarios,
+    withErrorPrefix: lib.withErrorPrefix,
+    memfs: lib.memfs,
+    vol: lib.vol,
   });
 });

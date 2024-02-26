@@ -1,7 +1,7 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe } from 'vitest';
-import { loadTransformScenarios } from '../../__fixtures__/runners/transform';
+import { describe, expect, onTestFinished, test } from 'vitest';
+import { loadTransformScenarios } from '../../test/runners/transform';
 
 import migrateLegacyColumnApi from './migrate-legacy-column-api-v31';
 
@@ -11,5 +11,6 @@ describe(migrateLegacyColumnApi, () => {
   const scenariosPath = join(__dirname, './__fixtures__/scenarios');
   loadTransformScenarios(scenariosPath, {
     transforms: [migrateLegacyColumnApi],
+    vitest: { describe, expect, test, onTestFinished },
   });
 });

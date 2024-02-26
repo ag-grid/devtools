@@ -1,6 +1,4 @@
 import {
-  parseAst,
-  transformAst,
   type AstCliContext,
   type AstNode,
   type AstTransform,
@@ -9,24 +7,20 @@ import {
   type AstTransformWithOptions,
   type NodePath,
   type ParserOptions,
-  type ParserPlugin,
 } from '@ag-grid-devtools/ast';
 import { partition } from '@ag-grid-devtools/utils';
-import { parse, print } from 'recast';
 
+import { type AstTransformOptions } from '../types';
 import {
-  type AstTransformJsOptions,
-  type AstTransformJsxOptions,
-  type AstTransformOptions,
-} from '../types';
-
-const JS_PARSER_PLUGINS: Array<ParserPlugin> = ['typescript', 'decorators-legacy'];
-const JSX_PARSER_PLUGINS: Array<ParserPlugin> = ['jsx', ...JS_PARSER_PLUGINS];
+  applyBabelTransform,
+  type BabelTransformJsOptions,
+  type BabelTransformJsxOptions,
+} from '../babelHelpers';
 
 export function transformJsScriptFile(
   source: string,
   transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>,
-  options: AstTransformOptions & AstTransformJsOptions & AstTransformJsxOptions,
+  options: AstTransformOptions & BabelTransformJsOptions & BabelTransformJsxOptions,
 ): AstTransformResult {
   return transformJsFile(source, transforms, {
     ...options,
@@ -37,7 +31,7 @@ export function transformJsScriptFile(
 export function transformJsModuleFile(
   source: string,
   transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>,
-  options: AstTransformOptions & AstTransformJsOptions & AstTransformJsxOptions,
+  options: AstTransformOptions & BabelTransformJsOptions & BabelTransformJsxOptions,
 ): AstTransformResult {
   return transformJsFile(source, transforms, {
     ...options,
@@ -48,7 +42,7 @@ export function transformJsModuleFile(
 export function transformJsUnknownFile(
   source: string,
   transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>,
-  options: AstTransformOptions & AstTransformJsOptions & AstTransformJsxOptions,
+  options: AstTransformOptions & BabelTransformJsOptions & BabelTransformJsxOptions,
 ): AstTransformResult {
   return transformJsFile(source, transforms, {
     ...options,
@@ -57,36 +51,15 @@ export function transformJsUnknownFile(
   });
 }
 
-export function transformJsFile(
+function transformJsFile<S>(
   source: string,
   transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>,
   options: AstTransformOptions &
-    AstTransformJsOptions &
-    AstTransformJsxOptions &
+    BabelTransformJsOptions &
+    BabelTransformJsxOptions &
     Required<Pick<ParserOptions, 'sourceType'>>,
 ): AstTransformResult {
-  const { filename, applyDangerousEdits, fs, jsx, sourceType, js: parserOptions = {} } = options;
-  const defaultPlugins = jsx ? JSX_PARSER_PLUGINS : JS_PARSER_PLUGINS;
-  // Attempt to determine input file line endings, defaulting to the operating system default
-  const crlfLineEndings = source.includes('\r\n');
-  const lfLineEndings = !crlfLineEndings && source.includes('\n');
-  const lineTerminator = crlfLineEndings ? '\r\n' : lfLineEndings ? '\n' : undefined;
-  // Parse the source AST
-  const ast = parse(source, {
-    parser: {
-      sourceFilename: filename,
-      parse(source: string): ReturnType<typeof parseAst> {
-        const { plugins } = parserOptions;
-        return parseAst(source, {
-          ...parserOptions,
-          sourceType,
-          sourceFilename: filename,
-          plugins: plugins ? [...defaultPlugins, ...plugins] : defaultPlugins,
-          tokens: true,
-        });
-      },
-    },
-  }) as ReturnType<typeof parseAst>;
+  const { filename, applyDangerousEdits, fs } = options;
   // Transform the AST
   const uniqueErrors = new Map<string, { fatal: boolean; error: SyntaxError }>();
   const transformContext: AstTransformContext<AstCliContext> = {
@@ -104,15 +77,20 @@ export function transformJsFile(
       fs,
     },
   };
-  const transformedAst = transformAst(ast, transforms, transformContext, { source });
+  const plugins = transforms.map((plugin): AstTransformWithOptions<AstCliContext> => {
+    const { opts } = transformContext;
+    if (Array.isArray(plugin)) {
+      const [pluginFn, pluginOptions] = plugin;
+      return [pluginFn, { ...opts, ...pluginOptions }];
+    } else {
+      return [plugin, opts];
+    }
+  });
+  const transformedSource = applyBabelTransform(source, plugins, options);
   // If there were no modifications to the AST, return a null result
-  if (!transformedAst && uniqueErrors.size === 0) return { source: null, errors: [], warnings: [] };
-  // Print the transformed AST
-  const transformedSource = transformedAst
-    ? print(transformedAst, {
-        lineTerminator,
-      }).code
-    : null;
+  if (!transformedSource && uniqueErrors.size === 0) {
+    return { source: null, errors: [], warnings: [] };
+  }
   const [errors, warnings] = partition(Array.from(uniqueErrors.values()), (error) => error.fatal);
   return {
     source: transformedSource === source ? null : transformedSource,

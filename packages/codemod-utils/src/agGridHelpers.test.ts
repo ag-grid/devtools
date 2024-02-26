@@ -11,7 +11,7 @@ import {
   type NodePath,
   type Types,
 } from '@ag-grid-devtools/ast';
-import { createMockFsHelpers, fs as memfs, vol } from '@ag-grid-devtools/test-utils';
+import { createMockFsHelpers, memfs, vol } from '@ag-grid-devtools/test-utils';
 import { unreachable } from '@ag-grid-devtools/utils';
 import { describe, expect, test, beforeEach, afterEach } from 'vitest';
 

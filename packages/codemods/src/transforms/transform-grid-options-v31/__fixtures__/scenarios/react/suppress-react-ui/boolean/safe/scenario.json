@@ -1,6 +1,8 @@
 {
-  "input": "input.jsx",
-  "output": null,
-  "errors": null,
-  "warnings": "output.warnings.cjs"
+  "scenario": {
+    "input": "input.jsx",
+    "output": null,
+    "errors": null,
+    "warnings": "output.warnings.cjs"
+  }
 }

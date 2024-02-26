@@ -1,7 +1,9 @@
 {
   "skip": true,
-  "input": "input.vue",
-  "output": "output.vue",
-  "errors": null,
-  "warnings": null
+  "scenario": {
+    "input": "input.vue",
+    "output": "output.vue",
+    "errors": null,
+    "warnings": null
+  }
 }

@@ -1,8 +1,11 @@
 {
-  "input": "input.component.ts",
-  "output": "output.component.ts",
-  "errors": null,
-  "options": {
-    "lineEndings": "crlf"
+  "scenario": {
+    "input": "input.component.ts",
+    "output": "output.component.ts",
+    "errors": null,
+    "warnings": null,
+    "options": {
+      "lineEndings": "crlf"
+    }
   }
 }

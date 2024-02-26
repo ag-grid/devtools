@@ -1,6 +1,8 @@
 {
-  "input": "input.ts",
-  "output": "output.ts",
-  "errors": null,
-  "warnings": null
+  "scenario": {
+    "input": "input.ts",
+    "output": "output.ts",
+    "errors": null,
+    "warnings": null
+  }
 }

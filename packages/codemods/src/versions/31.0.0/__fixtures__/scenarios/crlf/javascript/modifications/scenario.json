@@ -1,8 +1,11 @@
 {
-  "input": "input.js",
-  "output": "output.js",
-  "errors": null,
-  "options": {
-    "lineEndings": "crlf"
+  "scenario": {
+    "input": "input.js",
+    "output": "output.js",
+    "errors": null,
+    "warnings": null,
+    "options": {
+      "lineEndings": "crlf"
+    }
   }
 }

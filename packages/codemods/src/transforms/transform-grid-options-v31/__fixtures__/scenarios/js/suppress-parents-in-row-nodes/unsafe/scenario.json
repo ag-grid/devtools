@@ -1,8 +1,11 @@
 {
-  "input": "input.js",
-  "output": "output.js",
-  "errors": null,
-  "options": {
-    "applyDangerousEdits": true
+  "scenario": {
+    "input": "input.js",
+    "output": "output.js",
+    "errors": null,
+    "warnings": null,
+    "options": {
+      "applyDangerousEdits": true
+    }
   }
 }
