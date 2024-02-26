@@ -378,6 +378,12 @@ importers:
       '@typescript-eslint/types':
         specifier: 6.6.0
         version: 6.6.0
+      '@vitest/expect':
+        specifier: ^1
+        version: 1.3.1
+      '@vitest/runner':
+        specifier: ^1
+        version: 1.3.1
       eslint:
         specifier: ^8
         version: 8.48.0

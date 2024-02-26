@@ -2,18 +2,18 @@ import { transformFromAstSync, type BabelFileResult } from '@babel/core';
 import {
   type Ast,
   type AstNode,
-  type AstTransform,
-  type AstTransformContext,
-  type AstTransformWithOptions,
+  type BabelPlugin,
+  type BabelPluginWithOptions,
+  type FileMetadata,
 } from './types';
 
-export function transformAst<S extends object>(
+export function transformAst<S, T extends object = object>(
   node: AstNode,
-  transforms: Array<AstTransform<S> | AstTransformWithOptions<S>>,
-  context: AstTransformContext<S>,
+  plugins: Array<BabelPlugin<S> | BabelPluginWithOptions<S, T>>,
+  context: FileMetadata,
   metadata?: { source?: string | null },
 ): Ast | null {
-  const { filename, opts } = context;
+  const { filename } = context;
   const source = metadata && metadata.source;
   const result = stripBabelTransformErrorFilenamePrefix(() =>
     transformFromAstSync(node, source || undefined, {
@@ -21,14 +21,7 @@ export function transformAst<S extends object>(
       ast: true,
       cloneInputAst: false, // See https://github.com/benjamn/recast#using-a-different-parser
       filename,
-      plugins: transforms.map((plugin) => {
-        if (Array.isArray(plugin)) {
-          const [pluginFn, pluginOptions] = plugin;
-          return [pluginFn, { ...opts, ...pluginOptions }];
-        } else {
-          return [plugin, opts];
-        }
-      }),
+      plugins,
     }),
   );
   if (!result) return null;

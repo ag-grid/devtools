@@ -1,6 +1,8 @@
 {
-  "input": "input.js",
-  "output": "output.js",
-  "errors": null,
-  "warnings": null
+  "scenario": {
+    "input": "input.js",
+    "output": "output.js",
+    "errors": null,
+    "warnings": null
+  }
 }

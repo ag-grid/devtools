@@ -1,6 +1,6 @@
 import { type FsUtils } from '@ag-grid-devtools/types';
 import { fs as memfs } from 'memfs';
-export * from 'memfs';
+export { fs as memfs, vol } from 'memfs';
 
 export function createMockFsHelpers(fs: typeof memfs): FsUtils {
   return {

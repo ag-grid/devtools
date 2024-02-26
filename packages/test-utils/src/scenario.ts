@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync, type Stats } from 'node:fs';
 import { basename, join, sep } from 'node:path';
+import { withErrorPrefix } from './error';
 
 export type ScenarioLoader<I, O> = (path: string) => { input: I; expected: O };
 export type ScenarioRunner<I, O> = (input: I, expected: O, scenarioPath: string) => void;
@@ -13,12 +14,7 @@ export function loadScenarios<I, O>(
     manifest?: string;
   },
 ) {
-  const {
-    loader = loadJsonFile,
-    runner,
-    describe,
-    manifest: manifestFilename = 'scenario.json',
-  } = options;
+  const { loader, runner, describe, manifest: manifestFilename = 'scenario.json' } = options;
   const scenarios = findInDirectorySync(
     scenariosPath,
     (path, stats) => stats.isDirectory() || basename(path) === manifestFilename,
@@ -26,7 +22,10 @@ export function loadScenarios<I, O>(
     const filePath = join(scenariosPath, relativePath);
     const pathSegments = relativePath.split(sep);
     const hierarchy = pathSegments.slice(0, -1);
-    const scenarioData = loader(filePath);
+    const scenarioData = withErrorPrefix(
+      `Failed to load scenario definition file: ${filePath}`,
+      () => loader(filePath),
+    );
     if (
       !scenarioData ||
       typeof scenarioData !== 'object' ||
@@ -75,15 +74,6 @@ function findInDirectorySync(
     const children = findInDirectorySync(filePath, predicate);
     return children.map((childFilename) => join(filename, childFilename));
   });
-}
-
-export function loadJsonFile<T = unknown>(path: string): T {
-  const json = readFileSync(path, 'utf-8');
-  try {
-    return JSON.parse(json);
-  } catch (error) {
-    throw new Error(`Invalid JSON file: ${path}`);
-  }
 }
 
 type Tree<K, V> = {

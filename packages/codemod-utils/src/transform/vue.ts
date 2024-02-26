@@ -5,7 +5,7 @@ import {
   type AstTransformWithOptions,
 } from '@ag-grid-devtools/ast';
 
-import { type AstTransformJsOptions, type AstTransformOptions } from '../types';
+import { type AstTransformOptions } from '../types';
 import {
   parseVueSfcComponent,
   VueTemplateEngine,
@@ -13,7 +13,8 @@ import {
   type AST,
   type VueTemplateNode,
 } from '../vueHelpers';
-import { transformJsFile } from './js';
+import { BabelTransformJsOptions } from '../babelHelpers';
+import { transformJsModuleFile } from './js';
 import { printTemplate } from '../templateHelpers';
 
 type VElement = AST.VElement;
@@ -30,7 +31,7 @@ export function transformVueSfcFile(
     | AstTransform<AstCliContext & VueComponentCliContext>
     | AstTransformWithOptions<AstCliContext & VueComponentCliContext>
   >,
-  options: AstTransformOptions & AstTransformJsOptions,
+  options: AstTransformOptions & BabelTransformJsOptions,
 ): AstTransformResult {
   // Extract the different sections of the SFC
   const component = parseVueSfcComponent(source);
@@ -64,7 +65,7 @@ export function transformVueSfcFile(
     source: updatedScriptSource,
     errors,
     warnings,
-  } = transformJsFile(
+  } = transformJsModuleFile(
     scriptSource,
     transforms.map((transform): AstTransformWithOptions<AstCliContext & VueComponentCliContext> => {
       const [plugin, options] = Array.isArray(transform) ? transform : [transform, {}];
@@ -72,7 +73,6 @@ export function transformVueSfcFile(
     }),
     {
       ...options,
-      sourceType: 'module',
       jsx: false,
     },
   );
