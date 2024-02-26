@@ -1,12 +1,6 @@
-const { statSync, existsSync } = require('node:fs');
+import { statSync, existsSync } from 'node:fs';
 
-module.exports = {
-  validateDirectory,
-  validateEmptyPath,
-  validateFilename,
-};
-
-function validateDirectory(value) {
+export function validateDirectory(value) {
   const filenameError = validateFilename(value);
   if (typeof filenameError === 'string') return filenameError;
   const stat = getPathStats(value);
@@ -15,14 +9,14 @@ function validateDirectory(value) {
   return null;
 }
 
-function validateEmptyPath(value) {
+export function validateEmptyPath(value) {
   const filenameError = validateFilename(value);
   if (typeof filenameError === 'string') return filenameError;
   if (existsSync(value)) return `Provided path already exists: "${value}"`;
   return null;
 }
 
-function validateFilename(value) {
+export function validateFilename(value) {
   if (typeof value !== 'string') {
     if (value) return `Provided path is not a valid filename: ${JSON.stringify(value)}`;
     return 'No path provided';

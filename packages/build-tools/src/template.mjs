@@ -1,12 +1,7 @@
-const { mkdir, readdir, readFile, stat, writeFile } = require('node:fs/promises');
-const { dirname, join } = require('node:path');
+import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 
-module.exports = {
-  copyTemplateFile,
-  copyTemplateFiles,
-};
-
-async function copyTemplateFiles(templateDir, outputDir, variables) {
+export async function copyTemplateFiles(templateDir, outputDir, variables) {
   const templateFiles = await readdir(templateDir);
   return Promise.all(
     templateFiles.map((templateFilename) => {
@@ -41,7 +36,7 @@ async function copyTemplateFiles(templateDir, outputDir, variables) {
   );
 }
 
-async function copyTemplateFile(templatePath, outputPath, variables) {
+export async function copyTemplateFile(templatePath, outputPath, variables) {
   await ensureDirectoryExists(dirname(outputPath));
   const source = await readFile(templatePath, 'utf-8');
   const output = withErrorPrefix(`Failed to process template "${templatePath}"`, () =>
