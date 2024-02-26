@@ -1,7 +1,13 @@
 {
-  "input": "input.component.ts",
-  "output": "output.component.ts",
-  "errors": null,
+  "scenario": {
+    "input": "input.component.ts",
+    "output": "output.component.ts",
+    "errors": null,
+    "warnings": null,
+    "options": {
+      "applyDangerousEdits": true
+    }
+  },
   "files": {
     "input": {
       "component.html": "input.component.html"
@@ -9,8 +15,5 @@
     "expected": {
       "component.html": "output.component.html"
     }
-  },
-  "options": {
-    "applyDangerousEdits": true
   }
 }
