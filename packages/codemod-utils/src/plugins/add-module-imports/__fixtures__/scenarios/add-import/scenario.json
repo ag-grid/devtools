@@ -2,7 +2,11 @@
   "scenario": {
     "input": "input.js",
     "output": "output.js",
-    "errors": "output.errors.cjs",
+    "errors": null,
     "warnings": null
+  },
+  "files": {
+    "input": {},
+    "output": {}
   }
 }

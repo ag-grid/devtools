@@ -1,8 +1,11 @@
 {
-  "input": "input.component.ts",
-  "output": "output.component.ts",
-  "errors": null,
-  "options": {
-    "applyDangerousEdits": true
+  "scenario": {
+    "input": "input.component.ts",
+    "output": "output.component.ts",
+    "errors": null,
+    "warnings": null,
+    "options": {
+      "applyDangerousEdits": true
+    }
   }
 }
