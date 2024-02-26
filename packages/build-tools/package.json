@@ -13,11 +13,12 @@
   "bugs": {
     "url": "https://github.com/ag-grid/devtools/issues"
   },
-  "type": "commonjs",
-  "main": "./lib.cjs",
+  "type": "module",
+  "main": "./lib.mjs",
+  "module": "./lib.mjs",
   "scripts": {
-    "pkg": "./scripts/pkg",
-    "task": "./scripts/task",
+    "pkg": "./scripts/pkg.cjs",
+    "task": "./scripts/task.cjs",
     "lint": "eslint --ext cjs ."
   },
   "dependencies": {

@@ -1,11 +1,7 @@
-const { existsSync } = require('node:fs');
-const { dirname, join } = require('node:path');
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 
-module.exports = {
-  getPackageJsonPath,
-};
-
-function getPackageJsonPath(pwd) {
+export function getPackageJsonPath(pwd) {
   // Retrieve the package.json path from the closest ancestor directory
   let currentDir = pwd;
   while (true) {

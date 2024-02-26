@@ -1,38 +1,28 @@
-module.exports = {
-  red,
-  green,
-  yellow,
-  cyan,
-  gray,
-  bold,
-  italic,
-};
-
-function red(text) {
+export function red(text) {
   return withAnsiEscape('[31m', text);
 }
 
-function green(text) {
+export function green(text) {
   return withAnsiEscape('[32m', text);
 }
 
-function yellow(text) {
+export function yellow(text) {
   return withAnsiEscape('[33m', text);
 }
 
-function cyan(text) {
+export function cyan(text) {
   return withAnsiEscape('[36m', text);
 }
 
-function gray(text) {
+export function gray(text) {
   return withAnsiEscape('[90m', text);
 }
 
-function bold(text) {
+export function bold(text) {
   return withAnsiEscape('[1m', text);
 }
 
-function italic(text) {
+export function italic(text) {
   return withAnsiEscape('[3m', text);
 }
 
