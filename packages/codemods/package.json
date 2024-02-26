@@ -25,8 +25,8 @@
     "lint:typescript": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest watch",
-    "task:create-version": "pnpm run --filter build-tools task $PWD/tasks/create-version.cjs",
-    "task:create-transform": "pnpm run --filter build-tools task $PWD/tasks/create-transform.cjs"
+    "task:create-version": "pnpm run --filter build-tools task $PWD/tasks/create-version.mjs",
+    "task:create-transform": "pnpm run --filter build-tools task $PWD/tasks/create-transform.mjs"
   },
   "pkg": {
     "main": "./lib/lib.cjs",

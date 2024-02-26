@@ -1,19 +1,21 @@
-const { join, dirname } = require('node:path');
-const { stdin, stderr } = require('node:process');
-const {
+import { join, dirname } from 'node:path';
+import { stdin, stderr } from 'node:process';
+import {
   copyTemplateFiles,
   getPackageJsonPath,
   green,
   prompt,
   validateDirectory,
   validateEmptyPath,
-} = require('@ag-grid-devtools/build-tools');
-const {
+} from '@ag-grid-devtools/build-tools';
+
+import {
   isValidReleaseVersion,
   retrieveExistingVersions,
   getNextReleaseVersion,
-} = require('./src/version.cjs');
+} from './src/version.mjs';
 
+const __dirname = dirname(new URL(import.meta.url).pathname);
 const TEMPLATE_DIR = join(__dirname, '../templates/create-version');
 
 const PROJECT_VERSIONS_DIR = './src/versions';
@@ -54,13 +56,13 @@ const VARIABLES = [
   },
 ];
 
-module.exports = async function task(...args) {
+export default async function task(...args) {
   const variables = await prompt(VARIABLES, { args, input: stdin, output: stderr });
   if (!variables) throw null;
   const { outputPath, version } = variables;
   await copyTemplateFiles(TEMPLATE_DIR, outputPath, variables);
   process.stderr.write(`\nCreated codemod version ${green(version)} in ${outputPath}\n`);
-};
+}
 
 function validateReleaseVersion(value) {
   if (!isValidReleaseVersion(value)) return `Invalid semver release: "${value}"`;

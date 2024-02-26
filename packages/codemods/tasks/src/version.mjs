@@ -1,22 +1,22 @@
-const { readdirSync } = require('node:fs');
+import { ast } from '@ag-grid-devtools/ast/dist/lib/lib.js';
+import { withErrorPrefix } from '@ag-grid-devtools/test-utils/dist/lib/lib.js';
+import {
+  addModuleImports,
+  applyBabelTransform,
+} from '@ag-grid-devtools/codemod-utils/dist/lib/lib.js';
+import { readdirSync } from 'node:fs';
+import { readFile, writeFile } from 'node:fs/promises';
+import { join, relative } from 'node:path';
 
-module.exports = {
-  isValidReleaseVersion,
-  retrieveExistingVersions,
-  getLatestReleaseVersion,
-  getNextReleaseVersion,
-  parseReleaseVersion,
-};
-
-function isValidReleaseVersion(value) {
+export function isValidReleaseVersion(value) {
   return parseReleaseVersion(value) !== null;
 }
 
-function retrieveExistingVersions(versionsDir) {
+export function retrieveExistingVersions(versionsDir) {
   return readdirSync(versionsDir).filter(isValidReleaseVersion);
 }
 
-function getLatestReleaseVersion(versions) {
+export function getLatestReleaseVersion(versions) {
   return versions
     .map(parseReleaseVersion)
     .reduce(
@@ -27,7 +27,7 @@ function getLatestReleaseVersion(versions) {
     ?.join('.');
 }
 
-function getNextReleaseVersion(versions, type = 'patch') {
+export function getNextReleaseVersion(versions, type = 'patch') {
   const latestVersion = getLatestReleaseVersion(versions);
   const [major, minor, patch] = latestVersion ? parseReleaseVersion(latestVersion) : [0, 0, 0];
   switch (type) {
@@ -42,7 +42,7 @@ function getNextReleaseVersion(versions, type = 'patch') {
   }
 }
 
-function parseReleaseVersion(versions) {
+export function parseReleaseVersion(versions) {
   const match = /^(\d+)\.(\d+)\.(\d)+$/.exec(versions);
   if (!match) return null;
   const [, major, minor, patch] = match;
@@ -59,3 +59,4 @@ function getMaxReleaseVersion(left, right) {
   }, null);
   return result || right;
 }
+
