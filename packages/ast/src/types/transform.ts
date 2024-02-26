@@ -6,15 +6,16 @@ import { type AstNode } from './ast';
 
 export type { Binding, BindingKind, NodePath, Scope, Visitor } from '@babel/traverse';
 
-type Babel = typeof BabelCore;
-type BabelPlugin<S = PluginPass> = (babel: Babel) => PluginObj<S>;
+export type Babel = typeof BabelCore;
+export type BabelPlugin<S = PluginPass> = (babel: Babel) => PluginObj<S>;
+export type BabelPluginWithOptions<S = PluginPass, T extends object = object> = [BabelPlugin<S>, T];
 
 export type AstTransform<S extends object> = BabelPlugin<PluginPass & AstTransformContext<S>>;
 
-export type AstTransformWithOptions<S extends object = object, T extends object = object> = [
-  AstTransform<S>,
-  T,
-];
+export type AstTransformWithOptions<
+  S extends object = object,
+  T extends object = object,
+> = BabelPluginWithOptions<PluginPass & AstTransformContext<S>, T>;
 
 export interface AstTransformContext<S extends object = object> extends FileMetadata {
   opts: S;

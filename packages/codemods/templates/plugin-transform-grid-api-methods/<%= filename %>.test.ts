@@ -1,7 +1,7 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe } from 'vitest';
-import { loadTransformScenarios } from '../../__fixtures__/runners/transform';
+import { loadTransformScenarios } from '../../test/runners/transform';
 
 import <%= identifier %> from './<%= filename %>';
 

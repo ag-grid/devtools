@@ -10,27 +10,27 @@ const TEMPLATE_OPTIONS: TemplateBuilderOptions = {
   plugins: ['jsx', 'typescript', 'decorators-legacy'],
 };
 
-export function expression(
+export function expression<T extends Expression = Expression>(
   literals: TemplateStringsArray,
   ...interpolations: Array<AstNode>
-): Expression {
+): T {
   return stripTopLevelExpressionParentheses(
-    template.expression(TEMPLATE_OPTIONS).ast(literals, ...interpolations),
+    template.expression(TEMPLATE_OPTIONS).ast(literals, ...interpolations) as T,
   );
 }
 
-export function statement(
+export function statement<T extends Statement = Statement>(
   literals: TemplateStringsArray,
   ...interpolations: Array<AstNode>
-): Statement {
-  return template.statement(TEMPLATE_OPTIONS).ast(literals, ...interpolations);
+): T {
+  return template.statement(TEMPLATE_OPTIONS).ast(literals, ...interpolations) as T;
 }
 
-export function statements(
+export function statements<T extends Statement = Statement>(
   literals: TemplateStringsArray,
   ...interpolations: Array<AstNode>
-): Array<Statement> {
-  return template.statements(TEMPLATE_OPTIONS).ast(literals, ...interpolations);
+): Array<T> {
+  return template.statements(TEMPLATE_OPTIONS).ast(literals, ...interpolations) as Array<T>;
 }
 
 export function module(literals: TemplateStringsArray, ...interpolations: Array<AstNode>): File {

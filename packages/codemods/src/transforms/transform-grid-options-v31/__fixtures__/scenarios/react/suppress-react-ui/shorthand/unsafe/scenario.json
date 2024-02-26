@@ -1,8 +1,11 @@
 {
-  "input": "input.jsx",
-  "output": "output.jsx",
-  "errors": null,
-  "options": {
-    "applyDangerousEdits": true
+  "scenario": {
+    "input": "input.jsx",
+    "output": "output.jsx",
+    "errors": null,
+    "warnings": null,
+    "options": {
+      "applyDangerousEdits": true
+    }
   }
 }

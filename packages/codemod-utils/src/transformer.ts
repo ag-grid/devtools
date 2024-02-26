@@ -6,18 +6,19 @@ import {
 } from '@ag-grid-devtools/ast';
 import { extname } from 'node:path';
 
+import { type BabelTransformJsOptions } from './babelHelpers';
 import {
   transformJsModuleFile,
   transformJsScriptFile,
   transformJsUnknownFile,
   transformVueSfcFile,
 } from './transform';
-import { type AstTransformJsOptions, type AstTransformOptions } from './types';
+import { type AstTransformOptions } from './types';
 
 export function transformFileAst(
   source: string,
   transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>,
-  options: AstTransformOptions & AstTransformJsOptions,
+  options: AstTransformOptions & BabelTransformJsOptions,
 ): AstTransformResult {
   const extension = extname(options.filename);
   switch (extension) {
