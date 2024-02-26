@@ -1,22 +1,15 @@
-const { parseArgs } = require('node:util');
-const readline = require('node:readline/promises');
-const { gray, green, red } = require('./cli.cjs');
+import readline from 'node:readline/promises';
+import { parseArgs } from 'node:util';
+import { gray, green, red } from './cli.mjs';
 
-module.exports = {
-  prompt,
-  createPrompt,
-  createPromptReader,
-  createPromptWriter,
-};
-
-function prompt(variables, { args = [], env = {}, input, output }) {
+export function prompt(variables, { args = [], env = {}, input, output }) {
   const getValues = createPrompt(variables);
   const readline = createPromptReader({ input, output });
   const printline = createPromptWriter(output);
   return getValues({ args, env, readline, printline });
 }
 
-function createPrompt(variables) {
+export function createPrompt(variables) {
   return async ({ args, env, printline, readline }) => {
     const {
       values: { y: skipConfirmation = false, ...parsedArgs },
@@ -92,7 +85,7 @@ function createPrompt(variables) {
   };
 }
 
-function createPromptReader({ input, output }) {
+export function createPromptReader({ input, output }) {
   return (line, defaultValue) => {
     const rl = readline.createInterface({ input, output });
     const response = rl.question(`${line} `);
@@ -101,7 +94,7 @@ function createPromptReader({ input, output }) {
   };
 }
 
-function createPromptWriter(output) {
+export function createPromptWriter(output) {
   return (line) =>
     new Promise((resolve, reject) => {
       output.write(`${line}\n`, (_, error) => {
