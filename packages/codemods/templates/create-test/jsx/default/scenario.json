@@ -1,0 +1,8 @@
+{
+  "scenario": {
+    "input": "input.jsx",
+    "output": "output.jsx",
+    "errors": null,
+    "warnings": null
+  }
+}
