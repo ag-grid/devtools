@@ -1,5 +1,4 @@
 import { ast } from '@ag-grid-devtools/ast/dist/lib/lib.js';
-import { withErrorPrefix } from '@ag-grid-devtools/test-utils/dist/lib/lib.js';
 import {
   addModuleImports,
   applyBabelTransform,
@@ -7,7 +6,7 @@ import {
 } from '@ag-grid-devtools/codemod-utils/dist/lib/lib.js';
 import { readdirSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 
 export function isValidReleaseVersion(value) {
   return parseReleaseVersion(value) !== null;
@@ -61,13 +60,10 @@ function getMaxReleaseVersion(left, right) {
   return result || right;
 }
 
-export async function addTransformToVersion({
-  transformsPath,
-  manifestPath,
-  transformPath,
-  transformManifestPath,
-  transformIdentifier,
-}) {
+export async function addTransformToVersion({ versionPath, transformPath, transformIdentifier }) {
+  const transformsPath = join(versionPath, 'transforms.ts');
+  const versionManifestPath = join(versionPath, 'manifest.ts');
+  const transformManifestPath = join(transformPath, 'manifest.ts');
   return Promise.all([
     transformFile(transformsPath, [
       addModuleImports(
@@ -79,7 +75,7 @@ export async function addTransformToVersion({
       ),
       addTransformToCodemod(transformIdentifier),
     ]),
-    transformFile(manifestPath, [
+    transformFile(versionManifestPath, [
       addModuleImports(
         ast.statement`
         import ${transformIdentifier} from '${getModuleImportPath(transformManifestPath, {
