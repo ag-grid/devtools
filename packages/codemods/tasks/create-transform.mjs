@@ -131,18 +131,10 @@ export default async function task(...args) {
   const templateDir = pluginTemplate ?? TEMPLATE_DIR;
   await copyTemplateDirectory(templateDir, outputPath, variables);
   if (release) {
-    const versionPath = join(versionsDir, release);
-    const transformsPath = join(versionPath, 'transforms.ts');
-    const manifestPath = join(versionPath, 'manifest.ts');
-    const transformPath = outputPath;
-    const transformManifestPath = join(transformPath, 'manifest.ts');
-    const transformIdentifier = identifier;
     await addTransformToVersion({
-      transformsPath,
-      manifestPath,
-      transformPath,
-      transformManifestPath,
-      transformIdentifier,
+      versionPath: join(versionsDir, release),
+      transformPath: outputPath,
+      transformIdentifier: identifier,
     });
   }
   process.stderr.write(
