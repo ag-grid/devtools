@@ -29,47 +29,61 @@ const VARIABLES = [
   {
     name: 'projectRoot',
     label: 'Project root directory',
-    value: () => dirname(getPackageJsonPath(__dirname)),
-    validate: validateDirectory,
+    options: () => ({
+      value: dirname(getPackageJsonPath(__dirname)),
+      validate: validateDirectory,
+    }),
   },
   {
     name: 'versionsDir',
     label: 'Codemod versions directory',
-    value: ({ projectRoot }) => join(projectRoot, PROJECT_VERSIONS_DIR),
-    validate: validateDirectory,
+    options: ({ projectRoot }) => ({
+      value: join(projectRoot, PROJECT_VERSIONS_DIR),
+      validate: validateDirectory,
+    }),
   },
   {
     name: 'manifestPath',
     label: 'Codemod manifest path',
-    value: ({ versionsDir }) => join(versionsDir, MANIFEST_FILENAME),
-    validate: validateFile,
+    options: ({ versionsDir }) => ({
+      value: join(versionsDir, MANIFEST_FILENAME),
+      validate: validateFile,
+    }),
   },
   {
     name: 'manifestTestPath',
     label: 'Codemod manifest test path',
-    value: ({ projectRoot }) => join(projectRoot, MANIFEST_TEST_PATH),
-    validate: validateFile,
+    options: ({ projectRoot }) => ({
+      value: join(projectRoot, MANIFEST_TEST_PATH),
+      validate: validateFile,
+    }),
   },
   {
     name: 'version',
     label: 'Codemod version',
-    default: ({ versionsDir }) => {
+    options: ({ versionsDir }) => {
       const versions = retrieveExistingVersions(versionsDir);
-      return getNextReleaseVersion(versions, 'minor');
+      return {
+        default: getNextReleaseVersion(versions, 'minor'),
+        validate: validateReleaseVersion,
+      };
     },
-    validate: validateReleaseVersion,
   },
   {
     name: 'outputPath',
     label: 'Template output path',
-    value: ({ versionsDir, version }) => join(versionsDir, version),
-    validate: validateEmptyPath,
+    options: ({ versionsDir, version }) => ({
+      value: join(versionsDir, version),
+      validate: validateEmptyPath,
+    }),
   },
   {
     name: 'versionIdentifier',
     label: 'Version identifier for use in source code replacements',
-    value: ({ version }) => version.replace(/\./g, '_'),
-    validate: validateVersionIdentifier,
+    options: ({ version }) => ({
+      value: version.replace(/\./g, '_'),
+      validate: validateVersionIdentifier,
+    }),
   },
 ];
 

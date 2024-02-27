@@ -30,69 +30,94 @@ const VARIABLES = [
   {
     name: 'projectRoot',
     label: 'Project root directory',
-    value: () => dirname(getPackageJsonPath(__dirname)),
-    validate: validateDirectory,
+    options: () => ({
+      value: dirname(getPackageJsonPath(__dirname)),
+      validate: validateDirectory,
+    }),
   },
   {
     name: 'pluginsDir',
     label: 'Plugins directory',
-    value: ({ projectRoot }) => join(projectRoot, PROJECT_PLUGINS_DIR),
-    validate: validateDirectory,
+    options: ({ projectRoot }) => ({
+      value: join(projectRoot, PROJECT_PLUGINS_DIR),
+      validate: validateDirectory,
+    }),
   },
   {
     name: 'transformsDir',
     label: 'Transforms directory',
-    value: ({ projectRoot }) => join(projectRoot, PROJECT_TRANSFORMS_DIR),
-    validate: validateDirectory,
+    options: ({ projectRoot }) => ({
+      value: join(projectRoot, PROJECT_TRANSFORMS_DIR),
+      validate: validateDirectory,
+    }),
   },
   {
     name: 'versionsDir',
     label: 'Codemod versions directory',
-    value: ({ projectRoot }) => join(projectRoot, PROJECT_VERSIONS_DIR),
-    validate: validateDirectory,
+    options: ({ projectRoot }) => ({
+      value: join(projectRoot, PROJECT_VERSIONS_DIR),
+      validate: validateDirectory,
+    }),
   },
   {
     name: 'plugin',
     label: 'Plugin template (optional)',
-    parse: parseOptionalString,
-    format: formatOptionalString,
-    validate: validatePlugin,
+    options: ({ pluginsDir }) => ({
+      parse: parseOptionalString,
+      format: formatOptionalString,
+      validate: (value) => validatePlugin(value, { pluginsDir }),
+    }),
   },
   {
     name: 'name',
     label: 'Enter a human-readable name for the transform',
-    default: ({ plugin, pluginsDir, versionsDir }) =>
-      plugin ? generatePluginTransformName({ plugin, pluginsDir, versionsDir }) : '',
-    validate: validateTransformLabel,
+    options: ({ plugin, pluginsDir, versionsDir }) => ({
+      default: plugin ? generatePluginTransformName({ plugin, pluginsDir, versionsDir }) : '',
+      validate: validateTransformLabel,
+    }),
   },
   {
     name: 'description',
     label: 'Transform description',
-    default: ({ plugin, pluginsDir }) =>
-      plugin ? generatePluginTransformDescription({ plugin, pluginsDir }) : '',
+    options: ({ plugin, pluginsDir }) => ({
+      default: plugin ? generatePluginTransformDescription({ plugin, pluginsDir }) : '',
+    }),
   },
   {
     name: 'filename',
     label: 'Transform filename',
-    default: ({ name }) => kebabCase(name),
-    validate: validateTransformName,
+    options: ({ name }) => ({
+      default: kebabCase(name),
+      validate: validateTransformName,
+    }),
   },
   {
     name: 'identifier',
     label: 'Transform identifier for use in source code replacements',
-    value: ({ filename }) => camelCase(filename),
+    options: ({ filename }) => ({
+      value: camelCase(filename),
+    }),
   },
   {
     name: 'outputPath',
     label: 'Template output path',
-    value: ({ transformsDir, filename }) => join(transformsDir, filename),
-    validate: validateEmptyPath,
+    options: ({ transformsDir, filename }) => ({
+      value: join(transformsDir, filename),
+      validate: validateEmptyPath,
+    }),
   },
   {
     name: 'release',
     label: 'Add to codemod release version (optional)',
-    default: ({ versionsDir }) => getProjectLatestReleaseVersion(versionsDir),
-    validate: validateReleaseVersion,
+    options: ({ versionsDir }) => ({
+      default: getProjectLatestReleaseVersion(versionsDir),
+      parse: parseOptionalString,
+      format: formatOptionalString,
+      validate: (value) => {
+        if (value == null) return null;
+        return validateReleaseVersion(value, { versionsDir });
+      },
+    }),
   },
 ];
 
