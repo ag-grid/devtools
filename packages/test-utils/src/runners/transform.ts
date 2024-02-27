@@ -80,7 +80,7 @@ export function loadAstTransformExampleScenarios<O extends object = object>(
     runner: ({ scenario }) => runner(scenario),
     assert: (expected, actual, input, scenarioPath) => {
       withErrorPrefix(input.path, () => {
-        expect(actual.source).toEqual(expected.source === input.source ? null : expected.source);
+        expect(actual.source ?? input.source).toEqual(expected.source ?? input.source);
       });
       withErrorPrefix(input.errorsPath ?? scenarioPath, () => {
         expect(actual.errors).toEqual(expected.errors);
