@@ -1,6 +1,7 @@
 import readline from 'node:readline/promises';
 import { parseArgs } from 'node:util';
 import { gray, green, red } from './cli.mjs';
+import { parseBoolean } from './parse.mjs';
 
 export function prompt(variables, { args = [], env = {}, input, output }) {
   const getValues = createPrompt(variables);
@@ -31,7 +32,7 @@ export function createPrompt(variables) {
         value: optionsValue,
         default: defaultValue = null,
         parse = String,
-        format = String,
+        format = JSON.stringify,
         validate,
       } = options;
       const hasExistingValue = name in parsedArgs || 'value' in options;
@@ -75,15 +76,10 @@ export function createPrompt(variables) {
       ].join('\n'),
     );
     if (!skipConfirmation) {
-      const proceed = await readline('Do you want to proceed with this configuration?', 'yes');
-      switch (proceed.toLowerCase()) {
-        case 'yes':
-        case 'y':
-        case 'ok':
-          break;
-        default:
-          return null;
-      }
+      const proceed = parseBoolean(
+        await readline('Do you want to proceed with this configuration?', 'yes'),
+      );
+      if (!proceed) return null;
     }
     return values;
   };

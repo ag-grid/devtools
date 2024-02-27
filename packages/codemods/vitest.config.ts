@@ -12,6 +12,7 @@ export default mergeConfig(
       root: resolve(__dirname, '..', '..'),
       include: [join(__dirname, '**/*.{test,spec}.?(c|m)[jt]s?(x)')],
       exclude: [...configDefaults.exclude, join(__dirname, 'templates')],
+      passWithNoTests: true,
     },
   }),
 );

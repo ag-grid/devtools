@@ -1,0 +1,8 @@
+{
+  "scenario": {
+    "input": "input.component.ts",
+    "output": "output.component.ts",
+    "errors": null,
+    "warnings": null
+  }
+}

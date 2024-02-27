@@ -33,6 +33,24 @@ export function validateFilename(value) {
   return null;
 }
 
+export function validateBoolean(value) {
+  if (typeof value !== 'boolean') return 'Invalid boolean value';
+  return null;
+}
+
+export function validateOneOf(options) {
+  return function validateEnum(value) {
+    if (!options.includes(value)) {
+      return [
+        `Invalid value: "${value}"`,
+        '  Valid options:',
+        ...options.map((option) => `    - ${option}`),
+      ].join('\n');
+    }
+    return null;
+  };
+}
+
 function getPathStats(path) {
   try {
     return statSync(path);
