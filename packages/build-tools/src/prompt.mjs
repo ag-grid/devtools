@@ -22,21 +22,22 @@ export function createPrompt(variables) {
     const prompts = [...variables];
     const values = {};
     let variable;
+    const processedVariables = [];
     while ((variable = prompts.shift())) {
+      const { name, label, options: optionsFactory } = variable;
+      const options = optionsFactory(values, env);
       const {
-        name,
-        label,
-        value: valueGetter,
-        default: defaultValue,
+        value: optionsValue,
+        default: defaultValue = null,
         parse = String,
         format = String,
         validate,
-      } = variable;
-      const hasExistingValue = name in parsedArgs || 'value' in variable;
+      } = options;
+      const hasExistingValue = name in parsedArgs || 'value' in options;
       const existingValue = hasExistingValue
         ? name in parsedArgs
           ? parse(parsedArgs[name])
-          : valueGetter(values, env)
+          : optionsValue
         : null;
       const value = await (async () => {
         const question = getLineReaderPrompt(label, formatCliArg(name));
@@ -45,9 +46,10 @@ export function createPrompt(variables) {
           const line = `${question} ${answer}`;
           await printline(line);
           return existingValue;
+        } else {
+          const answer = defaultValue;
+          return parse(await readline(question, answer));
         }
-        const answer = defaultValue ? defaultValue(values, env) : null;
-        return parse(await readline(question, answer));
       })();
       const error = validate ? validate(value, values, env) : null;
       if (typeof error === 'string') {
@@ -56,6 +58,7 @@ export function createPrompt(variables) {
         if (hasExistingValue) return null;
       } else {
         values[name] = value;
+        processedVariables.push({ name, format });
       }
     }
     await printline(
@@ -63,7 +66,7 @@ export function createPrompt(variables) {
         '',
         'Selected configuration:',
         '',
-        ...variables.map(
+        ...processedVariables.map(
           ({ name, format = JSON.stringify }) =>
             `  ${formatCliArg(name)} ${formatVariableValue(format(values[name]))} \\`,
         ),
