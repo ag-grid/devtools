@@ -1,7 +1,7 @@
 import { join, dirname } from 'node:path';
 import { stdin, stderr } from 'node:process';
 import {
-  copyTemplateFiles,
+  copyTemplateDirectory,
   getPackageJsonPath,
   green,
   prompt,
@@ -91,7 +91,7 @@ export default async function task(...args) {
   const variables = await prompt(VARIABLES, { args, input: stdin, output: stderr });
   if (!variables) throw null;
   const { outputPath, manifestPath, manifestTestPath, version, versionIdentifier } = variables;
-  await copyTemplateFiles(TEMPLATE_DIR, outputPath, variables);
+  await copyTemplateDirectory(TEMPLATE_DIR, outputPath, variables);
   await addReleaseToVersionsManifest({
     versionsPath: manifestPath,
     versionManifestPath: join(outputPath, 'manifest'),
