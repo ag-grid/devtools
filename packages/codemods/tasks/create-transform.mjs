@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { stdin, stderr } from 'node:process';
 import {
-  copyTemplateFiles,
+  copyTemplateDirectory,
   formatOptionalString,
   getPackageJsonPath,
   green,
@@ -129,7 +129,7 @@ export default async function task(...args) {
   const { outputPath, filename, identifier, pluginsDir, plugin, versionsDir, release } = variables;
   const pluginTemplate = plugin ? getPluginTemplatePath({ pluginsDir, plugin }) : null;
   const templateDir = pluginTemplate ?? TEMPLATE_DIR;
-  await copyTemplateFiles(templateDir, outputPath, variables);
+  await copyTemplateDirectory(templateDir, outputPath, variables);
   if (release) {
     const versionPath = join(versionsDir, release);
     const transformsPath = join(versionPath, 'transforms.ts');
