@@ -27,6 +27,7 @@ export function createPrompt(variables) {
       const { name, label, options: optionsFactory } = variable;
       const options = optionsFactory(values, env);
       const {
+        prompt: promptLabel = label,
         value: optionsValue,
         default: defaultValue = null,
         parse = String,
@@ -40,7 +41,7 @@ export function createPrompt(variables) {
           : optionsValue
         : null;
       const value = await (async () => {
-        const question = getLineReaderPrompt(label, formatCliArg(name));
+        const question = getLineReaderPrompt(promptLabel, formatCliArg(name));
         if (hasExistingValue) {
           const answer = format(existingValue);
           const line = `${question} ${answer}`;
