@@ -20,6 +20,7 @@
     "build": "pnpm run build:lib && pnpm run build:pkg",
     "build:lib": "vite build",
     "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
+    "build:tasks": "pnpm run --filter @ag-grid-devtools/ast --filter @ag-grid-devtools/codemod-utils --filter @ag-grid-devtools/test-utils build",
     "lint": "pnpm run '/^lint:.*/'",
     "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
     "lint:typescript": "tsc --noEmit",
