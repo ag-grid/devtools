@@ -70,8 +70,9 @@ const VARIABLES = [
   },
   {
     name: 'name',
-    label: 'Enter a human-readable name for the transform',
+    label: 'Transform name',
     options: ({ plugin, pluginsDir, versionsDir }) => ({
+      prompt: 'Enter a human-readable name for the transform',
       default: plugin ? generatePluginTransformName({ plugin, pluginsDir, versionsDir }) : '',
       validate: validateTransformLabel,
     }),
@@ -108,8 +109,9 @@ const VARIABLES = [
   },
   {
     name: 'release',
-    label: 'Add to codemod release version (optional)',
+    label: 'Codemod release version',
     options: ({ versionsDir }) => ({
+      prompt: 'Add to codemod release version (optional)',
       default: getProjectLatestReleaseVersion(versionsDir),
       parse: parseOptionalString,
       format: formatOptionalString,
