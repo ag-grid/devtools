@@ -1,7 +1,7 @@
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-export async function copyTemplateFiles(templateDir, outputDir, variables) {
+export async function copyTemplateDirectory(templateDir, outputDir, variables) {
   const templateFiles = await readdir(templateDir);
   return Promise.all(
     templateFiles.map((templateFilename) => {
@@ -13,7 +13,7 @@ export async function copyTemplateFiles(templateDir, outputDir, variables) {
       const outputFilePath = join(outputDir, outputFilename);
       return stat(templateFilePath).then((stats) =>
         stats.isDirectory()
-          ? copyTemplateFiles(templateFilePath, outputFilePath, variables).then(
+          ? copyTemplateDirectory(templateFilePath, outputFilePath, variables).then(
               ({ directories, files }) => ({
                 directories: directories + 1,
                 files,
