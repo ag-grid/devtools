@@ -31,19 +31,21 @@ import {
   isPropertyInitializerNode,
   isTypedAngularExpressionNode,
   isTypedAngularTemplateNode,
+  isTypedVueTemplateNode,
   isVueAttributeAttribute,
   isVueDirectiveAttribute,
   removeTemplateNode,
   replaceTemplateNode,
   SecurityContext,
   visitGridOptionsProperties,
+  visitObjectExpression,
   type AngularTemplateNode,
   type AST,
+  type ObjectPropertyVisitor,
   type PropertyAccessorNode,
   type PropertyAssignmentNode,
   type PropertyInitializerNode,
   type VueTemplateNode,
-  isTypedVueTemplateNode,
 } from '@ag-grid-devtools/codemod-utils';
 import { Enum, match, nonNull, unreachable } from '@ag-grid-devtools/utils';
 
@@ -88,109 +90,117 @@ type JsxPropertyValueNode = Expression | JSXEmptyExpression;
 type VuePropertyValueNode = VLiteral | VExpressionContainer;
 type AngularPropertyValueNode = Angular.AST;
 
-export interface GridOptionReplacement {
+export interface CodemodObjectPropertyReplacement {
   accessor: {
     key: Identifier;
     computed: boolean;
   };
-  transform: GridOptionTransformer;
+  transform: CodemodObjectPropertyTransformer;
 }
 
-export type GridOptionTransformer = ObjectPropertyTransformer<AstTransformContext<AstCliContext>>;
+export type CodemodObjectPropertyTransformer = ObjectPropertyTransformer<
+  AstTransformContext<AstCliContext>
+>;
 
 export function transformGridOptions(
-  replacements: Array<GridOptionReplacement>,
+  replacements: Array<CodemodObjectPropertyReplacement>,
 ): AstTransform<AstCliContext> {
   return function transformGridOptions(babel) {
     return {
-      visitor: visitGridOptionsProperties({
-        init(path, context) {
-          const accessor = parseObjectPropertyInitializerAccessor(path);
-          if (!accessor) return;
-          // Iterate over each of the replacements until a match is found
-          for (const { accessor: replacedAccessor, transform } of replacements) {
-            // Skip over any properties that do not match any of the defined replacement patterns
-            if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-            // If a match was found, apply the appropriate transformation
-            transform.init(path, context);
-            // Skip all other replacements
-            break;
-          }
-        },
-        get(path, context) {
-          const accessor = parseObjectPropertyGetterAccessor(path);
-          if (!accessor) return;
-          // Iterate over each of the replacements until a match is found
-          for (const { accessor: replacedAccessor, transform } of replacements) {
-            // Skip over any properties that do not match any of the defined replacement patterns
-            if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-            // If a match was found, apply the appropriate transformation
-            transform.get(path, context);
-            // Skip all other replacements
-            break;
-          }
-        },
-        set(path, context) {
-          const accessor = parseObjectPropertyAssignmentAccessor(path);
-          if (!accessor) return;
-          // Iterate over each of the replacements until a match is found
-          for (const { accessor: replacedAccessor, transform } of replacements) {
-            // Skip over any properties that do not match any of the defined replacement patterns
-            if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-            // If a match was found, apply the appropriate transformation
-            transform.set(path, context);
-            // Skip all other replacements
-            break;
-          }
-        },
-        jsxAttribute(path, element, context) {
-          const accessor = parseJsxAttributeAccessor(path.node);
-          if (!accessor) return;
-          // Iterate over each of the replacements until a match is found
-          for (const { accessor: replacedAccessor, transform } of replacements) {
-            // Skip over any properties that do not match any of the defined replacement patterns
-            if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-            // If a match was found, apply the appropriate transformation
-            transform.jsxAttribute(path, element, context);
-            // Skip all other replacements
-            break;
-          }
-        },
-        angularAttribute(attributeNode, component, element, context) {
-          const accessor = parseAngularAttributeAccessor(attributeNode);
-          // Iterate over each of the replacements until a match is found
-          for (const { accessor: replacedAccessor, transform } of replacements) {
-            // Skip over any properties that do not match any of the defined replacement patterns
-            if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-            transform.angularAttribute(attributeNode, component, element, context);
-            // Skip all other replacements
-            break;
-          }
-        },
-        vueAttribute(attributeNode, component, element, context) {
-          const accessor = parseGridOptionVueAttributeAccessor(attributeNode.node);
-          if (!accessor) return;
-          // Iterate over each of the replacements until a match is found
-          for (const { accessor: replacedAccessor, transform } of replacements) {
-            // Skip over any properties that do not match any of the defined replacement patterns
-            if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
-            transform.vueAttribute(attributeNode, component, element, context);
-            // Skip all other replacements
-            break;
-          }
-        },
-      }),
+      visitor: visitGridOptionsProperties(getObjectPropertyReplacementsVisitor(replacements)),
     };
   };
 }
 
-export function getGridOptionReplacements(
-  transforms: Record<string, GridOptionTransformer>,
-): Array<GridOptionReplacement> {
+export function transformObjectProperties(
+  transforms: Record<string, CodemodObjectPropertyTransformer>,
+): Array<CodemodObjectPropertyReplacement> {
   return Object.entries(transforms).map(([key, transform]) => ({
     accessor: { key: t.identifier(key), computed: false },
     transform,
   }));
+}
+
+export function getObjectPropertyReplacementsVisitor<S extends AstTransformContext<AstCliContext>>(
+  replacements: Array<CodemodObjectPropertyReplacement>,
+): ObjectPropertyVisitor<S> {
+  return {
+    init(path, context) {
+      const accessor = parseObjectPropertyInitializerAccessor(path);
+      if (!accessor) return;
+      // Iterate over each of the replacements until a match is found
+      for (const { accessor: replacedAccessor, transform } of replacements) {
+        // Skip over any properties that do not match any of the defined replacement patterns
+        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+        // If a match was found, apply the appropriate transformation
+        transform.init(path, context);
+        // Skip all other replacements
+        break;
+      }
+    },
+    get(path, context) {
+      const accessor = parseObjectPropertyGetterAccessor(path);
+      if (!accessor) return;
+      // Iterate over each of the replacements until a match is found
+      for (const { accessor: replacedAccessor, transform } of replacements) {
+        // Skip over any properties that do not match any of the defined replacement patterns
+        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+        // If a match was found, apply the appropriate transformation
+        transform.get(path, context);
+        // Skip all other replacements
+        break;
+      }
+    },
+    set(path, context) {
+      const accessor = parseObjectPropertyAssignmentAccessor(path);
+      if (!accessor) return;
+      // Iterate over each of the replacements until a match is found
+      for (const { accessor: replacedAccessor, transform } of replacements) {
+        // Skip over any properties that do not match any of the defined replacement patterns
+        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+        // If a match was found, apply the appropriate transformation
+        transform.set(path, context);
+        // Skip all other replacements
+        break;
+      }
+    },
+    jsxAttribute(path, element, context) {
+      const accessor = parseJsxAttributeAccessor(path.node);
+      if (!accessor) return;
+      // Iterate over each of the replacements until a match is found
+      for (const { accessor: replacedAccessor, transform } of replacements) {
+        // Skip over any properties that do not match any of the defined replacement patterns
+        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+        // If a match was found, apply the appropriate transformation
+        transform.jsxAttribute(path, element, context);
+        // Skip all other replacements
+        break;
+      }
+    },
+    angularAttribute(attributeNode, component, element, context) {
+      const accessor = parseAngularAttributeAccessor(attributeNode);
+      // Iterate over each of the replacements until a match is found
+      for (const { accessor: replacedAccessor, transform } of replacements) {
+        // Skip over any properties that do not match any of the defined replacement patterns
+        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+        transform.angularAttribute(attributeNode, component, element, context);
+        // Skip all other replacements
+        break;
+      }
+    },
+    vueAttribute(attributeNode, component, element, context) {
+      const accessor = parseGridOptionVueAttributeAccessor(attributeNode.node);
+      if (!accessor) return;
+      // Iterate over each of the replacements until a match is found
+      for (const { accessor: replacedAccessor, transform } of replacements) {
+        // Skip over any properties that do not match any of the defined replacement patterns
+        if (!arePropertyAccessorsEqual(accessor, replacedAccessor)) continue;
+        transform.vueAttribute(attributeNode, component, element, context);
+        // Skip all other replacements
+        break;
+      }
+    },
+  };
 }
 
 export function frameworkEvent<T>(
@@ -253,7 +263,7 @@ type ObjectPropertyTransformer<S> = {
   ): void;
 };
 
-interface ObjectPropertyValueTransformer<S extends AstTransformContext<AstCliContext>> {
+export interface ObjectPropertyValueTransformer<S extends AstTransformContext<AstCliContext>> {
   property(
     value: ObjectPropertyValue,
     accessor: AccessorKey,
@@ -486,6 +496,64 @@ export function transformPropertyValue<S extends AstTransformContext<AstCliConte
   transform: ObjectPropertyValueTransformer<S>,
 ): ObjectPropertyTransformer<S> {
   return migrateProperty(null, transform);
+}
+
+export function transformObjectListValue<S extends AstTransformContext<AstCliContext>>(
+  replacements: Array<CodemodObjectPropertyReplacement>,
+): ObjectPropertyValueTransformer<S> {
+  const visitor = getObjectPropertyReplacementsVisitor(replacements);
+  return {
+    property(value, accessor, context) {
+      if (!value.isArrayExpression()) return value.node;
+      const elements = value.get('elements');
+      for (const element of elements) {
+        if (!element || !element.isExpression()) continue;
+        visitObjectExpression(element, visitor, context);
+      }
+      return value.node;
+    },
+    jsxAttribute(value, element, attribute, context) {
+      if (value === true) return value;
+      if (isNonNullJsxPropertyValue(value)) return value.node;
+      return null;
+    },
+    angularAttribute(value, component, element, attribute, context) {
+      return value;
+    },
+    vueAttribute(value, component, element, attribute, context) {
+      return value === true ? value : value.node;
+    },
+  };
+}
+
+export function transformObjectValue<S extends AstTransformContext<AstCliContext>>(
+  replacements: Array<CodemodObjectPropertyReplacement>,
+): ObjectPropertyValueTransformer<S> {
+  return {
+    property(value, accessor, context) {
+      if (!value.isExpression()) return value.node;
+      return transform(value, context);
+    },
+    jsxAttribute(value, element, attribute, context) {
+      if (isNonNullJsxPropertyValue(value)) return transform(value, context);
+      return null;
+    },
+    angularAttribute(value) {
+      return value;
+    },
+    vueAttribute(value) {
+      return value === true ? value : value.node;
+    },
+  };
+
+  function transform<S extends AstTransformContext<AstCliContext>>(
+    value: NodePath<Expression>,
+    context: S,
+  ): Expression {
+    const visitor = getObjectPropertyReplacementsVisitor(replacements);
+    visitObjectExpression(value, visitor, context);
+    return value.node;
+  }
 }
 
 export function migrateProperty<S extends AstTransformContext<AstCliContext>>(

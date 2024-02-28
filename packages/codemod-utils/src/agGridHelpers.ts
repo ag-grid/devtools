@@ -236,6 +236,14 @@ export interface ObjectPropertyVisitor<S> {
   ): void;
 }
 
+export function visitObjectExpression<
+  S extends AstTransformContext<AstCliContext & VueComponentCliContext>,
+>(target: NodePath<Expression>, visitor: ObjectPropertyVisitor<S>, context: S): void {
+  const accessors = getAccessorExpressionPaths(target);
+  if (!accessors) return;
+  accessors.forEach((accessor) => visitObjectAccessor(accessor, visitor, context));
+}
+
 export function visitGridOptionsProperties<
   S extends AstTransformContext<AstCliContext & VueComponentCliContext>,
 >(visitor: ObjectPropertyVisitor<S>): AstNodeVisitor<S> {
@@ -381,179 +389,176 @@ export function visitGridOptionsProperties<
       }
     },
   };
+}
 
-  function explainAccessorPathUsages(accessorPath: AccessorPath): {
-    initializers: Array<NodePath<AstNode>>;
-    assignments: Array<NodePath<AssignmentExpression>>;
-    references: Array<AccessorReference>;
-  } {
-    const initializers = accessorPath.path.reduce(
-      (roots, { key }) =>
-        roots.flatMap((root) => {
-          if (root.isObjectExpression()) {
-            return retrieveObjectLiteralPropertyAccessor(root, key).map(([key, value]) => value);
-          }
-          if (root.isArrayExpression()) {
-            return retrieveArrayLiteralPropertyAccessor(root, key).map(([key, value]) => value);
-          }
-          return [];
-        }),
-      [accessorPath.root.target],
-    );
-    const [assignments, references] = getAccessorPathReferences(accessorPath).reduce(
-      (results, reference) => {
-        const [assignments, accessorReferences] = results;
-        if (reference.accessor.parentPath.isAssignmentExpression()) {
-          const assignment = reference.accessor.parentPath;
-          const initializer = assignment.get('right');
-          if (reference.accessor.node !== initializer.node) {
-            assignments.push(assignment);
-          }
-        } else {
-          accessorReferences.push(reference);
+function visitObjectAccessor<S>(
+  accessorPath: AccessorPath,
+  propertyVisitor: ObjectPropertyVisitor<S>,
+  context: S,
+): void {
+  const { initializers, assignments, references } = explainAccessorPathUsages(accessorPath);
+  const assignedValues = assignments.map((assignment) => assignment.get('right'));
+  [...initializers, ...assignedValues].forEach((value) => {
+    if (value.isObjectExpression()) {
+      value.get('properties').forEach((property) => {
+        if (isPropertyInitializerNode(property)) {
+          propertyVisitor.init(property, context);
         }
-        return results;
-      },
-      [new Array<NodePath<AssignmentExpression>>(), new Array<AccessorReference>()],
-    );
-    return { initializers, assignments, references };
-  }
-
-  function visitObjectAccessor<S>(
-    accessorPath: AccessorPath,
-    propertyVisitor: ObjectPropertyVisitor<S>,
-    context: S,
-  ): void {
-    const { initializers, assignments, references } = explainAccessorPathUsages(accessorPath);
-    const assignedValues = assignments.map((assignment) => assignment.get('right'));
-    [...initializers, ...assignedValues].forEach((value) => {
-      if (value.isObjectExpression()) {
-        value.get('properties').forEach((property) => {
-          if (isPropertyInitializerNode(property)) {
-            propertyVisitor.init(property, context);
-          }
-        });
-      }
-    });
-    references.forEach((reference) => {
-      // Determine whether the reference is accessing a field on the object
-      if (reference.accessor.parentPath.isMemberExpression()) {
-        const propertyAccessor = reference.accessor.parentPath;
-        const object = propertyAccessor.get('object');
-        if (reference.accessor.node !== object.node) return;
-        // Determine whether the reference is setting the object field
-        if (isPropertyAssignmentNode(propertyAccessor.parentPath)) {
-          // FIXME: add tests for (optionally nested) renamed property assignments
-          propertyVisitor.set(propertyAccessor.parentPath, context);
-        } else if (isPropertyAccessorNode(propertyAccessor)) {
-          propertyVisitor.get(propertyAccessor, context);
-        }
-      } else if (
-        reference.accessor.isObjectProperty() &&
-        reference.accessor.parentPath.isObjectExpression()
-      ) {
-        propertyVisitor.init(reference.accessor, context);
-      }
-    });
-  }
-
-  function retrieveObjectLiteralPropertyAccessor(
-    root: NodePath<Types.ObjectExpression>,
-    key: AccessorKey,
-  ): Array<
-    [
-      { key: NodePath<ObjectProperty['key']>; computed: boolean },
-      NodePath<Expression | ObjectMethod>,
-    ]
-  > {
-    const namedProperties = root
-      .get('properties')
-      .map((property) => {
-        if (property.isObjectProperty() || property.isObjectMethod()) {
-          const key = property.isObjectProperty()
-            ? property.get('key')
-            : property.isObjectMethod()
-            ? property.get('key')
-            : null;
-          const computed = property.node.computed;
-          if (!key) return null;
-          return { key, computed, property };
-        }
-        if (property.isSpreadElement()) return null;
-        return null;
-      })
-      .filter(nonNull);
-    if (AccessorKey.Property.is(key)) {
-      return namedProperties
-        .map(
-          ({
-            key: propertyKey,
-            computed,
-            property,
-          }):
-            | [
-                { key: NodePath<ObjectProperty['key']>; computed: boolean },
-                NodePath<Expression | ObjectMethod>,
-              ]
-            | null => {
-            if (getStaticPropertyKey(propertyKey.node, computed) === key.name) {
-              if (property.isObjectMethod()) return [{ key: propertyKey, computed }, property];
-              const value = property.get('value');
-              if (!value.isExpression()) return null;
-              return [{ key: propertyKey, computed }, value];
-            }
-            return null;
-          },
-        )
-        .filter(nonNull);
-    } else if (AccessorKey.PrivateField.is(key)) {
-      return namedProperties
-        .map(
-          ({
-            key: propertyKey,
-            computed,
-            property,
-          }):
-            | [
-                { key: NodePath<ObjectProperty['key']>; computed: boolean },
-                NodePath<Expression | ObjectMethod>,
-              ]
-            | null => {
-            if (propertyKey.isPrivateName() && propertyKey.node.id.name === key.name) {
-              if (property.isObjectMethod()) return [{ key: propertyKey, computed }, property];
-              const value = property.get('value');
-              if (!value.isExpression()) return null;
-              return [{ key: propertyKey, computed }, value];
-            }
-            return null;
-          },
-        )
-        .filter(nonNull);
-    } else if (AccessorKey.Index.is(key)) {
-      const propertyKey = AccessorKey.Property({ name: String(key.index) });
-      return retrieveObjectLiteralPropertyAccessor(root, propertyKey);
-    } else if (AccessorKey.ObjectRest.is(key)) {
-      // FIXME: support traversing object rest keys
-      return [];
-    } else if (AccessorKey.ArrayRest.is(key)) {
-      return [];
-    } else if (AccessorKey.Computed.is(key)) {
-      const parsedKey = getStaticPropertyKey(key.expression.node, true);
-      if (typeof parsedKey !== 'string') return [];
-      const propertyKey = AccessorKey.Property({ name: parsedKey });
-      return retrieveObjectLiteralPropertyAccessor(root, propertyKey);
-    } else {
-      unreachable(key);
+      });
     }
-  }
+  });
+  references.forEach((reference) => {
+    // Determine whether the reference is accessing a field on the object
+    if (reference.accessor.parentPath.isMemberExpression()) {
+      const propertyAccessor = reference.accessor.parentPath;
+      const object = propertyAccessor.get('object');
+      if (reference.accessor.node !== object.node) return;
+      // Determine whether the reference is setting the object field
+      if (isPropertyAssignmentNode(propertyAccessor.parentPath)) {
+        // FIXME: add tests for (optionally nested) renamed property assignments
+        propertyVisitor.set(propertyAccessor.parentPath, context);
+      } else if (isPropertyAccessorNode(propertyAccessor)) {
+        propertyVisitor.get(propertyAccessor, context);
+      }
+    } else if (
+      reference.accessor.isObjectProperty() &&
+      reference.accessor.parentPath.isObjectExpression()
+    ) {
+      propertyVisitor.init(reference.accessor, context);
+    }
+  });
+}
 
-  function retrieveArrayLiteralPropertyAccessor(
-    root: NodePath<Types.ArrayExpression>,
-    key: AccessorKey,
-  ): Array<[number, NodePath<Expression>]> {
-    // FIXME: support traversing array literals
+export function explainAccessorPathUsages(accessorPath: AccessorPath): {
+  initializers: Array<NodePath<AstNode>>;
+  assignments: Array<NodePath<AssignmentExpression>>;
+  references: Array<AccessorReference>;
+} {
+  const initializers = accessorPath.path.reduce(
+    (roots, { key }) =>
+      roots.flatMap((root) => {
+        if (root.isObjectExpression()) {
+          return retrieveObjectLiteralPropertyAccessor(root, key).map(([key, value]) => value);
+        }
+        if (root.isArrayExpression()) {
+          return retrieveArrayLiteralPropertyAccessor(root, key).map(([key, value]) => value);
+        }
+        return [];
+      }),
+    [accessorPath.root.target],
+  );
+  const [assignments, references] = getAccessorPathReferences(accessorPath).reduce(
+    (results, reference) => {
+      const [assignments, accessorReferences] = results;
+      if (reference.accessor.parentPath.isAssignmentExpression()) {
+        const assignment = reference.accessor.parentPath;
+        const initializer = assignment.get('right');
+        if (reference.accessor.node !== initializer.node) {
+          assignments.push(assignment);
+        }
+      } else {
+        accessorReferences.push(reference);
+      }
+      return results;
+    },
+    [new Array<NodePath<AssignmentExpression>>(), new Array<AccessorReference>()],
+  );
+  return { initializers, assignments, references };
+}
+
+function retrieveObjectLiteralPropertyAccessor(
+  root: NodePath<Types.ObjectExpression>,
+  key: AccessorKey,
+): Array<
+  [{ key: NodePath<ObjectProperty['key']>; computed: boolean }, NodePath<Expression | ObjectMethod>]
+> {
+  const namedProperties = root
+    .get('properties')
+    .map((property) => {
+      if (property.isObjectProperty() || property.isObjectMethod()) {
+        const key = property.isObjectProperty()
+          ? property.get('key')
+          : property.isObjectMethod()
+          ? property.get('key')
+          : null;
+        const computed = property.node.computed;
+        if (!key) return null;
+        return { key, computed, property };
+      }
+      if (property.isSpreadElement()) return null;
+      return null;
+    })
+    .filter(nonNull);
+  if (AccessorKey.Property.is(key)) {
+    return namedProperties
+      .map(
+        ({
+          key: propertyKey,
+          computed,
+          property,
+        }):
+          | [
+              { key: NodePath<ObjectProperty['key']>; computed: boolean },
+              NodePath<Expression | ObjectMethod>,
+            ]
+          | null => {
+          if (getStaticPropertyKey(propertyKey.node, computed) === key.name) {
+            if (property.isObjectMethod()) return [{ key: propertyKey, computed }, property];
+            const value = property.get('value');
+            if (!value.isExpression()) return null;
+            return [{ key: propertyKey, computed }, value];
+          }
+          return null;
+        },
+      )
+      .filter(nonNull);
+  } else if (AccessorKey.PrivateField.is(key)) {
+    return namedProperties
+      .map(
+        ({
+          key: propertyKey,
+          computed,
+          property,
+        }):
+          | [
+              { key: NodePath<ObjectProperty['key']>; computed: boolean },
+              NodePath<Expression | ObjectMethod>,
+            ]
+          | null => {
+          if (propertyKey.isPrivateName() && propertyKey.node.id.name === key.name) {
+            if (property.isObjectMethod()) return [{ key: propertyKey, computed }, property];
+            const value = property.get('value');
+            if (!value.isExpression()) return null;
+            return [{ key: propertyKey, computed }, value];
+          }
+          return null;
+        },
+      )
+      .filter(nonNull);
+  } else if (AccessorKey.Index.is(key)) {
+    const propertyKey = AccessorKey.Property({ name: String(key.index) });
+    return retrieveObjectLiteralPropertyAccessor(root, propertyKey);
+  } else if (AccessorKey.ObjectRest.is(key)) {
+    // FIXME: support traversing object rest keys
     return [];
+  } else if (AccessorKey.ArrayRest.is(key)) {
+    return [];
+  } else if (AccessorKey.Computed.is(key)) {
+    const parsedKey = getStaticPropertyKey(key.expression.node, true);
+    if (typeof parsedKey !== 'string') return [];
+    const propertyKey = AccessorKey.Property({ name: parsedKey });
+    return retrieveObjectLiteralPropertyAccessor(root, propertyKey);
+  } else {
+    unreachable(key);
   }
+}
+
+function retrieveArrayLiteralPropertyAccessor(
+  root: NodePath<Types.ArrayExpression>,
+  key: AccessorKey,
+): Array<[number, NodePath<Expression>]> {
+  // FIXME: support traversing array literals
+  return [];
 }
 
 export function isGridApiReference(

@@ -6,12 +6,12 @@ import {
   type Types,
 } from '@ag-grid-devtools/ast';
 import {
-  GridOptionReplacement,
+  CodemodObjectPropertyReplacement,
   ObjectPropertyValue,
   frameworkEvent,
   frameworkWarning,
   getDeprecationMessage,
-  getGridOptionReplacements,
+  transformObjectProperties,
   getManualInterventionMessage,
   invertOptionalBooleanValue,
   isNonNullJsxPropertyValue,
@@ -27,7 +27,7 @@ type ObjectMethod = Types.ObjectMethod;
 
 const MIGRATION_URL_V31 = 'https://ag-grid.com/javascript-data-grid/upgrading-to-ag-grid-31/';
 
-export const replacements: Array<GridOptionReplacement> = getGridOptionReplacements({
+export const replacements: Array<CodemodObjectPropertyReplacement> = transformObjectProperties({
   advancedFilterModel: migrateProperty(
     'initialState',
     transformOptionalValue(
