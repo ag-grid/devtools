@@ -3,7 +3,9 @@ import { replaceVariables } from '@ag-grid-devtools/build-tools';
 import {
   addModuleImports,
   applyBabelTransform,
+  applyPrettierFormat,
   createBabelPlugin,
+  loadPrettierConfig,
   parseBabelAst,
 } from '@ag-grid-devtools/codemod-utils/dist/lib/lib.js';
 import { readdirSync } from 'node:fs';
@@ -78,6 +80,7 @@ export async function addTransformToVersion({ versionPath, transformPath, transf
         ),
         addTransformToCodemod(transformIdentifier),
       ],
+      prettier: true,
     }),
     transformFile(versionManifestPath, {
       plugins: [
@@ -90,6 +93,7 @@ export async function addTransformToVersion({ versionPath, transformPath, transf
         ),
         addTransformManifestToCodemodManifest(transformIdentifier),
       ],
+      prettier: true,
     }),
   ]);
 
@@ -192,6 +196,7 @@ export async function addReleaseToVersionsManifest({
       ),
       addReleaseVersionToVersionsManifest(versionIdentifier),
     ],
+    prettier: true,
   });
 
   function addReleaseVersionToVersionsManifest(transformIdentifier) {
@@ -231,6 +236,7 @@ export async function addReleaseToVersionsManifest({
 export async function addReleaseToVersionsManifestTests({ manifestTestPath, version }) {
   return transformFile(manifestTestPath, {
     plugins: [addReleaseVersionToVersionsManifestTests(version)],
+    prettier: true,
   });
 
   function addReleaseVersionToVersionsManifestTests(version) {
@@ -260,6 +266,7 @@ export async function addReleaseToPackageJsonExports(packageJsonPath, { version,
   return transformFile(packageJsonPath, {
     format: 'json',
     plugins: [addReleaseToPackageJson(version)],
+    prettier: true,
   });
 
   function addReleaseToPackageJson(version) {
@@ -291,31 +298,6 @@ export async function addReleaseToPackageJsonExports(packageJsonPath, { version,
         path.node.properties.push(property);
       }
     }
-  }
-
-  function getPackageExportsPropertyValue(path) {
-    const pkgProperty = path
-      .get('properties')
-      .find(
-        (property) =>
-          property.isObjectProperty() &&
-          property.get('name').isStringLiteral() &&
-          property.node.key.value === 'pkg',
-      );
-    const exportsProperty = pkgProperty
-      ?.get('value')
-      .get('properties')
-      .find(
-        (property) =>
-          property.isObjectProperty() &&
-          property.get('name').isStringLiteral() &&
-          property.node.key.value === 'exports',
-      );
-    const exportsPropertyValue = exportsProperty?.get('value');
-    if (!exportsPropertyValue || !exportsPropertyValue.isObjectExpression()) {
-      throw new Error('Missing "pkg.exports" object');
-    }
-    return exportsPropertyValue;
   }
 }
 
@@ -349,7 +331,10 @@ function parseFile(filename, { format = 'js', transformSource = null }) {
     );
 }
 
-function transformFile(filename, { plugins, format = 'js', transformSource = null }) {
+function transformFile(
+  filename,
+  { plugins, format = 'js', transformSource = null, prettier = false },
+) {
   return readFile(filename, 'utf-8')
     .then((source) => transformSource?.(source) ?? source)
     .then((source) => (format === 'json' ? addParentheses(source) : source))
@@ -365,6 +350,16 @@ function transformFile(filename, { plugins, format = 'js', transformSource = nul
       return transformedSource ?? null;
     })
     .then((source) => (format === 'json' ? removeParentheses(source) : source))
+    .then((source) =>
+      prettier
+        ? loadPrettierConfig(filename).then((config) =>
+            applyPrettierFormat(source, {
+              filepath: filename,
+              ...config,
+            }),
+          )
+        : source,
+    )
     .then((source) => writeFile(filename, source).then(() => source))
     .catch((error) => {
       if (error instanceof Error) {
