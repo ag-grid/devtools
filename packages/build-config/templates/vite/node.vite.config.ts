@@ -19,8 +19,10 @@ const NODE_MODULES = [
   'perf_hooks',
   'process',
   'stream',
+  'tty',
   'url',
   'util',
+  'v8',
 ];
 
 export default mergeConfig(
