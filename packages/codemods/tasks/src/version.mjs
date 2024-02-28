@@ -1,8 +1,10 @@
 import { ast } from '@ag-grid-devtools/ast/dist/lib/lib.js';
+import { replaceVariables } from '@ag-grid-devtools/build-tools';
 import {
   addModuleImports,
   applyBabelTransform,
   createBabelPlugin,
+  parseBabelAst,
 } from '@ag-grid-devtools/codemod-utils/dist/lib/lib.js';
 import { readdirSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -65,26 +67,30 @@ export async function addTransformToVersion({ versionPath, transformPath, transf
   const versionManifestPath = join(versionPath, 'manifest.ts');
   const transformManifestPath = join(transformPath, 'manifest.ts');
   return Promise.all([
-    transformFile(transformsPath, [
-      addModuleImports(
-        ast.statement`
-        import ${transformIdentifier} from '${getModuleImportPath(transformPath, {
-          currentPath: transformsPath,
-        })}';
-      `,
-      ),
-      addTransformToCodemod(transformIdentifier),
-    ]),
-    transformFile(versionManifestPath, [
-      addModuleImports(
-        ast.statement`
-        import ${transformIdentifier} from '${getModuleImportPath(transformManifestPath, {
-          currentPath: transformsPath,
-        })}';
-      `,
-      ),
-      addTransformManifestToCodemodManifest(transformIdentifier),
-    ]),
+    transformFile(transformsPath, {
+      plugins: [
+        addModuleImports(
+          ast.statement`
+            import ${transformIdentifier} from '${getModuleImportPath(transformPath, {
+              currentPath: transformsPath,
+            })}';
+          `,
+        ),
+        addTransformToCodemod(transformIdentifier),
+      ],
+    }),
+    transformFile(versionManifestPath, {
+      plugins: [
+        addModuleImports(
+          ast.statement`
+            import ${transformIdentifier} from '${getModuleImportPath(transformManifestPath, {
+              currentPath: transformsPath,
+            })}';
+          `,
+        ),
+        addTransformManifestToCodemodManifest(transformIdentifier),
+      ],
+    }),
   ]);
 
   function addTransformToCodemod(transformIdentifier) {
@@ -175,16 +181,18 @@ export async function addReleaseToVersionsManifest({
   versionManifestPath,
   versionIdentifier,
 }) {
-  return transformFile(versionsPath, [
-    addModuleImports(
-      ast.statement`
+  return transformFile(versionsPath, {
+    plugins: [
+      addModuleImports(
+        ast.statement`
         import ${versionIdentifier} from '${getModuleImportPath(versionManifestPath, {
           currentPath: versionsPath,
         })}';
       `,
-    ),
-    addReleaseVersionToVersionsManifest(versionIdentifier),
-  ]);
+      ),
+      addReleaseVersionToVersionsManifest(versionIdentifier),
+    ],
+  });
 
   function addReleaseVersionToVersionsManifest(transformIdentifier) {
     return createBabelPlugin((babel) => {
@@ -221,7 +229,9 @@ export async function addReleaseToVersionsManifest({
 }
 
 export async function addReleaseToVersionsManifestTests({ manifestTestPath, version }) {
-  return transformFile(manifestTestPath, [addReleaseVersionToVersionsManifestTests(version)]);
+  return transformFile(manifestTestPath, {
+    plugins: [addReleaseVersionToVersionsManifestTests(version)],
+  });
 
   function addReleaseVersionToVersionsManifestTests(version) {
     return createBabelPlugin((babel) => {
@@ -243,6 +253,72 @@ export async function addReleaseToVersionsManifestTests({ manifestTestPath, vers
   }
 }
 
+export async function addReleaseToPackageJsonExports(packageJsonPath, { version, templatePath }) {
+  const templateAst = await parseJsonFile(templatePath, {
+    transformSource: (source) => replaceVariables(source, { version }),
+  });
+  return transformFile(packageJsonPath, {
+    format: 'json',
+    plugins: [addReleaseToPackageJson(version)],
+  });
+
+  function addReleaseToPackageJson(version) {
+    return createBabelPlugin((babel) => {
+      return {
+        visitor: {
+          ObjectExpression(path) {
+            deepMergeJsonAstObjectFields(path, templateAst);
+            path.skip();
+          },
+        },
+      };
+    });
+  }
+
+  function deepMergeJsonAstObjectFields(path, valueNode) {
+    if (!path.isObjectExpression() || valueNode.type !== path.node.type) {
+      path.replaceWith(valueNode);
+      return;
+    }
+    const existingProperties = path.get('properties');
+    for (const property of valueNode.properties) {
+      const existingProperty = existingProperties.find(
+        (existingProperty) => existingProperty.get('key').node.value === property.key.value,
+      );
+      if (existingProperty) {
+        deepMergeJsonAstObjectFields(existingProperty.get('value'), property.value);
+      } else {
+        path.node.properties.push(property);
+      }
+    }
+  }
+
+  function getPackageExportsPropertyValue(path) {
+    const pkgProperty = path
+      .get('properties')
+      .find(
+        (property) =>
+          property.isObjectProperty() &&
+          property.get('name').isStringLiteral() &&
+          property.node.key.value === 'pkg',
+      );
+    const exportsProperty = pkgProperty
+      ?.get('value')
+      .get('properties')
+      .find(
+        (property) =>
+          property.isObjectProperty() &&
+          property.get('name').isStringLiteral() &&
+          property.node.key.value === 'exports',
+      );
+    const exportsPropertyValue = exportsProperty?.get('value');
+    if (!exportsPropertyValue || !exportsPropertyValue.isObjectExpression()) {
+      throw new Error('Missing "pkg.exports" object');
+    }
+    return exportsPropertyValue;
+  }
+}
+
 function getModuleImportPath(importedPath, { currentPath }) {
   return ensureLocalImportPath(relative(dirname(currentPath), importedPath));
 }
@@ -251,24 +327,62 @@ function ensureLocalImportPath(path) {
   return path.startsWith('.') || path.startsWith('/') ? path : `./${path}`;
 }
 
-function transformFile(filename, plugins) {
+async function parseJsonFile(filename, { transformSource }) {
+  const ast = await parseFile(filename, { format: 'json', transformSource });
+  const rootNodes = ast.program.body;
+  const rootNode =
+    rootNodes.length === 1 && rootNodes[0].type === 'ExpressionStatement' ? rootNodes[0] : null;
+  if (!rootNode) throw new Error(`Invalid json file contents: ${filename}`);
+  return rootNode.expression;
+}
+
+function parseFile(filename, { format = 'js', transformSource = null }) {
   return readFile(filename, 'utf-8')
-    .then((source) => {
-      const updatedSource = applyBabelTransform(source, plugins, {
+    .then((source) => transformSource?.(source) ?? source)
+    .then((source) => (format === 'json' ? addParentheses(source) : source))
+    .then((source) =>
+      parseBabelAst(source, {
         filename,
-        jsx: false,
-        sourceType: 'module',
+        jsx: format === 'jsx',
+        sourceType: format === 'json' ? 'script' : 'module',
+      }),
+    );
+}
+
+function transformFile(filename, { plugins, format = 'js', transformSource = null }) {
+  return readFile(filename, 'utf-8')
+    .then((source) => transformSource?.(source) ?? source)
+    .then((source) => (format === 'json' ? addParentheses(source) : source))
+    .then((source) => {
+      const transformedSource = applyBabelTransform(source, plugins, {
+        filename,
+        jsx: format === 'jsx',
+        sourceType: format === 'json' ? 'script' : 'module',
         print: {
-          quote: 'single',
+          quote: format === 'json' ? 'double' : 'single',
         },
       });
-      if (updatedSource == null) return source;
-      return writeFile(filename, updatedSource).then(() => updatedSource);
+      return transformedSource ?? null;
     })
+    .then((source) => (format === 'json' ? removeParentheses(source) : source))
+    .then((source) => writeFile(filename, source).then(() => source))
     .catch((error) => {
       if (error instanceof Error) {
         error.message = `Unable to transform ${filename}\n\n${error.message}`;
       }
       throw error;
     });
+}
+
+function addParentheses(source) {
+  return `(${source})`;
+}
+
+function removeParentheses(source) {
+  if (source.charAt(0) !== '(' || source.charAt(source.length - 1) !== ')') {
+    throw new Error(
+      'Invalid source transformation: expected result expression to be wrapped in parentheses',
+    );
+  }
+  return source.slice(1, source.length - 1);
 }

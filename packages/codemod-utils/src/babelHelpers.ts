@@ -35,14 +35,35 @@ export function applyBabelTransform<S, T extends object = object>(
       print?: Options;
     },
 ): string | null {
-  const { filename, jsx, sourceType, js: parserOptions = {}, print: printOptions = {} } = context;
-  const defaultPlugins = jsx ? JSX_PARSER_PLUGINS : JS_PARSER_PLUGINS;
+  const { print: printOptions = {}, ...parserContext } = context;
   // Attempt to determine input file line endings, defaulting to the operating system default
   const crlfLineEndings = source.includes('\r\n');
   const lfLineEndings = !crlfLineEndings && source.includes('\n');
   const lineTerminator = crlfLineEndings ? '\r\n' : lfLineEndings ? '\n' : undefined;
   // Parse the source AST
-  const ast = parse(source, {
+  const ast = parseBabelAst(source, parserContext);
+  // Transform the AST
+  const transformedAst = transformAst(ast, plugins, parserContext, { source });
+  // Print the transformed AST
+  const transformedSource = transformedAst
+    ? print(transformedAst, {
+        lineTerminator,
+        ...printOptions,
+      }).code
+    : null;
+  return transformedSource;
+}
+
+export function parseBabelAst<S, T extends object = object>(
+  source: string,
+  context: FileMetadata &
+    BabelTransformJsOptions &
+    BabelTransformJsxOptions &
+    Required<Pick<ParserOptions, 'sourceType'>>,
+): ReturnType<typeof parseAst> {
+  const { filename, jsx, sourceType, js: parserOptions = {} } = context;
+  const defaultPlugins = jsx ? JSX_PARSER_PLUGINS : JS_PARSER_PLUGINS;
+  return parse(source, {
     parser: {
       sourceFilename: filename,
       parse(source: string): ReturnType<typeof parseAst> {
@@ -57,14 +78,4 @@ export function applyBabelTransform<S, T extends object = object>(
       },
     },
   }) as ReturnType<typeof parseAst>;
-  // Transform the AST
-  const transformedAst = transformAst(ast, plugins, context, { source });
-  // Print the transformed AST
-  const transformedSource = transformedAst
-    ? print(transformedAst, {
-        lineTerminator,
-        ...printOptions,
-      }).code
-    : null;
-  return transformedSource;
 }
