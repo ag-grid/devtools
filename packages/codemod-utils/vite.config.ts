@@ -8,6 +8,11 @@ import pkg from './package.json' assert { type: 'json' };
 export default mergeConfig(
   base,
   defineConfig({
+    resolve: {
+      alias: {
+        'prettier': 'prettier/index.mjs',
+      },
+    },
     build: {
       lib: {
         entry: resolve(__dirname, pkg.module),
