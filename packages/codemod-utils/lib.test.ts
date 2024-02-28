@@ -26,6 +26,7 @@ test('module exports', () => {
     createVueAstNode: lib.createVueAstNode,
     createVueBooleanLiteral: lib.createVueBooleanLiteral,
     createVueExpressionContainer: lib.createVueExpressionContainer,
+    explainAccessorPathUsages: lib.explainAccessorPathUsages,
     findNamedAngularTemplateElements: lib.findNamedAngularTemplateElements,
     findTemplateNodes: lib.findTemplateNodes,
     getAngularColumnApiReferences: lib.getAngularColumnApiReferences,
@@ -94,5 +95,6 @@ test('module exports', () => {
     transformFileAst: lib.transformFileAst,
     updateAngularComponentTemplate: lib.updateAngularComponentTemplate,
     visitGridOptionsProperties: lib.visitGridOptionsProperties,
+    visitObjectExpression: lib.visitObjectExpression,
   });
 });

@@ -57,6 +57,9 @@ export function transformGridApiMethods(options: {
             // We've found a match, so replace the current AST node with the rewritten node and stop processing this node
             // FIXME: Match quote style in generated option key string literal
             path.replaceWith(node);
+
+            // Prevent this node from being repeatedly transformed
+            path.skip();
             return;
           }
           for (const deprecation of deprecations) {
@@ -69,6 +72,9 @@ export function transformGridApiMethods(options: {
             if (!isGridApiReference(api, context)) continue;
 
             context.opts.fail(path, 'This method has been deprecated');
+
+            // Prevent this node from being repeatedly transformed
+            path.skip();
           }
         },
       },
