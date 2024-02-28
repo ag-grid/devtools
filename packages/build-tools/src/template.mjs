@@ -60,7 +60,7 @@ function withErrorPrefix(prefix, fn) {
   }
 }
 
-function replaceVariables(template, variables) {
+export function replaceVariables(template, variables) {
   const tokens = parseTemplateString(template);
   return substituteTemplateStringVariables(tokens, variables);
 }
