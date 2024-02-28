@@ -81,6 +81,7 @@ test('module exports', () => {
     matchVueComponentMethod: lib.matchVueComponentMethod,
     matchers: lib.matchers,
     mergeSourceChunks: lib.mergeSourceChunks,
+    parseBabelAst: lib.parseBabelAst,
     parseAngularComponentTemplate: lib.parseAngularComponentTemplate,
     parseVueComponentTemplateSource: lib.parseVueComponentTemplateSource,
     parseVueSfcComponent: lib.parseVueSfcComponent,

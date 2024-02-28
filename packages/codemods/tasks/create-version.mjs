@@ -1,4 +1,4 @@
-import { join, dirname } from 'node:path';
+import { join, dirname, basename, extname } from 'node:path';
 import { stdin, stderr } from 'node:process';
 import {
   copyTemplateDirectory,
@@ -11,19 +11,26 @@ import {
 } from '@ag-grid-devtools/build-tools';
 
 import {
+  addReleaseToPackageJsonExports,
   addReleaseToVersionsManifest,
   addReleaseToVersionsManifestTests,
+  getNextReleaseVersion,
   isValidReleaseVersion,
   retrieveExistingVersions,
-  getNextReleaseVersion,
 } from './src/version.mjs';
 
 const __dirname = dirname(new URL(import.meta.url).pathname);
+
 const TEMPLATE_DIR = join(__dirname, '../templates/create-version');
+const CODEMOD_TEMPLATE_DIR = join(TEMPLATE_DIR, 'codemod');
+const EXPORTS_TEMPLATE_DIR = join(TEMPLATE_DIR, 'exports');
+const PACKAGE_JSON_TEMPLATE_PATH = join(TEMPLATE_DIR, 'pkg', 'pkg.json');
 
 const PROJECT_VERSIONS_DIR = './src/versions';
 const MANIFEST_FILENAME = 'manifest.ts';
 const MANIFEST_TEST_PATH = './lib.test.ts';
+
+const VERSION_EXPORTS_DIR = './version';
 
 const VARIABLES = [
   {
@@ -43,15 +50,23 @@ const VARIABLES = [
     }),
   },
   {
-    name: 'manifestPath',
-    label: 'Codemod manifest path',
+    name: 'exportsDir',
+    label: 'Codemod exports directory',
+    options: ({ projectRoot }) => ({
+      value: join(projectRoot, VERSION_EXPORTS_DIR),
+      validate: validateDirectory,
+    }),
+  },
+  {
+    name: 'versionsManifestPath',
+    label: 'Codemod versions manifest path',
     options: ({ versionsDir }) => ({
       value: join(versionsDir, MANIFEST_FILENAME),
       validate: validateFile,
     }),
   },
   {
-    name: 'manifestTestPath',
+    name: 'versionsManifestTestPath',
     label: 'Codemod manifest test path',
     options: ({ projectRoot }) => ({
       value: join(projectRoot, MANIFEST_TEST_PATH),
@@ -78,6 +93,13 @@ const VARIABLES = [
     }),
   },
   {
+    name: 'versionManifestPath',
+    label: 'Codemod manifest path',
+    options: ({ outputPath }) => ({
+      value: join(outputPath, MANIFEST_FILENAME),
+    }),
+  },
+  {
     name: 'versionIdentifier',
     label: 'Version identifier for use in source code replacements',
     options: ({ version }) => ({
@@ -90,14 +112,28 @@ const VARIABLES = [
 export default async function task(...args) {
   const variables = await prompt(VARIABLES, { args, input: stdin, output: stderr });
   if (!variables) throw null;
-  const { outputPath, manifestPath, manifestTestPath, version, versionIdentifier } = variables;
-  await copyTemplateDirectory(TEMPLATE_DIR, outputPath, variables);
+  const {
+    projectRoot,
+    outputPath,
+    exportsDir,
+    versionManifestPath,
+    versionsManifestPath,
+    versionsManifestTestPath,
+    version,
+    versionIdentifier,
+  } = variables;
+  await copyTemplateDirectory(CODEMOD_TEMPLATE_DIR, outputPath, variables);
+  await copyTemplateDirectory(EXPORTS_TEMPLATE_DIR, exportsDir, variables);
   await addReleaseToVersionsManifest({
-    versionsPath: manifestPath,
-    versionManifestPath: join(outputPath, 'manifest'),
+    versionsPath: versionsManifestPath,
+    versionManifestPath: stripFileExtension(versionManifestPath),
     versionIdentifier: `v${versionIdentifier}`,
   });
-  await addReleaseToVersionsManifestTests({ manifestTestPath, version });
+  await addReleaseToVersionsManifestTests({ manifestTestPath: versionsManifestTestPath, version });
+  await addReleaseToPackageJsonExports(join(projectRoot, 'package.json'), {
+    version,
+    templatePath: PACKAGE_JSON_TEMPLATE_PATH,
+  });
   process.stderr.write(`\nCreated codemod version ${green(version)} in ${outputPath}\n`);
 }
 
@@ -113,4 +149,8 @@ function validateVersionIdentifier(value) {
 
 function isValidVersionIdentifier(value) {
   return /^\w*$/i.test(value);
+}
+
+function stripFileExtension(path) {
+  return join(dirname(path), basename(path, extname(path)));
 }
