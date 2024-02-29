@@ -61,7 +61,7 @@ Changes are merged to the repository as follows:
     > _Note that a `wip/...` prefix indicates a branch that is not intended to be merged_
 2. Commit code changes to the feature branch
 3. Rebase on the latest `develop` branch to incorporate upstream changes
-4. Raise a PR that targets `develop` as its base branch (note that this is **not** the default repository branch)
+4. Raise a PR that targets `develop` as its base branch
 5. Wait for CI tests to pass
 6. Merge the PR using the 'rebase' merge stragegy
 
@@ -69,17 +69,21 @@ Changes are merged to the repository as follows:
 
 When the contents of the `develop` branch are ready to be released, follow these steps to publish a new version:
 
-1. Create a new branch from the current `develop` branch, named with the `release/...` prefix
-2. Add a single commit that updates the relevant `package.json` version numbers
-3. Raise a PR that targets `develop` as its base branch (note that this is **not** the default repository branch)
-4. Wait for CI tests to pass
-5. Merge the PR using the 'rebase' merge stragegy
-6. Raise a new PR that merges `develop` into `main`
-2. Wait for CI tests to pass
-3. Merge the PR using the 'rebase' merge stragegy
+1. Ensure that `@ag-grid-community/cli` package version has been incremented in the `develop` branch:
+    ```
+    git diff origin/main..origin/develop -- ./packages/cli/package.json |
+      grep '"version": ".*"' && echo "Ready to publish" || echo "Version already published"
+    ```
+2. Raise a new PR that merges `develop` into `main`
+3. Wait for CI tests to pass
+4. Merge the PR using the 'rebase' merge stragegy
 
 This will cause CI to perform the following actions:
 
 - Build and publish all public packages
 - Tag the repository with the current package version
 - Create a Github 'Release' page linked to the release commit
+
+Once the release has succeeded, rebase the `develop` branch onto the `main` branch and force-push to retain linear commit history.
+
+> This step is only necessary because Github does not yet allow fast-forward merges: https://github.com/orgs/community/discussions/4618 (see workarounds)
