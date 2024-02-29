@@ -265,16 +265,16 @@ export async function addReleaseToPackageJsonExports(packageJsonPath, { version,
   });
   return transformFile(packageJsonPath, {
     format: 'json',
-    plugins: [addReleaseToPackageJson(version)],
+    plugins: [mergeJsonFields(templateAst)],
     prettier: true,
   });
 
-  function addReleaseToPackageJson(version) {
+  function mergeJsonFields(fields) {
     return createBabelPlugin((babel) => {
       return {
         visitor: {
           ObjectExpression(path) {
-            deepMergeJsonAstObjectFields(path, templateAst);
+            deepMergeJsonAstObjectFields(path, fields);
             path.skip();
           },
         },
