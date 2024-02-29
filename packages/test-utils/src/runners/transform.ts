@@ -82,10 +82,10 @@ export function loadAstTransformExampleScenarios<O extends object = object>(
       withErrorPrefix(input.path, () => {
         expect(actual.source ?? input.source).toEqual(expected.source ?? input.source);
       });
-      withErrorPrefix(input.errorsPath ?? scenarioPath, () => {
+      withErrorPrefix(`Invalid errors in ${input.errorsPath ?? scenarioPath}`, () => {
         expect(actual.errors).toEqual(expected.errors);
       });
-      withErrorPrefix(input.warningsPath ?? scenarioPath, () => {
+      withErrorPrefix(`Invalid warnings in ${input.warningsPath ?? scenarioPath}`, () => {
         expect(actual.warnings).toEqual(expected.warnings);
       });
     },
