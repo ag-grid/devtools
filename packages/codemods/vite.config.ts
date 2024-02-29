@@ -33,6 +33,11 @@ const codemodEntries = Object.fromEntries(
 export default mergeConfig(
   base,
   defineConfig({
+    resolve: {
+      alias: {
+        prettier: 'prettier/index.mjs',
+      },
+    },
     build: {
       lib: {
         entry: {
