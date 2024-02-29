@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@ag-grid-community/cli",
-  "version": "31.0.1",
+  "version": "31.1.0",
   "license": "MIT",
   "description": "AG Grid developer toolkit",
   "author": "AG Grid <info@ag-grid.com>",
