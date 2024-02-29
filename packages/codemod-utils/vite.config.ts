@@ -10,7 +10,7 @@ export default mergeConfig(
   defineConfig({
     resolve: {
       alias: {
-        'prettier': 'prettier/index.mjs',
+        prettier: 'prettier/index.mjs',
       },
     },
     build: {
