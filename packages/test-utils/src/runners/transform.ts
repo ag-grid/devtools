@@ -83,13 +83,26 @@ export function loadAstTransformExampleScenarios<O extends object = object>(
         expect(actual.source ?? input.source).toEqual(expected.source ?? input.source);
       });
       withErrorPrefix(`Invalid errors in ${input.errorsPath ?? scenarioPath}`, () => {
-        expect(actual.errors).toEqual(expected.errors);
+        const actualErrors = actual.errors.map(stripSyntaxErrorLineNumbers);
+        expect(actualErrors).toEqual(expected.errors);
       });
       withErrorPrefix(`Invalid warnings in ${input.warningsPath ?? scenarioPath}`, () => {
-        expect(actual.warnings).toEqual(expected.warnings);
+        const actualErrors = actual.warnings.map(stripSyntaxErrorLineNumbers);
+        expect(actualErrors).toEqual(expected.warnings);
       });
     },
   });
+}
+
+function stripSyntaxErrorLineNumbers(error: Error): Error {
+  if (error.name !== 'SyntaxError') return error;
+  const message = error.message
+    // Strip leading line number from active line
+    .replaceAll(/^> +\d+ \|(.*)(?:\n +\| ( *\^*$))?/gm, '\n> |$1\n  | $2')
+    // Remove surrounding source lines
+    .replaceAll(/\n +\d+ \|.*/g, '');
+  if (message === error.message) return error;
+  return Object.create(error, { message: { value: message } });
 }
 
 function transformFsLineEndings(
