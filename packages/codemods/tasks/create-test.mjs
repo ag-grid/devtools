@@ -27,11 +27,21 @@ const TEST_TYPE_RELEASE = 'version';
 const TEST_TYPE_PLUGIN = 'plugin';
 const TEST_TYPES = [TEST_TYPE_TRANSFORM, TEST_TYPE_RELEASE, TEST_TYPE_PLUGIN];
 
-const FRAMEWORK_VANILLA = 'js';
+const FRAMEWORK_JS = 'js';
+const FRAMEWORK_VANILLA = 'vanilla';
 const FRAMEWORK_REACT = 'jsx';
 const FRAMEWORK_ANGULAR = 'angular';
 const FRAMEWORK_VUE = 'vue';
-const FRAMEWORKS = [FRAMEWORK_VANILLA, FRAMEWORK_REACT, FRAMEWORK_ANGULAR, FRAMEWORK_VUE];
+const FRAMEWORKS = [
+  FRAMEWORK_JS,
+  FRAMEWORK_VANILLA,
+  FRAMEWORK_REACT,
+  FRAMEWORK_ANGULAR,
+  FRAMEWORK_VUE,
+];
+
+const JS_TEMPLATE_TYPE_DEFAULT = 'default';
+const JS_TEMPLATE_TYPES = [JS_TEMPLATE_TYPE_DEFAULT];
 
 const VANILLA_TEMPLATE_TYPE_DEFAULT = 'default';
 const VANILLA_TEMPLATE_TYPES = [VANILLA_TEMPLATE_TYPE_DEFAULT];
@@ -169,9 +179,16 @@ const VARIABLES = [
     label: 'Framework template',
     options: ({ framework }) => {
       switch (framework) {
+        case FRAMEWORK_JS: {
+          return {
+            prompt: `JS template type (${JS_TEMPLATE_TYPES.join(`/`)})`,
+            value: JS_TEMPLATE_TYPE_DEFAULT,
+            validate: validateOneOf(JS_TEMPLATE_TYPES),
+          };
+        }
         case FRAMEWORK_VANILLA: {
           return {
-            prompt: `JS template type (${VANILLA_TEMPLATE_TYPES.join(`/`)})`,
+            prompt: `Vanilla template type (${VANILLA_TEMPLATE_TYPES.join(`/`)})`,
             value: VANILLA_TEMPLATE_TYPE_DEFAULT,
             validate: validateOneOf(VANILLA_TEMPLATE_TYPES),
           };
@@ -179,8 +196,8 @@ const VARIABLES = [
         case FRAMEWORK_REACT: {
           return {
             prompt: `React template type (${REACT_TEMPLATE_TYPES.join(`/`)})`,
-            value: VANILLA_TEMPLATE_TYPE_DEFAULT,
-            validate: validateOneOf(VANILLA_TEMPLATE_TYPES),
+            value: JS_TEMPLATE_TYPE_DEFAULT,
+            validate: validateOneOf(JS_TEMPLATE_TYPES),
           };
         }
         case FRAMEWORK_ANGULAR: {
