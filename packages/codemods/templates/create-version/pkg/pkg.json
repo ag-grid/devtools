@@ -1,4 +1,5 @@
 {
+  "version": "<%= version %>",
   "pkg": {
     "exports": {
       "./version/<%= version %>/codemod.cjs": {
