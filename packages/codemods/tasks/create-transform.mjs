@@ -116,16 +116,17 @@ const VARIABLES = [
   {
     name: 'release',
     label: 'Codemod release version',
-    options: ({ versionsDir }) => ({
-      prompt: 'Add to codemod release version (optional)',
-      default: getProjectLatestReleaseVersion(versionsDir),
-      parse: parseOptionalString,
-      format: formatOptionalString,
-      validate: (value) => {
-        if (value == null) return null;
-        return validateReleaseVersion(value, { versionsDir });
-      },
-    }),
+    options: ({ versionsDir }) => {
+      const options = getProjectReleaseVersions(versionsDir);
+      return {
+        prompt: 'Add to codemod release version (optional)',
+        options,
+        default: getProjectLatestReleaseVersion(versionsDir),
+        parse: parseOptionalString,
+        format: formatOptionalString,
+        validate: validateOptional(validateOneOf(options)),
+      };
+    },
   },
 ];
 
@@ -165,12 +166,6 @@ function validateTransformName(value) {
 
 function getPluginOptions({ pluginsDir }) {
   return readdirSync(pluginsDir);
-}
-
-function validateReleaseVersion(value, { versionsDir }) {
-  const versions = getProjectReleaseVersions(versionsDir);
-  if (!versions.includes(value)) return `Codemod version does not exist: ${value}`;
-  return null;
 }
 
 function generatePluginTransformName({ plugin, pluginsDir, versionsDir }) {
