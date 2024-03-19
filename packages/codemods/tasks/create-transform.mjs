@@ -10,6 +10,8 @@ import {
   prompt,
   validateDirectory,
   validateEmptyPath,
+  validateOneOf,
+  validateOptional,
 } from '@ag-grid-devtools/build-tools';
 
 import {
@@ -62,11 +64,15 @@ const VARIABLES = [
   {
     name: 'plugin',
     label: 'Plugin template (optional)',
-    options: ({ pluginsDir }) => ({
-      parse: parseOptionalString,
-      format: formatOptionalString,
-      validate: (value) => validatePlugin(value, { pluginsDir }),
-    }),
+    options: ({ pluginsDir }) => {
+      const options = getPluginOptions({ pluginsDir });
+      return {
+        parse: parseOptionalString,
+        format: formatOptionalString,
+        options,
+        validate: validateOptional(validateOneOf(options)),
+      };
+    },
   },
   {
     name: 'name',
@@ -157,22 +163,8 @@ function validateTransformName(value) {
   return null;
 }
 
-function validatePlugin(value, { pluginsDir }) {
-  if (value) return validatePluginName(value, { pluginsDir });
-  return null;
-}
-
-function validatePluginName(value, { pluginsDir }) {
-  const error = validateDirectory(join(pluginsDir, value));
-  if (typeof error === 'string') {
-    return [
-      `Invalid plugin name: "${value}"`,
-      `  ${error}`,
-      `  Available plugins:`,
-      ...readdirSync(pluginsDir).map((name) => `    - ${name}`),
-    ].join('\n');
-  }
-  return null;
+function getPluginOptions({ pluginsDir }) {
+  return readdirSync(pluginsDir);
 }
 
 function validateReleaseVersion(value, { versionsDir }) {
