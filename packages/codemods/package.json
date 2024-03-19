@@ -56,6 +56,7 @@
     "@ag-grid-devtools/ast": "workspace:*",
     "@ag-grid-devtools/build-config": "workspace:*",
     "@ag-grid-devtools/build-tools": "workspace:*",
+    "@ag-grid-devtools/codemod-task-utils": "workspace:*",
     "@ag-grid-devtools/codemod-utils": "workspace:*",
     "@ag-grid-devtools/test-utils": "workspace:*",
     "@ag-grid-devtools/types": "workspace:*",

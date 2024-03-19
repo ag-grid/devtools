@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@ag-grid-devtools/build-config": "workspace:*",
-    "@ag-grid-devtools/codemod-utils": "workspace:*",
+    "@ag-grid-devtools/codemod-task-utils": "workspace:*",
     "@ag-grid-devtools/types": "workspace:*",
     "@ag-grid-devtools/utils": "workspace:*",
     "@ag-grid-devtools/worker-utils": "workspace:*",

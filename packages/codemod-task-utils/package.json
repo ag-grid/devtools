@@ -1,0 +1,57 @@
+{
+  "private": true,
+  "name": "@ag-grid-devtools/codemod-task-utils",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Codemod task runner helpers",
+  "author": "AG Grid <info@ag-grid.com>",
+  "homepage": "https://www.ag-grid.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ag-grid/devtools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ag-grid/devtools/issues"
+  },
+  "type": "module",
+  "main": "./lib.ts",
+  "module": "./lib.ts",
+  "scripts": {
+    "build": "pnpm run build:lib && pnpm run build:docs && pnpm run build:pkg",
+    "build:lib": "vite build",
+    "build:docs": "typedoc",
+    "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
+    "lint": "pnpm run '/^lint:.*/'",
+    "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
+    "lint:typescript": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "update-event-keys": "./scripts/update-event-keys ./src/eventKeys.ts"
+  },
+  "pkg": {
+    "type": "module",
+    "main": "./lib/lib.cjs",
+    "module": "/lib/lib.js",
+    "types": "./lib.d.ts",
+    "exports": {
+      ".": {
+        "import": "./lib/lib.js",
+        "require": "./lib/lib.cjs"
+      }
+    }
+  },
+  "dependencies": {
+    "@ag-grid-devtools/types": "workspace:*",
+    "@ag-grid-devtools/worker-utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@ag-grid-devtools/build-config": "workspace:*"
+  },
+  "peerDependencies": {
+    "eslint": "^8",
+    "typedoc": "^0.25",
+    "typescript": "^5",
+    "vite": "^5",
+    "vitest": "^1"
+  }
+}

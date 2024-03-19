@@ -1,5 +1,5 @@
 import { type CodemodTask, type CodemodTaskInput, type FsUtils } from '@ag-grid-devtools/types';
-import { configureWorkerTask, initTaskWorker } from './worker';
+import { configureWorkerTask, initTaskWorker } from '@ag-grid-devtools/worker-utils';
 
 export function initCodemodTaskWorker(
   task: CodemodTask,
