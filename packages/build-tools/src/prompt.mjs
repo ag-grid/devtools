@@ -1,3 +1,4 @@
+import { clearScreenDown, moveCursor } from 'node:readline';
 import readline from 'node:readline/promises';
 import { parseArgs } from 'node:util';
 import { gray, green, red } from './cli.mjs';
@@ -30,6 +31,7 @@ export function createPrompt(variables) {
       const {
         prompt: promptLabel = label,
         value: optionsValue,
+        options: choices,
         default: defaultValue = null,
         parse = String,
         format = JSON.stringify,
@@ -50,7 +52,7 @@ export function createPrompt(variables) {
           return existingValue;
         } else {
           const answer = defaultValue;
-          return parse(await readline(question, answer));
+          return parse(await readline(question, answer, choices));
         }
       })();
       const error = validate ? validate(value, values, env) : null;
@@ -86,12 +88,63 @@ export function createPrompt(variables) {
 }
 
 export function createPromptReader({ input, output }) {
-  return (line, defaultValue) => {
+  return (line, defaultValue, options) => {
     const rl = readline.createInterface({ input, output });
     const response = rl.question(`${line} `);
+    if (options && options.length > 0) {
+      const defaultOptionIndex = defaultValue != null ? options.indexOf(defaultValue) : -1;
+      let selectedOptionIndex = defaultOptionIndex !== -1 ? defaultOptionIndex : null;
+      listOptions(rl, options, selectedOptionIndex);
+      rl.input.on('keypress', (char, key) => {
+        switch (key.name) {
+          case 'tab':
+          case 'down': {
+            selectedOptionIndex = ((selectedOptionIndex ?? -1) + 1) % options.length;
+            changeSelectedIndex(rl, options, selectedOptionIndex);
+            break;
+          }
+          case 'up': {
+            selectedOptionIndex =
+              (options.length + (selectedOptionIndex ?? 0) - 1) % options.length;
+            changeSelectedIndex(rl, options, selectedOptionIndex);
+            break;
+          }
+          case 'return': {
+            clearScreenDown(rl.output);
+            break;
+          }
+          default: {
+            selectedOptionIndex = null;
+          }
+        }
+      });
+      function changeSelectedIndex(rl, options, selectedOptionIndex) {
+        clearInput(rl);
+        listOptions(rl, options, selectedOptionIndex);
+        rl.write(options[selectedOptionIndex]);
+      }
+    }
     if (defaultValue != null) rl.write(defaultValue);
     return response.finally(() => rl.close());
   };
+
+  function clearInput(rl) {
+    rl.write(null, { ctrl: true, name: 'u' });
+  }
+
+  function listOptions(rl, options, selectedIndex) {
+    rl.pause();
+    const inputCursorPos = rl.getCursorPos();
+    const formattedOptions = options.map((value, index) => {
+      const isSelected = index === selectedIndex;
+      const message = `${isSelected ? '◉' : '◯'} ${value}`;
+      return isSelected ? green(message) : message;
+    });
+    const outputLines = ['', ...formattedOptions, ''];
+    rl.output.write(outputLines.join('\n'));
+    moveCursor(rl.input, inputCursorPos.cols, -(outputLines.length - 1));
+    rl.resume();
+  }
 }
 
 export function createPromptWriter(output) {
