@@ -9,6 +9,6 @@ import {
 
 export const replacements: Array<CodemodObjectPropertyReplacement> = transformObjectProperties({
   hello: migrateProperty('greet', migrateOptionalValue()),
-  goodbye: removeProperty('The "goodbye" option has been removed. See release notes for upgrade instructions.'),
+  goodbye: removeProperty('The "goodbye" option has been removed. See release notes for details.'),
   friendly: migrateProperty('unfriendly', invertOptionalBooleanValue()),
 });
