@@ -6,7 +6,6 @@ export interface PackageManifest {
 export interface VersionManifest {
   version: string;
   codemodPath: string;
-  workerPath: string;
   transforms: Array<TransformManifest>;
 }
 

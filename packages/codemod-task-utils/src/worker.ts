@@ -1,17 +1,22 @@
 import { type CodemodTask, type CodemodTaskInput, type FsUtils } from '@ag-grid-devtools/types';
-import { configureWorkerTask, initTaskWorker } from '@ag-grid-devtools/worker-utils';
+import {
+  configureWorkerTask,
+  createFsHelpers,
+  initTaskWorker,
+} from '@ag-grid-devtools/worker-utils';
 
 export function initCodemodTaskWorker(
   task: CodemodTask,
-  options: {
-    fs: FsUtils;
+  options?: {
+    fs?: FsUtils;
   },
 ): void {
+  const { fs = createFsHelpers() } = options || {};
   const workerTask = configureWorkerTask(task, {
     main: parseMainThreadTaskInput,
     worker: parseWorkerThreadTaskInput,
   });
-  initTaskWorker(workerTask, options);
+  initTaskWorker(workerTask, { fs });
 }
 
 function parseMainThreadTaskInput(env: Pick<NodeJS.Process, 'argv' | 'env'>): CodemodTaskInput {

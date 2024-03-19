@@ -1,5 +1,5 @@
 import codemods from '@ag-grid-community/codemods';
-import { createCodemodTask } from '@ag-grid-devtools/codemod-task-utils';
+import { composeCodemods, createCodemodTask } from '@ag-grid-devtools/codemod-task-utils';
 import {
   Codemod,
   CodemodTaskInput,
@@ -21,7 +21,7 @@ import { findInGitRepository, getGitProjectRoot, getUncommittedGitFiles } from '
 import { basename, extname, resolve, relative } from '../utils/path';
 import { getCliCommand } from '../utils/pkg';
 import { green, indentErrorMessage, log } from '../utils/stdio';
-import { Worker, WorkerTaskQueue } from '../utils/worker';
+import { Worker, WorkerTaskQueue, type WorkerOptions } from '../utils/worker';
 import { requireDynamicModule, resolveDynamicModule } from '../utils/module';
 
 const { versions } = codemods;
@@ -29,11 +29,14 @@ const { versions } = codemods;
 const SOURCE_FILE_EXTENSIONS = ['.cjs', '.js', '.mjs', '.jsx', '.ts', '.tsx', '.vue'];
 const LATEST_VERSION = versions[versions.length - 1].version;
 
+const CODEMODS_PACKAGE = '@ag-grid-community/codemods';
+const WORKER_PATH = `${CODEMODS_PACKAGE}/worker`;
+
 export interface MigrateCommandArgs {
   /**
    * Semver version to migrate from
    */
-  from: VersionManifest['version'];
+  from: VersionManifest['version'] | null;
   /**
    * Semver version to migrate to
    */
@@ -83,7 +86,10 @@ Options:
       LATEST_VERSION,
       env,
     )})
-    --from=<version>          AG Grid semver version to migrate from
+    --from=<version>          AG Grid semver version to migrate from (defaults to ${green(
+      getPrecedingSemver(LATEST_VERSION) ?? 'null',
+      env,
+    )})
     --allow-untracked, -u     Allow operating on files outside a git repository
     --allow-dirty, -d         Allow operating on repositories with uncommitted changes in the working tree
     --apply-dangerous-edits   Automatically apply fixes that potentially change application behavior
@@ -101,7 +107,7 @@ Options:
 
 export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
   const options: MigrateCommandArgs = {
-    from: '',
+    from: getPrecedingSemver(LATEST_VERSION),
     to: LATEST_VERSION,
     allowUntracked: false,
     allowDirty: false,
@@ -287,117 +293,104 @@ async function migrate(
     }
   }
 
-  const version = versions.find(({ version }) => version === to);
-  if (!version) throw new CliError(`Unknown version: ${green(to, env)}`);
+  const toVersion = versions.find(({ version }) => version === to);
+  if (!toVersion) throw new CliError(`Unknown version: ${green(to, env)}`);
 
+  const toSemver = semver.parse(toVersion.version);
+  if (!toSemver) throw new CliError(`Invalid target semver version: ${green(to, env)}`);
+
+  const fromSemver = from ? semver.parse(from) : null;
+  if (from && !fromSemver) throw new CliError(`Invalid starting semver version: ${green(to, env)}`);
+
+  const codemodVersions = fromSemver
+    ? versions.filter(({ version }) => {
+        const versionSemver = semver.parse(version);
+        if (!versionSemver) return false;
+        return versionSemver.compare(fromSemver) > 0 && versionSemver.compare(toSemver) <= 0;
+      })
+    : [toVersion];
   await log(
     stderr,
     `Migrating${from ? ` from version ${green(from, env)}` : ''} to version ${green(to, env)}...`,
   );
 
+  if (codemodVersions.length === 0) {
+    throw new CliError(
+      `Unable to migrate from version ${green(from || 'null', env)} to version ${green(to, env)}`,
+      'There are no applicable migrations for the specified version range',
+    );
+  }
+
+  log(
+    stderr,
+    [
+      `Running ${codemodVersions.length} ${codemodVersions.length === 1 ? 'codemod' : 'codemods'}:`,
+      ...codemodVersions.map(({ version }) => ` - ${green(version, env)}`),
+    ].join('\n'),
+  );
+
+  // Declare task logging functions
+  const onQueue = verbose
+    ? (inputFilePath: string): void => {
+        log(stderr, `Queueing ${relative(cwd, inputFilePath)}`);
+      }
+    : undefined;
+  const onStart = (inputFilePath: string): void => {
+    log(stderr, `Processing ${relative(cwd, inputFilePath)}`);
+  };
+  const onComplete = verbose
+    ? (inputFilePath: string, stats: { runningTime: number }): void => {
+        log(stderr, `Processed ${relative(cwd, inputFilePath)} in ${stats.runningTime}ms`);
+      }
+    : undefined;
+
   const startTime = Date.now();
 
   // Process the tasks either in-process or via a worker pool
   const isSingleThreaded = numThreads === 0;
+
+  const codemodPaths = codemodVersions.map(({ codemodPath }) =>
+    join(CODEMODS_PACKAGE, codemodPath),
+  );
+
   const results = await (isSingleThreaded
     ? (() => {
-        // Load the codemod and wrap it in a task helper
-        const codemod = requireDynamicModule(
-          join('@ag-grid-community/codemods', version.codemodPath),
-          import.meta,
-        ) as Codemod;
-        const task = createCodemodTask(codemod);
-        const runner = { fs: createFsHelpers() };
         if (verbose) {
           log(stderr, 'Running in single-threaded mode');
         }
-        // Run the codemod for each input file
-        return Promise.all(
-          inputFilePaths.map((inputFilePath) => {
-            const startTime = Date.now();
-            log(stderr, `Processing ${relative(cwd, inputFilePath)}`);
-            return task
-              .run({ inputFilePath, dryRun, applyDangerousEdits }, runner)
-              .then(({ result, errors, warnings }) => ({
-                path: inputFilePath,
-                result,
-                errors,
-                warnings,
-              }))
-              .catch((error: Error) => ({
-                path: inputFilePath,
-                result: { source: null, updated: null },
-                errors: [error],
-                warnings: new Array<Error>(),
-              }))
-              .then((result) => {
-                if (verbose) {
-                  const runningTime = Date.now() - startTime;
-                  log(stderr, `Processed ${relative(cwd, inputFilePath)} in ${runningTime}ms`);
-                }
-                return result;
-              });
-          }),
+        // Load the codemod and wrap it in a task helper
+        const codemod = composeCodemods(
+          codemodPaths.map((codemodPath) =>
+            requireDynamicModule<Codemod>(codemodPath, import.meta),
+          ),
         );
+        return executeCodemodSingleThreaded(codemod, inputFilePaths, {
+          dryRun,
+          applyDangerousEdits,
+          onStart,
+          onComplete,
+        });
       })()
     : (() => {
-        // Create a worker pool to run the codemods in parallel
-        const workerPath = resolveDynamicModule(
-          join('@ag-grid-community/codemods', version.workerPath),
-          import.meta,
-        );
         const numWorkers = numThreads || cpus().length;
-        const workers = Array.from({ length: numWorkers }, () => new Worker(workerPath));
-        const workerPool = new WorkerTaskQueue<CodemodTaskInput, CodemodTaskWorkerResult>(workers);
         if (verbose) {
           log(stderr, `Running in multi-threaded mode with ${numWorkers} workers`);
         }
-        // Process the tasks by dispatching them to the worker pool
-        return Promise.all(
-          inputFilePaths.map((inputFilePath) => {
-            return workerPool
-              .run(
-                { inputFilePath, dryRun, applyDangerousEdits },
-                {
-                  onQueue: verbose
-                    ? () => {
-                        log(stderr, `Queueing ${relative(cwd, inputFilePath)}`);
-                      }
-                    : undefined,
-                  onStart: () => {
-                    log(stderr, `Processing ${relative(cwd, inputFilePath)}`);
-                  },
-                  onComplete: verbose
-                    ? ({ runningTime }) => {
-                        log(
-                          stderr,
-                          `Processed ${relative(cwd, inputFilePath)} in ${runningTime}ms`,
-                        );
-                      }
-                    : undefined,
-                },
-              )
-              .then((workerResult) => {
-                if (workerResult.success) return workerResult.value;
-                throw workerResult.error;
-              })
-              .then(({ result, errors, warnings }) => ({
-                path: inputFilePath,
-                result,
-                errors,
-                warnings,
-              }))
-              .catch((error: Error) => ({
-                path: inputFilePath,
-                result: { source: null, updated: null },
-                errors: [error],
-                warnings: new Array<Error>(),
-              }));
-          }),
-        ).then((results) => {
-          // Terminate the worker pool threads so that the main process can exit cleanly
-          workerPool.terminate();
-          return results;
+
+        // Create a worker pool to run the codemods in parallel
+        const scriptPath = resolveDynamicModule(WORKER_PATH, import.meta);
+        const config: WorkerOptions = {
+          // Pass the list of codemod paths to the worker via workerData
+          workerData: codemodPaths,
+        };
+        const workers = Array.from({ length: numWorkers }, () => new Worker(scriptPath, config));
+        const workerPool = new WorkerTaskQueue<CodemodTaskInput, CodemodTaskWorkerResult>(workers);
+        return executeCodemodMultiThreaded(workerPool, inputFilePaths, {
+          dryRun,
+          applyDangerousEdits,
+          onQueue,
+          onStart,
+          onComplete,
         });
       })());
 
@@ -478,6 +471,102 @@ async function migrate(
   return successResults.map(({ path }) => path);
 }
 
+type CodemodExecutionResult = Array<{
+  path: string;
+  result: { source: string | null; updated: string | null };
+  errors: Array<Error>;
+  warnings: Array<Error>;
+}>;
+
+function executeCodemodMultiThreaded(
+  workerPool: WorkerTaskQueue<CodemodTaskInput, CodemodTaskWorkerResult>,
+  inputFilePaths: string[],
+  options: {
+    dryRun: boolean;
+    applyDangerousEdits: boolean;
+    onQueue?: (inputFilePath: string) => void;
+    onStart?: (inputFilePath: string) => void;
+    onComplete?: (inputFilePath: string, stats: { runningTime: number }) => void;
+  },
+): Promise<CodemodExecutionResult> {
+  const { dryRun, applyDangerousEdits, onQueue, onStart, onComplete } = options;
+  // Process the tasks by dispatching them to the worker pool
+  return Promise.all(
+    inputFilePaths.map((inputFilePath) => {
+      return workerPool
+        .run(
+          { inputFilePath, dryRun, applyDangerousEdits },
+          {
+            onQueue: onQueue?.bind(null, inputFilePath),
+            onStart: onStart?.bind(null, inputFilePath),
+            onComplete: onComplete?.bind(null, inputFilePath),
+          },
+        )
+        .then((workerResult) => {
+          if (workerResult.success) return workerResult.value;
+          throw workerResult.error;
+        })
+        .then(({ result, errors, warnings }) => ({
+          path: inputFilePath,
+          result,
+          errors,
+          warnings,
+        }))
+        .catch((error: Error) => ({
+          path: inputFilePath,
+          result: { source: null, updated: null },
+          errors: [error],
+          warnings: new Array<Error>(),
+        }));
+    }),
+  ).then((results) => {
+    // Terminate the worker pool threads so that the main process can exit cleanly
+    workerPool.terminate();
+    return results;
+  });
+}
+
+function executeCodemodSingleThreaded(
+  codemod: Codemod,
+  inputFilePaths: string[],
+  options: {
+    dryRun: boolean;
+    applyDangerousEdits: boolean;
+    onStart?: (inputFilePath: string) => void;
+    onComplete?: (inputFilePath: string, stats: { runningTime: number }) => void;
+  },
+): Promise<CodemodExecutionResult> {
+  const { dryRun, applyDangerousEdits, onStart, onComplete } = options;
+  const task = createCodemodTask(codemod);
+  const runner = { fs: createFsHelpers() };
+  // Run the codemod for each input file
+  return Promise.all(
+    inputFilePaths.map((inputFilePath) => {
+      const startTime = Date.now();
+      onStart?.(inputFilePath);
+      return task
+        .run({ inputFilePath, dryRun, applyDangerousEdits }, runner)
+        .then(({ result, errors, warnings }) => ({
+          path: inputFilePath,
+          result,
+          errors,
+          warnings,
+        }))
+        .catch((error: Error) => ({
+          path: inputFilePath,
+          result: { source: null, updated: null },
+          errors: [error],
+          warnings: new Array<Error>(),
+        }))
+        .then((result) => {
+          const runningTime = Date.now() - startTime;
+          onComplete?.(inputFilePath, { runningTime });
+          return result;
+        });
+    }),
+  );
+}
+
 function formatFileErrors(warningResults: Array<{ path: string; errors: Error[] }>): string {
   return warningResults
     .map(
@@ -509,6 +598,17 @@ function getGitSourceFiles(projectRoot: string): Promise<Array<string>> {
 
 function isSourceFile(filePath: string): boolean {
   return SOURCE_FILE_EXTENSIONS.includes(extname(filePath));
+}
+
+function getPrecedingSemver(version: string): string | null {
+  const parsed = semver.parse(version);
+  if (!parsed) return null;
+  const isPatchRelease = parsed.patch > 0;
+  const isMinorRelease = !isPatchRelease && parsed.minor > 0;
+  const isMajorRelease = !isMinorRelease && parsed.major > 0;
+  if (isPatchRelease || isMinorRelease) return `${parsed.major}.0.0`;
+  if (isMajorRelease) return `${parsed.major - 1}.0.0`;
+  return null;
 }
 
 function getUnifiedDiff(

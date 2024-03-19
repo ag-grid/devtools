@@ -2,11 +2,8 @@
   "version": "<%= version %>",
   "pkg": {
     "exports": {
-      "./version/<%= version %>/codemod.cjs": {
-        "require": "./version/<%= version %>/codemod.cjs"
-      },
-      "./version/<%= version %>/worker.cjs": {
-        "require": "./version/<%= version %>/worker.cjs"
+      "./version/<%= version %>": {
+        "require": "./version/<%= version %>.cjs"
       }
     }
   }

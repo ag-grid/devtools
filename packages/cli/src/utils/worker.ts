@@ -7,7 +7,7 @@ import {
   nonNull,
 } from '@ag-grid-devtools/utils';
 import { Worker } from 'node:worker_threads';
-export { Worker } from 'node:worker_threads';
+export { Worker, type WorkerOptions } from 'node:worker_threads';
 
 export type WorkerResult<T> =
   | { success: true; value: T; stats: WorkerTaskStats }

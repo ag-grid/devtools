@@ -14,8 +14,7 @@ const transforms: Array<TransformManifest> = [
 
 const manifest: VersionManifest = {
   version: '31.0.0',
-  codemodPath: 'version/31.0.0/codemod.cjs',
-  workerPath: 'version/31.0.0/worker.cjs',
+  codemodPath: 'version/31.0.0',
   transforms,
 };
 
