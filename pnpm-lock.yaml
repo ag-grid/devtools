@@ -335,9 +335,6 @@ importers:
       '@ag-grid-devtools/utils':
         specifier: workspace:*
         version: link:../utils
-      '@ag-grid-devtools/worker-utils':
-        specifier: workspace:*
-        version: link:../worker-utils
 
   packages/systemjs-plugin:
     dependencies:

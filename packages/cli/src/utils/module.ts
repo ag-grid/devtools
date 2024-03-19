@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 
-export function requireDynamicModule(path: string, meta: ImportMeta): unknown {
+export function requireDynamicModule<T = unknown>(path: string, meta: ImportMeta): T {
   const require = createRequire(meta.url);
   return require(path);
 }

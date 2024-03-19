@@ -38,23 +38,17 @@
       ".": {
         "require": "./lib/lib.cjs"
       },
-      "./version/31.0.0/codemod.cjs": {
-        "require": "./version/31.0.0/codemod.cjs"
+      "./worker": {
+        "require": "./worker.cjs"
       },
-      "./version/31.0.0/worker.cjs": {
-        "require": "./version/31.0.0/worker.cjs"
+      "./version/31.0.0": {
+        "require": "./version/31.0.0.cjs"
       },
-      "./version/31.1.0/codemod.cjs": {
-        "require": "./version/31.1.0/codemod.cjs"
+      "./version/31.1.0": {
+        "require": "./version/31.1.0.cjs"
       },
-      "./version/31.1.0/worker.cjs": {
-        "require": "./version/31.1.0/worker.cjs"
-      },
-      "./version/31.2.0/codemod.cjs": {
-        "require": "./version/31.2.0/codemod.cjs"
-      },
-      "./version/31.2.0/worker.cjs": {
-        "require": "./version/31.2.0/worker.cjs"
+      "./version/31.2.0": {
+        "require": "./version/31.2.0.cjs"
       }
     }
   },
@@ -66,8 +60,7 @@
     "@ag-grid-devtools/codemod-utils": "workspace:*",
     "@ag-grid-devtools/test-utils": "workspace:*",
     "@ag-grid-devtools/types": "workspace:*",
-    "@ag-grid-devtools/utils": "workspace:*",
-    "@ag-grid-devtools/worker-utils": "workspace:*"
+    "@ag-grid-devtools/utils": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^8",

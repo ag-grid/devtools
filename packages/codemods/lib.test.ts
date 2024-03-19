@@ -16,8 +16,7 @@ test('module exports', () => {
 function versionManifest(version: string): object {
   return {
     version,
-    codemodPath: `version/${version}/codemod.cjs`,
-    workerPath: `version/${version}/worker.cjs`,
+    codemodPath: `version/${version}`,
     transforms: expect.arrayContaining([
       {
         description: expect.any(String),
