@@ -2,7 +2,7 @@
 import { join, resolve } from 'path';
 import { defineConfig, mergeConfig } from 'vite';
 
-import base from './vite.config';
+import base from './vite.config.mts';
 
 export default mergeConfig(
   base,

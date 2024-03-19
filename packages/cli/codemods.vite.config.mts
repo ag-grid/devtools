@@ -1,7 +1,7 @@
 import { resolve } from 'path';
 import { defineConfig, mergeConfig } from 'vite';
 
-import base from '../codemods/vite.config';
+import base from '../codemods/vite.config.mts';
 
 import pkg from '../codemods/package.json' assert { type: 'json' };
 

@@ -1,6 +1,6 @@
 {
   "extends": "./packages/build-config/templates/tsc/tsconfig.json",
-  "include": ["*.config.ts"],
+  "include": ["*.config.mts"],
   "compilerOptions": {
     "paths": {
       "@ag-grid-devtools/*": ["./packages/*"]

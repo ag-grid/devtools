@@ -8,7 +8,7 @@ export default mergeConfig(
   defineConfig({
     plugins: [
       dts({
-        exclude: ['node_modules/**', '*.config.ts', '**/*.test.ts'],
+        exclude: ['node_modules/**', '*.config.mts', '**/*.test.ts'],
       }),
     ],
   }),
