@@ -1,4 +1,5 @@
 import codemods from '@ag-grid-community/codemods';
+import { createCodemodTask } from '@ag-grid-devtools/codemod-utils';
 import {
   Codemod,
   CodemodTaskInput,
@@ -22,7 +23,6 @@ import { getCliCommand } from '../utils/pkg';
 import { green, indentErrorMessage, log } from '../utils/stdio';
 import { Worker, WorkerTaskQueue } from '../utils/worker';
 import { requireDynamicModule, resolveDynamicModule } from '../utils/module';
-import { createCodemodTask } from '../../../codemod-utils/src/taskHelpers';
 
 const { versions } = codemods;
 
