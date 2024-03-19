@@ -22,7 +22,6 @@ test('module exports', () => {
     VueTemplateFormatter: lib.VueTemplateFormatter,
     createAngularBooleanLiteral: lib.createAngularBooleanLiteral,
     createBabelPlugin: lib.createBabelPlugin,
-    createCodemodTask: lib.createCodemodTask,
     createVueAstNode: lib.createVueAstNode,
     createVueBooleanLiteral: lib.createVueBooleanLiteral,
     createVueExpressionContainer: lib.createVueExpressionContainer,

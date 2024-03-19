@@ -1,2 +1,2 @@
-export * from './src/fs';
+export * from './src/task';
 export * from './src/worker';

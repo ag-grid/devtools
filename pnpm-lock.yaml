@@ -179,9 +179,9 @@ importers:
       '@ag-grid-devtools/build-config':
         specifier: workspace:*
         version: link:../build-config
-      '@ag-grid-devtools/codemod-utils':
+      '@ag-grid-devtools/codemod-task-utils':
         specifier: workspace:*
-        version: link:../codemod-utils
+        version: link:../codemod-task-utils
       '@ag-grid-devtools/types':
         specifier: workspace:*
         version: link:../types
@@ -212,6 +212,34 @@ importers:
       semver:
         specifier: 7.5.4
         version: 7.5.4
+
+  packages/codemod-task-utils:
+    dependencies:
+      '@ag-grid-devtools/types':
+        specifier: workspace:*
+        version: link:../types
+      '@ag-grid-devtools/worker-utils':
+        specifier: workspace:*
+        version: link:../worker-utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^5
+        version: 5.0.11(@types/node@20.11.29)
+      vitest:
+        specifier: ^1
+        version: 1.3.1(@types/node@20.11.29)
+    devDependencies:
+      '@ag-grid-devtools/build-config':
+        specifier: workspace:*
+        version: link:../build-config
 
   packages/codemod-utils:
     dependencies:
@@ -292,6 +320,9 @@ importers:
       '@ag-grid-devtools/build-tools':
         specifier: workspace:*
         version: link:../build-tools
+      '@ag-grid-devtools/codemod-task-utils':
+        specifier: workspace:*
+        version: link:../codemod-task-utils
       '@ag-grid-devtools/codemod-utils':
         specifier: workspace:*
         version: link:../codemod-utils

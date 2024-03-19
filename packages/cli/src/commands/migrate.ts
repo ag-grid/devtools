@@ -1,5 +1,5 @@
 import codemods from '@ag-grid-community/codemods';
-import { createCodemodTask } from '@ag-grid-devtools/codemod-utils';
+import { createCodemodTask } from '@ag-grid-devtools/codemod-task-utils';
 import {
   Codemod,
   CodemodTaskInput,
