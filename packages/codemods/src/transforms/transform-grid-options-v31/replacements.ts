@@ -25,7 +25,7 @@ import {
 type Expression = Types.Expression;
 type ObjectMethod = Types.ObjectMethod;
 
-const MIGRATION_URL_V31 = 'https://ag-grid.com/javascript-data-grid/upgrading-to-ag-grid-31/';
+const MIGRATION_URL = 'https://ag-grid.com/javascript-data-grid/upgrading-to-ag-grid-31/';
 
 export const replacements: Array<CodemodObjectPropertyReplacement> = transformObjectProperties({
   advancedFilterModel: migrateProperty(
@@ -33,7 +33,7 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
     transformOptionalValue(
       (() => {
         const warnings = frameworkWarning(
-          getManualInterventionMessage('advancedFilterModel', MIGRATION_URL_V31),
+          getManualInterventionMessage('advancedFilterModel', MIGRATION_URL),
         );
         return {
           property(value) {
@@ -56,7 +56,7 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
     transformOptionalValue(
       (() => {
         const warnings = frameworkWarning(
-          getManualInterventionMessage('advancedFilterModel', MIGRATION_URL_V31),
+          getManualInterventionMessage('advancedFilterModel', MIGRATION_URL),
         );
         return {
           property(value) {
@@ -102,7 +102,7 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
     'includeHiddenColumnsInQuickFilter',
     invertOptionalBooleanValue(),
   ),
-  functionsPassive: removeProperty(getDeprecationMessage('functionsPassive', MIGRATION_URL_V31)),
+  functionsPassive: removeProperty(getDeprecationMessage('functionsPassive', MIGRATION_URL)),
   getServerSideStoreParams: migrateProperty(
     'getServerSideGroupLevelParams',
     migrateOptionalValue(),
@@ -113,10 +113,10 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
     migrateOptionalValue(),
   ),
   rememberGroupStateWhenNewData: removeProperty(
-    getDeprecationMessage('rememberGroupStateWhenNewData', MIGRATION_URL_V31),
+    getDeprecationMessage('rememberGroupStateWhenNewData', MIGRATION_URL),
   ),
   rowDataChangeDetectionStrategy: removeProperty(
-    getDeprecationMessage('rowDataChangeDetectionStrategy', MIGRATION_URL_V31),
+    getDeprecationMessage('rowDataChangeDetectionStrategy', MIGRATION_URL),
   ),
   serverSideFilterAllLevels: migrateProperty(
     'serverSideOnlyRefreshFilteredGroups',
@@ -132,7 +132,7 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
     transformOptionalValue(
       (() => {
         const warnings = frameworkWarning(
-          getManualInterventionMessage('suppressServerSideInfiniteScroll', MIGRATION_URL_V31),
+          getManualInterventionMessage('suppressServerSideInfiniteScroll', MIGRATION_URL),
         );
         return {
           property(value) {
@@ -159,24 +159,22 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
     'alwaysAggregateAtRootLevel',
     invertOptionalBooleanValue(),
   ),
-  suppressAsyncEvents: removeProperty(
-    getDeprecationMessage('suppressAsyncEvents', MIGRATION_URL_V31),
-  ),
+  suppressAsyncEvents: removeProperty(getDeprecationMessage('suppressAsyncEvents', MIGRATION_URL)),
   suppressParentsInRowNodes: removeProperty(
-    getDeprecationMessage('suppressParentsInRowNodes', MIGRATION_URL_V31),
+    getDeprecationMessage('suppressParentsInRowNodes', MIGRATION_URL),
   ),
-  suppressReactUi: removeProperty(getDeprecationMessage('suppressReactUi', MIGRATION_URL_V31)),
+  suppressReactUi: removeProperty(getDeprecationMessage('suppressReactUi', MIGRATION_URL)),
   ...frameworkEvent('columnRowGroupChangeRequest', (eventName) =>
-    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
+    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL)),
   ),
   ...frameworkEvent('columnPivotChangeRequest', (eventName) =>
-    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
+    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL)),
   ),
   ...frameworkEvent('columnValueChangeRequest', (eventName) =>
-    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
+    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL)),
   ),
   ...frameworkEvent('columnAggFuncChangeRequest', (eventName) =>
-    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL_V31)),
+    removeProperty(getDeprecationMessage(eventName, MIGRATION_URL)),
   ),
   ...frameworkEvent('rowDataChanged', (eventName) =>
     migrateProperty(

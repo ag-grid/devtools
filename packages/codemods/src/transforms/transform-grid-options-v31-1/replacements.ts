@@ -1,4 +1,3 @@
-import { type Types } from '@ag-grid-devtools/ast';
 import {
   getDeprecationMessage,
   transformObjectProperties,
@@ -12,7 +11,7 @@ import {
   type CodemodObjectPropertyReplacement,
 } from '../../plugins/transform-grid-options/transform-grid-options';
 
-const MIGRATION_URL_V31_1 = 'https://ag-grid.com/javascript-data-grid/upgrading-to-ag-grid-31-1/';
+const MIGRATION_URL = 'https://ag-grid.com/javascript-data-grid/upgrading-to-ag-grid-31-1/';
 
 export const replacements: Array<CodemodObjectPropertyReplacement> = transformObjectProperties({
   cellFlashDelay: migrateProperty('cellFlashDuration', migrateOptionalValue()),
@@ -30,7 +29,7 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
                   suppressFilterButton: removeProperty(
                     getDeprecationMessage(
                       'columnDefs[..].floatingFilterComponentParams.suppressFilterButton',
-                      MIGRATION_URL_V31_1,
+                      MIGRATION_URL,
                     ),
                   ),
                 }),

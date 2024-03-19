@@ -1,4 +1,5 @@
 import {
+  getDeprecationMessage,
   invertOptionalBooleanValue,
   migrateOptionalValue,
   migrateProperty,
@@ -7,8 +8,10 @@ import {
   type CodemodObjectPropertyReplacement,
 } from '../../plugins/<%= plugin %>/transform-grid-options';
 
+const MIGRATION_URL = '<%= migrationUrl %>';
+
 export const replacements: Array<CodemodObjectPropertyReplacement> = transformObjectProperties({
   hello: migrateProperty('greet', migrateOptionalValue()),
-  goodbye: removeProperty('The "goodbye" option has been removed. See release notes for details.'),
+  goodbye: removeProperty(getDeprecationMessage('goodbye', MIGRATION_URL)),
   friendly: migrateProperty('unfriendly', invertOptionalBooleanValue()),
 });

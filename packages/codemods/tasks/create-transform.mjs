@@ -128,6 +128,28 @@ const VARIABLES = [
       };
     },
   },
+  {
+    name: 'migrationUrl',
+    label: 'Migration guide URL',
+    options: ({ plugin, release, versionsDir }) => {
+      switch (plugin) {
+        case 'transform-grid-options': {
+          const releaseVersion = release ?? getProjectLatestReleaseVersion(versionsDir);
+          const defaultValue = `https://ag-grid.com/javascript-data-grid/upgrading-to-ag-grid-${formatSemverUrlSlug(
+            releaseVersion,
+          )}/`;
+          return {
+            prompt: 'Codemod migration guide URL',
+            default: defaultValue,
+          };
+        }
+        default:
+          return {
+            value: null,
+          };
+      }
+    },
+  },
 ];
 
 export default async function task(...args) {
@@ -211,6 +233,11 @@ function getPluginTemplatePath({ pluginsDir, plugin }) {
 
 function isValidTransformName(value) {
   return /^[a-z]+(-[a-z0-9]+)*$/i.test(value);
+}
+
+function formatSemverUrlSlug(value) {
+  const [major, minor, patch] = parseReleaseVersion(value);
+  return minor === 0 && patch === 0 ? `${major}` : `${major}-${minor}`;
 }
 
 function kebabCase(value) {
