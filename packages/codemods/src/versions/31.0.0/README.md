@@ -5,7 +5,7 @@ Codemod for upgrading to [AG Grid v31.0.0](https://github.com/ag-grid/ag-grid/re
 ## Usage
 
 ```
-npx @ag-grid-community/cli migrate --to 31.0.0
+npx @ag-grid-devtools/cli migrate --to 31.0.0
 ```
 
 Source code transformations applied by this codemod are specified in [`transforms.ts`](./transforms.ts).

@@ -1,4 +1,4 @@
-import codemods from '@ag-grid-community/codemods';
+import codemods from '@ag-grid-devtools/codemods';
 import { composeCodemods, createCodemodTask } from '@ag-grid-devtools/codemod-task-utils';
 import {
   Codemod,
@@ -30,7 +30,7 @@ const SOURCE_FILE_EXTENSIONS = ['.cjs', '.js', '.mjs', '.jsx', '.ts', '.tsx', '.
 const LATEST_VERSION = versions[versions.length - 1].version;
 const DEFAULT_TARGET_VERSION = getMinorSemverVersion(getCliPackageVersion()) ?? LATEST_VERSION;
 
-const CODEMODS_PACKAGE = '@ag-grid-community/codemods';
+const CODEMODS_PACKAGE = '@ag-grid-devtools/codemods';
 const WORKER_PATH = `${CODEMODS_PACKAGE}/worker`;
 
 export interface MigrateCommandArgs {

@@ -1,4 +1,4 @@
-# @ag-grid-community/codemods
+# @ag-grid-devtools/codemods
 
 > _AG Grid codemods_
 

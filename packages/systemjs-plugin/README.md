@@ -1,4 +1,4 @@
-# @ag-grid-community/systemjs-plugin
+# @ag-grid-devtools/systemjs-plugin
 
 > _SystemJS plugin for TypeScript/JSX/CSS source files_
 

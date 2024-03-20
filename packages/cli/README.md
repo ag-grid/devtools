@@ -1,4 +1,4 @@
-# @ag-grid-community/cli
+# @ag-grid-devtools/cli
 
 > _AG Grid developer toolkit_
 
@@ -9,10 +9,10 @@ The AG Grid developer toolkit is distributed as a command-line tool that assists
 Run the following command to list available commands:
 
 ```
-npx @ag-grid-community/cli --help
+npx @ag-grid-devtools/cli --help
 ```
 
-> _Note that it is recommended to run a specific version of the developer toolkit, e.g._ `@ag-grid-community/cli@31.0`
+> _Note that it is recommended to run a specific version of the developer toolkit, e.g._ `@ag-grid-devtools/cli@31.0`
 
 ### Available commands
 

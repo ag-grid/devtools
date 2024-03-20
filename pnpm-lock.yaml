@@ -157,7 +157,7 @@ importers:
 
   packages/cli:
     dependencies:
-      '@ag-grid-community/codemods':
+      '@ag-grid-devtools/codemods':
         specifier: workspace:*
         version: link:../codemods
       eslint:

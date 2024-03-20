@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "@ag-grid-community/systemjs-plugin",
+  "name": "@ag-grid-devtools/systemjs-plugin",
   "version": "0.1.0",
   "description": "SystemJS plugin for TypeScript/JSX/CSS source files",
   "license": "MIT",

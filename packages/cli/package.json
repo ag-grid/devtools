@@ -1,7 +1,7 @@
 {
   "private": true,
-  "name": "@ag-grid-community/cli",
-  "version": "31.2.0",
+  "name": "@ag-grid-devtools/cli",
+  "version": "0.0.1",
   "license": "MIT",
   "description": "AG Grid developer toolkit",
   "author": "AG Grid <info@ag-grid.com>",
@@ -22,7 +22,7 @@
     "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
     "build:codemods": "pnpm run build:codemods:lib && pnpm run build:codemods:pkg",
     "build:codemods:lib": "vite build --config codemods.vite.config.mts",
-    "build:codemods:pkg": "pnpm run --filter build-tools pkg $PWD/../codemods $PWD/dist/node_modules/@ag-grid-community/codemods/package.json",
+    "build:codemods:pkg": "pnpm run --filter build-tools pkg $PWD/../codemods $PWD/dist/node_modules/@ag-grid-devtools/codemods/package.json",
     "lint": "pnpm run '/^lint:.*/'",
     "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
     "lint:typescript": "tsc --noEmit",
@@ -36,10 +36,10 @@
     "bin": "./index.cjs"
   },
   "bundleDependencies": [
-    "@ag-grid-community/codemods"
+    "@ag-grid-devtools/codemods"
   ],
   "dependencies": {
-    "@ag-grid-community/codemods": "workspace:*"
+    "@ag-grid-devtools/codemods": "workspace:*"
   },
   "devDependencies": {
     "@ag-grid-devtools/build-config": "workspace:*",
