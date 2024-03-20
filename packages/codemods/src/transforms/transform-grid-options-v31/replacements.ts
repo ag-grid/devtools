@@ -56,7 +56,7 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
     transformOptionalValue(
       (() => {
         const warnings = frameworkWarning(
-          getManualInterventionMessage('advancedFilterModel', MIGRATION_URL),
+          getManualInterventionMessage('defaultExcelExportParams', MIGRATION_URL),
         );
         return {
           property(value) {
