@@ -51,7 +51,7 @@ Points to note:
 
 ### Development workflow
 
-Changes are merged to the repository as follows:
+Changes are committed to the repository as follows:
 
 1. Create a new feature branch from the current `develop` branch, named with the relevant prefix:
     - `feature/...` - Branch contains new features
@@ -76,14 +76,10 @@ When the contents of the `develop` branch are ready to be released, follow these
     ```
 2. Raise a new PR that merges `develop` into `main`
 3. Wait for CI tests to pass
-4. Merge the PR using the 'rebase' merge stragegy
+4. Merge the PR using the 'merge commit' merge stragegy
 
 This will cause CI to perform the following actions:
 
 - Build and publish all public packages
 - Tag the repository with the current package version
 - Create a Github 'Release' page linked to the release commit
-
-Once the release has succeeded, rebase the `develop` branch onto the `main` branch and force-push to retain linear commit history.
-
-> This step is only necessary because Github does not yet allow fast-forward merges: https://github.com/orgs/community/discussions/4618 (see workarounds)
