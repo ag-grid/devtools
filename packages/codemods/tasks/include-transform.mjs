@@ -48,19 +48,27 @@ const VARIABLES = [
   {
     name: 'version',
     label: 'Codemod release version',
-    options: ({ versionsDir }) => ({
-      prompt: 'Which codemod release version would you like to update?',
-      default: getProjectLatestReleaseVersion(versionsDir),
-      validate: validateOneOf(retrieveExistingVersions(versionsDir)),
-    }),
+    options: ({ versionsDir }) => {
+      const options = retrieveExistingVersions(versionsDir);
+      return {
+        prompt: 'Which codemod release version would you like to update?',
+        options,
+        default: getProjectLatestReleaseVersion(versionsDir),
+        validate: validateOneOf(options),
+      };
+    },
   },
   {
     name: 'transform',
     label: 'Transform name',
-    options: ({ transformsDir }) => ({
-      prompt: 'Which transform would you like to include?',
-      validate: validateOneOf(retrieveExistingTransforms(transformsDir)),
-    }),
+    options: ({ transformsDir }) => {
+      const options = retrieveExistingTransforms(transformsDir);
+      return {
+        prompt: 'Which transform would you like to include?',
+        options,
+        validate: validateOneOf(options),
+      };
+    },
   },
   {
     name: 'transformIdentifier',

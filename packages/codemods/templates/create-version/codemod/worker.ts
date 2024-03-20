@@ -1,5 +1,5 @@
-import { createCodemodTask } from '@ag-grid-devtools/codemod-utils';
-import { createFsHelpers, initCodemodTaskWorker } from '@ag-grid-devtools/worker-utils';
+import { createCodemodTask, initCodemodTaskWorker } from '@ag-grid-devtools/codemod-task-utils';
+import { createFsHelpers } from '@ag-grid-devtools/worker-utils';
 
 import codemod from './codemod';
 

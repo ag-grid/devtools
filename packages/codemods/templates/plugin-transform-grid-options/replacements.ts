@@ -1,14 +1,17 @@
 import {
-  GridOptionReplacement,
-  getGridOptionReplacements,
+  getDeprecationMessage,
   invertOptionalBooleanValue,
   migrateOptionalValue,
   migrateProperty,
   removeProperty,
+  transformObjectProperties,
+  type CodemodObjectPropertyReplacement,
 } from '../../plugins/<%= plugin %>/transform-grid-options';
 
-export const replacements: Array<GridOptionReplacement> = getGridOptionReplacements({
+const MIGRATION_URL = '<%= migrationUrl %>';
+
+export const replacements: Array<CodemodObjectPropertyReplacement> = transformObjectProperties({
   hello: migrateProperty('greet', migrateOptionalValue()),
-  goodbye: removeProperty('The "goodbye" option has been removed. See release notes for upgrade instructions.'),
+  goodbye: removeProperty(getDeprecationMessage('goodbye', MIGRATION_URL)),
   friendly: migrateProperty('unfriendly', invertOptionalBooleanValue()),
 });

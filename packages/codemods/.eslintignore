@@ -1,3 +1,6 @@
+/src/versions/*/__fixtures__/scenarios
+/src/plugins/*/__fixtures__/scenarios
+/src/transforms/*/__fixtures__/scenarios
 /templates/
 /dist/
 /vitest.config.ts.timestamp-*.mjs

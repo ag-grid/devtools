@@ -4,7 +4,6 @@ export * from './src/angularHelpers';
 export * from './src/babelHelpers';
 export * from './src/plugins';
 export * from './src/prettierHelpers';
-export * from './src/taskHelpers';
 export * from './src/templateHelpers';
 export * from './src/transformer';
 export * from './src/vueHelpers';

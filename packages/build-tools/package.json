@@ -21,9 +21,6 @@
     "task": "./scripts/task.cjs",
     "lint": "eslint --ext cjs ."
   },
-  "dependencies": {
-    "ts-node": "^10"
-  },
   "devDependencies": {
     "@ag-grid-devtools/build-config": "workspace:*"
   }

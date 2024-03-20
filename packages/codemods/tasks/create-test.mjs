@@ -27,11 +27,21 @@ const TEST_TYPE_RELEASE = 'version';
 const TEST_TYPE_PLUGIN = 'plugin';
 const TEST_TYPES = [TEST_TYPE_TRANSFORM, TEST_TYPE_RELEASE, TEST_TYPE_PLUGIN];
 
-const FRAMEWORK_VANILLA = 'js';
+const FRAMEWORK_JS = 'js';
+const FRAMEWORK_VANILLA = 'vanilla';
 const FRAMEWORK_REACT = 'jsx';
 const FRAMEWORK_ANGULAR = 'angular';
 const FRAMEWORK_VUE = 'vue';
-const FRAMEWORKS = [FRAMEWORK_VANILLA, FRAMEWORK_REACT, FRAMEWORK_ANGULAR, FRAMEWORK_VUE];
+const FRAMEWORKS = [
+  FRAMEWORK_JS,
+  FRAMEWORK_VANILLA,
+  FRAMEWORK_REACT,
+  FRAMEWORK_ANGULAR,
+  FRAMEWORK_VUE,
+];
+
+const JS_TEMPLATE_TYPE_DEFAULT = 'default';
+const JS_TEMPLATE_TYPES = [JS_TEMPLATE_TYPE_DEFAULT];
 
 const VANILLA_TEMPLATE_TYPE_DEFAULT = 'default';
 const VANILLA_TEMPLATE_TYPES = [VANILLA_TEMPLATE_TYPE_DEFAULT];
@@ -84,7 +94,8 @@ const VARIABLES = [
     name: 'type',
     label: 'Test type',
     options: () => ({
-      prompt: `Which type of test scenario is this? (${TEST_TYPES.join('/')})`,
+      prompt: `Which type of test scenario is this?})`,
+      options: TEST_TYPES,
       default: TEST_TYPE_TRANSFORM,
       validate: validateOneOf(TEST_TYPES),
     }),
@@ -98,6 +109,7 @@ const VARIABLES = [
           const options = getSubdirectories(transformsDir);
           return {
             prompt: 'Which transform does the test relate to?',
+            options,
             validate: validateOneOf(options),
           };
         }
@@ -105,6 +117,7 @@ const VARIABLES = [
           const options = getSubdirectories(versionsDir);
           return {
             prompt: 'Which release does the test relate to?',
+            options,
             default: getProjectLatestReleaseVersion(versionsDir),
             validate: validateOneOf(options),
           };
@@ -113,6 +126,7 @@ const VARIABLES = [
           const options = getSubdirectories(pluginsDir);
           return {
             prompt: 'Which plugin does the test relate to?',
+            options,
             validate: validateOneOf(options),
           };
         }
@@ -160,6 +174,7 @@ const VARIABLES = [
     label: 'Test scenario framework',
     options: () => ({
       prompt: `Test scenario framework (${FRAMEWORKS.join('/')})`,
+      options: FRAMEWORKS,
       default: FRAMEWORK_VANILLA,
       validate: validateOneOf(FRAMEWORKS),
     }),
@@ -169,30 +184,42 @@ const VARIABLES = [
     label: 'Framework template',
     options: ({ framework }) => {
       switch (framework) {
+        case FRAMEWORK_JS: {
+          return {
+            prompt: `JS template type`,
+            options: JS_TEMPLATE_TYPES,
+            value: JS_TEMPLATE_TYPE_DEFAULT,
+            validate: validateOneOf(JS_TEMPLATE_TYPES),
+          };
+        }
         case FRAMEWORK_VANILLA: {
           return {
-            prompt: `JS template type (${VANILLA_TEMPLATE_TYPES.join(`/`)})`,
+            prompt: `Vanilla template type`,
+            options: VANILLA_TEMPLATE_TYPES,
             value: VANILLA_TEMPLATE_TYPE_DEFAULT,
             validate: validateOneOf(VANILLA_TEMPLATE_TYPES),
           };
         }
         case FRAMEWORK_REACT: {
           return {
-            prompt: `React template type (${REACT_TEMPLATE_TYPES.join(`/`)})`,
-            value: VANILLA_TEMPLATE_TYPE_DEFAULT,
-            validate: validateOneOf(VANILLA_TEMPLATE_TYPES),
+            prompt: `React template type`,
+            options: REACT_TEMPLATE_TYPES,
+            value: REACT_TEMPLATE_TYPE_DEFAULT,
+            validate: validateOneOf(REACT_TEMPLATE_TYPES),
           };
         }
         case FRAMEWORK_ANGULAR: {
           return {
-            prompt: `Angular component template type (${ANGULAR_TEMPLATE_TYPES.join(`/`)})`,
+            prompt: `Angular component template type`,
+            options: ANGULAR_TEMPLATE_TYPES,
             default: ANGULAR_TEMPLATE_TYPE_EXTERNAL,
             validate: validateOneOf(ANGULAR_TEMPLATE_TYPES),
           };
         }
         case FRAMEWORK_VUE: {
           return {
-            prompt: `Vue component type (${VUE_TEMPLATE_TYPES.join(`/`)})`,
+            prompt: `Vue component type`,
+            options: VUE_TEMPLATE_TYPES,
             default: VUE_TEMPLATE_TYPE_SFC,
             validate: validateOneOf(VUE_TEMPLATE_TYPES),
           };

@@ -51,6 +51,13 @@ export function validateOneOf(options) {
   };
 }
 
+export function validateOptional(validator) {
+  return function validateOptional(value) {
+    if (value === null) return null;
+    return validator(value);
+  };
+}
+
 function getPathStats(path) {
   try {
     return statSync(path);

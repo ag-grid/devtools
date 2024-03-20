@@ -10,6 +10,8 @@ import {
   prompt,
   validateDirectory,
   validateEmptyPath,
+  validateOneOf,
+  validateOptional,
 } from '@ag-grid-devtools/build-tools';
 
 import {
@@ -62,11 +64,15 @@ const VARIABLES = [
   {
     name: 'plugin',
     label: 'Plugin template (optional)',
-    options: ({ pluginsDir }) => ({
-      parse: parseOptionalString,
-      format: formatOptionalString,
-      validate: (value) => validatePlugin(value, { pluginsDir }),
-    }),
+    options: ({ pluginsDir }) => {
+      const options = getPluginOptions({ pluginsDir });
+      return {
+        parse: parseOptionalString,
+        format: formatOptionalString,
+        options,
+        validate: validateOptional(validateOneOf(options)),
+      };
+    },
   },
   {
     name: 'name',
@@ -110,16 +116,39 @@ const VARIABLES = [
   {
     name: 'release',
     label: 'Codemod release version',
-    options: ({ versionsDir }) => ({
-      prompt: 'Add to codemod release version (optional)',
-      default: getProjectLatestReleaseVersion(versionsDir),
-      parse: parseOptionalString,
-      format: formatOptionalString,
-      validate: (value) => {
-        if (value == null) return null;
-        return validateReleaseVersion(value, { versionsDir });
-      },
-    }),
+    options: ({ versionsDir }) => {
+      const options = getProjectReleaseVersions(versionsDir);
+      return {
+        prompt: 'Add to codemod release version (optional)',
+        options,
+        default: getProjectLatestReleaseVersion(versionsDir),
+        parse: parseOptionalString,
+        format: formatOptionalString,
+        validate: validateOptional(validateOneOf(options)),
+      };
+    },
+  },
+  {
+    name: 'migrationUrl',
+    label: 'Migration guide URL',
+    options: ({ plugin, release, versionsDir }) => {
+      switch (plugin) {
+        case 'transform-grid-options': {
+          const releaseVersion = release ?? getProjectLatestReleaseVersion(versionsDir);
+          const defaultValue = `https://ag-grid.com/javascript-data-grid/upgrading-to-ag-grid-${formatSemverUrlSlug(
+            releaseVersion,
+          )}/`;
+          return {
+            prompt: 'Codemod migration guide URL',
+            default: defaultValue,
+          };
+        }
+        default:
+          return {
+            value: null,
+          };
+      }
+    },
   },
 ];
 
@@ -157,28 +186,8 @@ function validateTransformName(value) {
   return null;
 }
 
-function validatePlugin(value, { pluginsDir }) {
-  if (value) return validatePluginName(value, { pluginsDir });
-  return null;
-}
-
-function validatePluginName(value, { pluginsDir }) {
-  const error = validateDirectory(join(pluginsDir, value));
-  if (typeof error === 'string') {
-    return [
-      `Invalid plugin name: "${value}"`,
-      `  ${error}`,
-      `  Available plugins:`,
-      ...readdirSync(pluginsDir).map((name) => `    - ${name}`),
-    ].join('\n');
-  }
-  return null;
-}
-
-function validateReleaseVersion(value, { versionsDir }) {
-  const versions = getProjectReleaseVersions(versionsDir);
-  if (!versions.includes(value)) return `Codemod version does not exist: ${value}`;
-  return null;
+function getPluginOptions({ pluginsDir }) {
+  return readdirSync(pluginsDir);
 }
 
 function generatePluginTransformName({ plugin, pluginsDir, versionsDir }) {
@@ -224,6 +233,11 @@ function getPluginTemplatePath({ pluginsDir, plugin }) {
 
 function isValidTransformName(value) {
   return /^[a-z]+(-[a-z0-9]+)*$/i.test(value);
+}
+
+function formatSemverUrlSlug(value) {
+  const [major, minor, patch] = parseReleaseVersion(value);
+  return minor === 0 && patch === 0 ? `${major}` : `${major}-${minor}`;
 }
 
 function kebabCase(value) {

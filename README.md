@@ -15,8 +15,10 @@ The following packages contain internal library helpers:
 
 - [`ast`](./packages/ast/): AST transformation tools
 - [`codemod-utils`](./packages/codemod-utils/): Codemod utility helpers
+- [`codemod-task-utils`](./packages/codemod-task-utils/): Codemod task runner helpers
 - [`systemjs-plugin`](./packages/systemjs-plugin/): SystemJS plugin for TypeScript/JSX/CSS source files
 - [`test-utils`](./packages/test-utils/): Automated testing helpers
+- [`worker-utils`](./packages/worker-utils/): Worker utility helpers
 - [`types`](./packages/types/): Shared type definitions
 
 The following packages contain configuration shared across multiple internal packages:
