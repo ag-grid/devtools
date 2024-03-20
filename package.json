@@ -7,7 +7,7 @@
   },
   "scripts": {
     "ci": "pnpm run verify && pnpm run build",
-    "build": "pnpm run --filter @ag-grid-community/cli build",
+    "build": "pnpm run --filter @ag-grid-devtools/cli build",
     "build:lib": "pnpm run --recursive --parallel build:lib && pnpm run build:docs && pnpm run coverage",
     "build:docs": "typedoc",
     "verify": "pnpm run /^\\(lint\\|test\\)$/",
@@ -19,8 +19,8 @@
     "coverage": "vitest run --coverage",
     "coverage:report": "vitest run --coverage --config ./report.vitest.config.mts",
     "clean": "rm -rf docs coverages packages/*/dist",
-    "version": "pnpm --filter @ag-grid-community/cli exec -- pnpm run --silent version",
-    "publish": "pnpm run --filter @ag-grid-community/cli publish"
+    "version": "pnpm --filter @ag-grid-devtools/cli exec -- pnpm run --silent version",
+    "publish": "pnpm run --filter @ag-grid-devtools/cli publish"
   },
   "peerDependencies": {
     "@vitest/coverage-v8": "^1",

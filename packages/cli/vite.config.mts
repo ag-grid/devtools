@@ -17,7 +17,7 @@ export default mergeConfig(
       },
       sourcemap: false,
       rollupOptions: {
-        external: ['@ag-grid-community/codemods'],
+        external: ['@ag-grid-devtools/codemods'],
       },
     },
   }),

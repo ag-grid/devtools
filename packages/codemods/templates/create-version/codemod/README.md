@@ -5,7 +5,7 @@ Codemod for upgrading to [AG Grid v<%= version %>](https://github.com/ag-grid/ag
 ## Usage
 
 ```
-npx @ag-grid-community/cli migrate --to <%= version %>
+npx @ag-grid-devtools/cli migrate --to <%= version %>
 ```
 
 Source code transformations applied by this codemod are specified in [`transforms.ts`](./transforms.ts).
