@@ -6,10 +6,6 @@ See the [`<%= plugin %>`](../../plugins/<%= plugin %>/) plugin for usage instruc
 
 ## Common tasks
 
-### Add a new rule
-
-Replacement rules are specified in [`replacements.ts`](./replacements.ts)
-
 ### Add a test case
 
 Create a new unit test scenario for this transform:
@@ -17,6 +13,10 @@ Create a new unit test scenario for this transform:
 ```
 pnpm run task:create-test --type transform --target <%= filename %>
 ```
+
+### Add a new rule
+
+Replacement rules are specified in [`replacements.ts`](./replacements.ts)
 
 ### Add to a codemod release
 
