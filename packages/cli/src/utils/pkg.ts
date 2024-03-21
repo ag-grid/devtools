@@ -1,13 +1,13 @@
 import { name, version } from '../../package.json' assert { type: 'json' };
 
-export function getPackageName(): string {
+export function getCliPackageName(): string {
   return name;
 }
 
-export function getPackageVersion(): string {
-  return version.replace(/^(\d+\.\d+).+$/, '$1');
+export function getCliPackageVersion(): string {
+  return version;
 }
 
 export function getCliCommand(): string {
-  return `npx ${getPackageName()}@${getPackageVersion()}`;
+  return `npx ${getCliPackageName()}@${getCliPackageVersion().replace(/^(\d+\.\d+).+$/, '$1')}`;
 }

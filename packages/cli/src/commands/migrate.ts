@@ -19,7 +19,7 @@ import { CliArgsError, CliError } from '../utils/cli';
 import { findInDirectory } from '../utils/fs';
 import { findInGitRepository, getGitProjectRoot, getUncommittedGitFiles } from '../utils/git';
 import { basename, extname, resolve, relative } from '../utils/path';
-import { getCliCommand } from '../utils/pkg';
+import { getCliCommand, getCliPackageVersion } from '../utils/pkg';
 import { green, indentErrorMessage, log } from '../utils/stdio';
 import { Worker, WorkerTaskQueue, type WorkerOptions } from '../utils/worker';
 import { requireDynamicModule, resolveDynamicModule } from '../utils/module';
@@ -28,6 +28,7 @@ const { versions } = codemods;
 
 const SOURCE_FILE_EXTENSIONS = ['.cjs', '.js', '.mjs', '.jsx', '.ts', '.tsx', '.vue'];
 const LATEST_VERSION = versions[versions.length - 1].version;
+const DEFAULT_TARGET_VERSION = getMinorSemverVersion(getCliPackageVersion()) ?? LATEST_VERSION;
 
 const CODEMODS_PACKAGE = '@ag-grid-community/codemods';
 const WORKER_PATH = `${CODEMODS_PACKAGE}/worker`;
@@ -83,11 +84,11 @@ Upgrade project source files to ensure compatibility with a specific AG Grid ver
 Options:
   Optional arguments:
     --to=<version>            AG Grid semver version to migrate to (defaults to ${green(
-      LATEST_VERSION,
+      DEFAULT_TARGET_VERSION,
       env,
     )})
     --from=<version>          AG Grid semver version to migrate from (defaults to ${green(
-      getPrecedingSemver(LATEST_VERSION) ?? 'null',
+      getPrecedingSemver(DEFAULT_TARGET_VERSION) ?? 'null',
       env,
     )})
     --allow-untracked, -u     Allow operating on files outside a git repository
@@ -107,8 +108,8 @@ Options:
 
 export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
   const options: MigrateCommandArgs = {
-    from: getPrecedingSemver(LATEST_VERSION),
-    to: LATEST_VERSION,
+    from: getPrecedingSemver(DEFAULT_TARGET_VERSION),
+    to: DEFAULT_TARGET_VERSION,
     allowUntracked: false,
     allowDirty: false,
     applyDangerousEdits: false,
@@ -152,7 +153,9 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
               .map(({ version }) => version)
               .map(
                 (version) =>
-                  ` - ${green(version, env)}${version === LATEST_VERSION ? ' (default)' : ''}`,
+                  ` - ${green(version, env)}${
+                    version === DEFAULT_TARGET_VERSION ? ' (default)' : ''
+                  }`,
               )
               .join('\n')}\n`,
           );
@@ -600,14 +603,20 @@ function isSourceFile(filePath: string): boolean {
   return SOURCE_FILE_EXTENSIONS.includes(extname(filePath));
 }
 
+function getMinorSemverVersion(version: string): string | null {
+  const parsed = semver.parse(version);
+  if (!parsed) return null;
+  return [parsed.major, parsed.minor, 0].join('.');
+}
+
 function getPrecedingSemver(version: string): string | null {
   const parsed = semver.parse(version);
   if (!parsed) return null;
   const isPatchRelease = parsed.patch > 0;
   const isMinorRelease = !isPatchRelease && parsed.minor > 0;
   const isMajorRelease = !isMinorRelease && parsed.major > 0;
-  if (isPatchRelease || isMinorRelease) return `${parsed.major}.0.0`;
-  if (isMajorRelease) return `${parsed.major - 1}.0.0`;
+  if (isPatchRelease || isMinorRelease) return [parsed.major, 0, 0].join('.');
+  if (isMajorRelease) return [parsed.major - 1, 0, 0].join('.');
   return null;
 }
 
