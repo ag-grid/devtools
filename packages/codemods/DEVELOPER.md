@@ -11,11 +11,11 @@ This package contains the following npm scripts:
 
 ## Common tasks
 
-> These tasks assume the task runner script dependencies have already been built via `pnpm run build:tasks`
+> These tasks assume the task runner script dependencies have already been built. This can be done by navigating to the `packages/codemods` directory within the repository and running `pnpm run build:tasks`
 
 ### Creating a new codemod
 
-All codemods are tied to a specific release version. To create a new codemod release, run the following command within this package:
+All codemods are tied to a specific release version. To create a new codemod release, navigate to the `packages/codemods` directory within the repository and run the following command:
 
 ```
 pnpm run task:create-version
