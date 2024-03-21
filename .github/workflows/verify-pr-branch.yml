@@ -8,9 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check target branch
-        if: github.base_ref == 'main' && github.head_ref != 'develop'
+        if: github.base_ref == 'release' && github.head_ref != 'main'
         run: |
-          echo "ERROR: Only the 'develop' branch can be merged to 'main'"
+          echo "ERROR: Only the 'main' branch can be merged to 'release'"
           exit 1
       - name: Checkout Git repository
         uses: actions/checkout@v4
