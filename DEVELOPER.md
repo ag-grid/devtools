@@ -40,41 +40,41 @@ This project uses Github pull requests (PRs) for merging code, and Github Action
 
 This repository contains the following long-lived branches:
 
-- `main`: Branch containing the most recently published version
-- `develop`: Stable development branch containing the upcoming 'next' release
+- `main`: Stable development branch containing the upcoming 'next' release
+- `release`: Branch containing the most recently published version
 
 Points to note:
 
 - Branch protection rules and CI tests are in place for both these branches to prevent accidentally committing broken code changes
-- Features not yet ready for release remain on short-lived feature branches until they are ready to be merged into the `develop` branch
-- Packages are automatically published by CI whenever a PR is successfully merged into the `main` branch
+- Features not yet ready for release remain on short-lived feature branches until they are ready to be merged into the `main` branch
+- Packages are automatically published by CI whenever a PR is successfully merged into the `release` branch
 
 ### Development workflow
 
 Changes are committed to the repository as follows:
 
-1. Create a new feature branch from the current `develop` branch, named with the relevant prefix:
+1. Create a new feature branch from the current `main` branch, named with the relevant prefix:
     - `feature/...` - Branch contains new features
     - `fix/...` - Branch contains bugfixes
     - `docs/...` - Branch contains documentation updates
     - `chore/...` - Branch contains routine admin tasks
     > _Note that a `wip/...` prefix indicates a branch that is not intended to be merged_
 2. Commit code changes to the feature branch
-3. Rebase on the latest `develop` branch to incorporate upstream changes
-4. Raise a PR that targets `develop` as its base branch
+3. Rebase on the latest `main` branch to incorporate upstream changes
+4. Raise a PR that targets `main` as its base branch
 5. Wait for CI tests to pass
 6. Merge the PR using the 'rebase' merge stragegy
 
 ### Releasing
 
-When the contents of the `develop` branch are ready to be released, follow these steps to publish a new version:
+When the contents of the `main` branch are ready to be released, follow these steps to publish a new version:
 
-1. Ensure that `@ag-grid-devtools/cli` package version has been incremented in the `develop` branch:
+1. Ensure that `@ag-grid-devtools/cli` package version has been incremented in the `main` branch:
     ```
-    git diff origin/main..origin/develop -- ./packages/cli/package.json |
+    git diff origin/release..origin/main -- ./packages/cli/package.json |
       grep '"version": ".*"' && echo "Ready to publish" || echo "Version already published"
     ```
-2. Raise a new PR that merges `develop` into `main`
+2. Raise a new PR that merges `main` into `release`
 3. Wait for CI tests to pass
 4. Merge the PR using the 'merge commit' merge stragegy
 
