@@ -28,16 +28,16 @@ const TEST_TYPE_PLUGIN = 'plugin';
 const TEST_TYPES = [TEST_TYPE_TRANSFORM, TEST_TYPE_RELEASE, TEST_TYPE_PLUGIN];
 
 const FRAMEWORK_JS = 'js';
-const FRAMEWORK_VANILLA = 'vanilla';
-const FRAMEWORK_REACT = 'jsx';
-const FRAMEWORK_ANGULAR = 'angular';
-const FRAMEWORK_VUE = 'vue';
+const FRAMEWORK_GRID_VANILLA = 'grid:vanilla';
+const FRAMEWORK_GRID_REACT = 'grid:jsx';
+const FRAMEWORK_GRID_ANGULAR = 'grid:angular';
+const FRAMEWORK_GRID_VUE = 'grid:vue';
 const FRAMEWORKS = [
   FRAMEWORK_JS,
-  FRAMEWORK_VANILLA,
-  FRAMEWORK_REACT,
-  FRAMEWORK_ANGULAR,
-  FRAMEWORK_VUE,
+  FRAMEWORK_GRID_VANILLA,
+  FRAMEWORK_GRID_REACT,
+  FRAMEWORK_GRID_ANGULAR,
+  FRAMEWORK_GRID_VUE,
 ];
 
 const JS_TEMPLATE_TYPE_DEFAULT = 'default';
@@ -138,7 +138,7 @@ const VARIABLES = [
     label: 'Scenario name',
     options: ({ type, target, transformsDir, versionsDir, pluginsDir }) => ({
       prompt:
-        'What should the scenario be called? (machine-friendly, use slashes for nested scenarios)',
+        'What should the scenario be called? (directory name, use slashes for nested scenarios)',
       validate: (value) => {
         const error = validateScenarioName(value);
         if (error != null) return error;
@@ -173,9 +173,9 @@ const VARIABLES = [
     name: 'framework',
     label: 'Test scenario framework',
     options: () => ({
-      prompt: `Test scenario framework (${FRAMEWORKS.join('/')})`,
+      prompt: `Test scenario framework`,
       options: FRAMEWORKS,
-      default: FRAMEWORK_VANILLA,
+      default: FRAMEWORK_JS,
       validate: validateOneOf(FRAMEWORKS),
     }),
   },
@@ -192,7 +192,7 @@ const VARIABLES = [
             validate: validateOneOf(JS_TEMPLATE_TYPES),
           };
         }
-        case FRAMEWORK_VANILLA: {
+        case FRAMEWORK_GRID_VANILLA: {
           return {
             prompt: `Vanilla template type`,
             options: VANILLA_TEMPLATE_TYPES,
@@ -200,7 +200,7 @@ const VARIABLES = [
             validate: validateOneOf(VANILLA_TEMPLATE_TYPES),
           };
         }
-        case FRAMEWORK_REACT: {
+        case FRAMEWORK_GRID_REACT: {
           return {
             prompt: `React template type`,
             options: REACT_TEMPLATE_TYPES,
@@ -208,7 +208,7 @@ const VARIABLES = [
             validate: validateOneOf(REACT_TEMPLATE_TYPES),
           };
         }
-        case FRAMEWORK_ANGULAR: {
+        case FRAMEWORK_GRID_ANGULAR: {
           return {
             prompt: `Angular component template type`,
             options: ANGULAR_TEMPLATE_TYPES,
@@ -216,7 +216,7 @@ const VARIABLES = [
             validate: validateOneOf(ANGULAR_TEMPLATE_TYPES),
           };
         }
-        case FRAMEWORK_VUE: {
+        case FRAMEWORK_GRID_VUE: {
           return {
             prompt: `Vue component type`,
             options: VUE_TEMPLATE_TYPES,
