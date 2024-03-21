@@ -13,6 +13,12 @@ This package contains the following npm scripts:
 
 > These tasks assume the task runner script dependencies have already been built. This can be done by navigating to the `packages/codemods` directory within the repository and running `pnpm run build:tasks`
 
+### Adding new transformation rules to an existing codemod
+
+Codemods typically comprise a set of source transformations.
+
+See the README instructions for the relevant [source transformation](./src/transforms) for details on how to add new transformation rules.
+
 ### Creating a new codemod
 
 All codemods are tied to a specific release version. To create a new codemod release, navigate to the `packages/codemods` directory within the repository and run the following command:
@@ -27,7 +33,7 @@ Additionally, the codemod will be referenced where necessary in source code to b
 
 If you inspect the generated files, you will see that a codemod is essentially just a function that transforms an arbitrary input source file into a transformed output source file (see the [`Codemod`](../types/src/codemod.ts) type definition for the exact details).
 
-While this is very flexible, it doesn't provide much structure for transforming source code. In most cases, codemods will be performing AST transformations rather than raw text manipulations, and therefore the default codemod template creates the boilerplate for a codemod that performs a sequence of AST transformations expressed as [Babel transform plugins](https://babeljs.io/docs/plugins#transform-plugins) (see the [`AstTransform`](../types/src/transform.ts) for the exact details). The rest of these instructions assume that your codemods will be based on Babel AST transformations, however you can always transform other file formats if necessary.
+While this is very flexible, it doesn't provide much structure for transforming source code. In most cases, codemods will be performing AST transformations rather than raw text manipulations, and therefore the default codemod template creates the boilerplate for a codemod that performs a sequence of AST transformations expressed as [Babel transform plugins](https://babeljs.io/docs/plugins#transform-plugins) (see the [`AstTransform`](../ast/src/types/transform.ts) for the exact details). The rest of these instructions assume that your codemods will be based on Babel AST transformations, however you can always transform other file formats if necessary.
 
 The newly-generated codemod version contains a `transforms.ts` file that specifies which AST transformations to apply. If you inspect this file, you will see that it does not yet specify any transforms, and will therefore not perform any code modifications when invoked.
 
