@@ -1,4 +1,4 @@
-const rules = require('./rules.cjs');
+const { rules } = require('./rules.eslintrc.cjs');
 
 module.exports = {
   root: true,
