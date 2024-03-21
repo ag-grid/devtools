@@ -4,7 +4,8 @@ const path = require('node:path');
 const process = require('node:process');
 const { createRequire } = require('node:module');
 
-const [inputPath, outputPath] = process.argv.slice(2);
+const [inputPath, outputPath, overrideVersion = null] = process.argv.slice(2);
+const workspaceVersions = parseWorkspaceDependencyVersions(process.env.PKG_WORKSPACE_VERSIONS);
 
 class ExitError extends Error {
   code;
@@ -35,7 +36,7 @@ try {
   })();
   const {
     name,
-    version,
+    version: pkgVersion,
     license,
     description,
     author,
@@ -46,8 +47,10 @@ try {
     dependencies,
     bundleDependencies,
     optionalDependencies,
-    pkg: overrides,
+    pkg: pkgOverrides,
   } = pkg;
+  const { version: pkgOverridesVersion, ...overrides } = pkgOverrides ?? {};
+  const version = overrideVersion ?? pkgOverridesVersion ?? pkgVersion;
   const pkgFields = {
     name,
     version,
@@ -63,7 +66,10 @@ try {
     optionalDependencies,
     ...overrides,
   };
-  const updatedPkg = fixPackageWorkspaceDependencies(pkgFields, inputPkgPath);
+  const updatedPkg = fixPackageWorkspaceDependencies(pkgFields, inputPkgPath, {
+    ...workspaceVersions,
+    [name]: version,
+  });
   const json = `${JSON.stringify(updatedPkg, null, 2)}\n`;
   if (outputPath) {
     try {
@@ -89,23 +95,28 @@ try {
   }
 }
 
-function fixPackageWorkspaceDependencies(pkg, inputPkgPath) {
+function parseWorkspaceDependencyVersions(envValue) {
+  if (!envValue) return {};
+  return Object.fromEntries(envValue.split(',').map((pair) => pair.split(':')));
+}
+
+function fixPackageWorkspaceDependencies(pkg, inputPkgPath, versionOverrides) {
   const require = createRequire(path.resolve(process.cwd(), inputPkgPath));
   return Object.fromEntries(
     Object.entries(pkg).map(([key, value]) => {
       if (!isDependenciesPackageField(key) || !value) return [key, value];
-      return [key, fixWorkspaceDependencyVersions(value, require)];
+      return [key, fixWorkspaceDependencyVersions(value, require, versionOverrides)];
     }),
   );
 }
 
-function fixWorkspaceDependencyVersions(dependencies, require) {
+function fixWorkspaceDependencyVersions(dependencies, require, versionOverrides) {
   return Object.fromEntries(
     Object.entries(dependencies).map((dependency) => {
       const [name, version] = dependency;
       if (version === 'workspace:*') {
-        const workspaceVersion = require(path.join(name, 'package.json')).version;
-        return [name, workspaceVersion];
+        const version = versionOverrides[name] ?? require(path.join(name, 'package.json')).version;
+        return [name, version];
       }
       return dependency;
     }),
