@@ -9,4 +9,5 @@ export * from './src/replace';
 export * from './src/scope';
 export * from './src/template';
 export * from './src/transform';
+export * from './src/typechecker';
 export * from './src/types';
