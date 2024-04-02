@@ -11,7 +11,6 @@ export interface CodemodInput {
 }
 
 export interface CodemodOptions {
-  applyDangerousEdits: boolean;
   fs: FsUtils;
 }
 
@@ -26,7 +25,6 @@ export interface CodemodTask extends Task<CodemodTaskInput, CodemodTaskResult> {
 export interface CodemodTaskInput {
   inputFilePath: string;
   dryRun: boolean;
-  applyDangerousEdits: boolean;
 }
 
 export interface CodemodTaskResult {

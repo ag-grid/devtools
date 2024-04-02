@@ -19,12 +19,11 @@ export function loadTransformScenarios(
   },
 ): void {
   const { transforms, vitest } = options;
-  return loadAstTransformExampleScenarios<{ applyDangerousEdits?: boolean }>(scenariosPath, {
+  return loadAstTransformExampleScenarios(scenariosPath, {
     vitest,
     runner: (input) => {
       const { source, errors, warnings } = transformFileAst(input.source, transforms, {
         filename: input.path,
-        applyDangerousEdits: Boolean(input.options?.applyDangerousEdits),
         fs: createMockFsHelpers(memfs),
       });
       return { source, errors, warnings };

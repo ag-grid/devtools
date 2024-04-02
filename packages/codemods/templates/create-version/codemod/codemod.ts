@@ -13,10 +13,9 @@ const codemod: Codemod = function codemodV<%= versionIdentifier %>(
   options: CodemodOptions,
 ): CodemodResult {
   const { path, source } = file;
-  const { applyDangerousEdits, fs } = options;
+  const { fs } = options;
   return transformFileAst(source, transforms, {
     filename: path,
-    applyDangerousEdits: Boolean(applyDangerousEdits),
     fs,
   });
 };

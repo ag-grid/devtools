@@ -5,8 +5,7 @@
     "errors": null,
     "warnings": "output.warnings.cjs",
     "options": {
-      "lineEndings": "crlf",
-      "applyDangerousEdits": true
+      "lineEndings": "crlf"
     }
   }
 }

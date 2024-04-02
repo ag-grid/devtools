@@ -14,15 +14,12 @@ export function loadCodemodExampleScenarios(
   },
 ): void {
   const { codemod, vitest } = options;
-  return loadAstTransformExampleScenarios<{ applyDangerousEdits?: boolean }>(scenariosPath, {
+  return loadAstTransformExampleScenarios(scenariosPath, {
     vitest,
     runner: (input) => {
       const { source, errors, warnings } = codemod(
         { path: input.path, source: input.source },
-        {
-          applyDangerousEdits: Boolean(input.options?.applyDangerousEdits),
-          fs: createMockFsHelpers(memfs),
-        },
+        { fs: createMockFsHelpers(memfs) },
       );
       return { source, errors, warnings };
     },
