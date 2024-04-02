@@ -21,37 +21,29 @@ export function initCodemodTaskWorker(
 
 function parseMainThreadTaskInput(env: Pick<NodeJS.Process, 'argv' | 'env'>): CodemodTaskInput {
   const {
-    env: { INPUT_FILE, DRY_RUN, APPLY_DANGEROUS_EDITS },
+    env: { INPUT_FILE, DRY_RUN },
   } = env;
   if (!INPUT_FILE) throw new Error('Missing INPUT_FILE environment variable');
   const inputFilePath = INPUT_FILE;
   const dryRun = parseBooleanEnvVar(DRY_RUN);
-  const applyDangerousEdits = parseBooleanEnvVar(APPLY_DANGEROUS_EDITS);
   return {
     inputFilePath,
     dryRun,
-    applyDangerousEdits,
   };
 }
 
 function parseWorkerThreadTaskInput(data: unknown): CodemodTaskInput {
   if (!data || typeof data !== 'object') throw new Error('Invalid task input');
-  const { inputFilePath, dryRun, applyDangerousEdits } = data as Record<string, unknown>;
+  const { inputFilePath, dryRun } = data as Record<string, unknown>;
   if (typeof inputFilePath !== 'string') {
     throw new Error(`Invalid inputFilePath field value: ${JSON.stringify(inputFilePath)}`);
   }
   if (typeof dryRun !== 'boolean') {
     throw new Error(`Invalid dryRun field value: ${JSON.stringify(dryRun)}`);
   }
-  if (typeof applyDangerousEdits !== 'boolean') {
-    throw new Error(
-      `Invalid applyDangerousEdits field value: ${JSON.stringify(applyDangerousEdits)}`,
-    );
-  }
   return {
     inputFilePath,
     dryRun: Boolean(dryRun),
-    applyDangerousEdits: Boolean(applyDangerousEdits),
   };
 }
 

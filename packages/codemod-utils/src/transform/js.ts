@@ -59,13 +59,12 @@ function transformJsFile<S>(
     BabelTransformJsxOptions &
     Required<Pick<ParserOptions, 'sourceType'>>,
 ): AstTransformResult {
-  const { filename, applyDangerousEdits, fs } = options;
+  const { filename, fs } = options;
   // Transform the AST
   const uniqueErrors = new Map<string, { fatal: boolean; error: SyntaxError }>();
   const transformContext: AstTransformContext<AstCliContext> = {
     filename,
     opts: {
-      applyDangerousEdits,
       warn(node: NodePath<AstNode> | null, message: string) {
         const error = createSourceCodeError(node, message);
         uniqueErrors.set(error.message, { error, fatal: false });
