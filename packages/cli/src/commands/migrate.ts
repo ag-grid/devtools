@@ -82,13 +82,12 @@ function usage(env: CliEnv): string {
 Upgrade project source files to ensure compatibility with a specific AG Grid version
 
 Options:
+  Required arguments:
+    --from=<version>          AG Grid semver version to migrate from
+
   Optional arguments:
     --to=<version>            AG Grid semver version to migrate to (defaults to ${green(
       DEFAULT_TARGET_VERSION,
-      env,
-    )})
-    --from=<version>          AG Grid semver version to migrate from (defaults to ${green(
-      getPrecedingSemver(DEFAULT_TARGET_VERSION) ?? 'null',
       env,
     )})
     --allow-untracked, -u     Allow operating on files outside a git repository
@@ -108,7 +107,7 @@ Options:
 
 export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
   const options: MigrateCommandArgs = {
-    from: getPrecedingSemver(DEFAULT_TARGET_VERSION),
+    from: null,
     to: DEFAULT_TARGET_VERSION,
     allowUntracked: false,
     allowDirty: false,
@@ -205,7 +204,10 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     }
   }
   if (options.help) return options;
-  if (options.from && semver.gte(options.from, options.to)) {
+  if (!options.from) {
+    throw new CliArgsError(`Missing --from migration starting version`, usage(env));
+  }
+  if (semver.gte(options.from, options.to)) {
     throw new CliArgsError(
       `Invalid --from migration starting version: ${green(options.from, env)}`,
       `Migration starting version must be less than target version (${green(options.to, env)})`,
@@ -303,18 +305,19 @@ async function migrate(
   if (!toSemver) throw new CliError(`Invalid target semver version: ${green(to, env)}`);
 
   const fromSemver = from ? semver.parse(from) : null;
-  if (from && !fromSemver) throw new CliError(`Invalid starting semver version: ${green(to, env)}`);
+  if (!fromSemver) {
+    throw new CliError(`Invalid starting semver version: ${green(from || 'null', env)}`);
+  }
 
-  const codemodVersions = fromSemver
-    ? versions.filter(({ version }) => {
-        const versionSemver = semver.parse(version);
-        if (!versionSemver) return false;
-        return versionSemver.compare(fromSemver) > 0 && versionSemver.compare(toSemver) <= 0;
-      })
-    : [toVersion];
+  const codemodVersions = versions.filter(({ version }) => {
+    const versionSemver = semver.parse(version);
+    if (!versionSemver) return false;
+    return versionSemver.compare(fromSemver) > 0 && versionSemver.compare(toSemver) <= 0;
+  });
+
   await log(
     stderr,
-    `Migrating${from ? ` from version ${green(from, env)}` : ''} to version ${green(to, env)}...`,
+    `Migrating from version ${green(from || 'null', env)} to version ${green(to, env)}...`,
   );
 
   if (codemodVersions.length === 0) {
@@ -607,17 +610,6 @@ function getMinorSemverVersion(version: string): string | null {
   const parsed = semver.parse(version);
   if (!parsed) return null;
   return [parsed.major, parsed.minor, 0].join('.');
-}
-
-function getPrecedingSemver(version: string): string | null {
-  const parsed = semver.parse(version);
-  if (!parsed) return null;
-  const isPatchRelease = parsed.patch > 0;
-  const isMinorRelease = !isPatchRelease && parsed.minor > 0;
-  const isMajorRelease = !isMinorRelease && parsed.major > 0;
-  if (isPatchRelease || isMinorRelease) return [parsed.major, 0, 0].join('.');
-  if (isMajorRelease) return [parsed.major - 1, 0, 0].join('.');
-  return null;
 }
 
 function getUnifiedDiff(
