@@ -76,3 +76,77 @@ pnpm run task:create-test
 ```
 
 This will prompt for the name of the codemod or transform that you want to test and the name of the test scenario, and will create the source files for the test scenario based on a template.
+
+#### Test scenario format
+
+Generated test cases are detected via filesystem naming convention, whereby each test scenario is a directory within the relevant `__fixtures__/scenarios` directory that contains a file named `scenario.json` that is used to describe the test scenario.
+
+Test scenario directories can be nested within the filesystem to 
+
+A `scenario.json` file can contain the following fields:
+
+```
+{
+  "skip": false,
+  "only": false,
+  "scenario": {
+    "input": "input.js",
+    "output": "output.js",
+    "errors": "output.errors.cjs",
+    "warnings": "output.warnings.cjs"
+  },
+  "files": {
+    "input": {
+      "foo.js": "input.foo.js",
+    },
+    "output": {
+      "foo.js": "output.foo.js"
+    }
+  }
+}
+```
+
+##### `skip` (optional)
+
+If set to `true`, the scenario runner will skip this test scenario
+
+##### `only` (optional)
+
+If set to `true`, the scenario runner will skip any other test scenarios in this suite that do not also specify `"only": true`
+
+##### `scenario.input`
+
+Relative path to a file that contains the 'input' source that is passed to the codemod
+
+##### `scenario.output`
+
+Relative path to a file that contains the expected 'output' source that has been modified by the codemod
+
+##### `scenario.errors`
+
+Relative path to a file that contains a list of errors expected to be emitted by the codemod.
+
+The referenced file is a CommonJS file that exports an array of JavaScript `Error` objects, such as the following:
+
+```
+module.exports = [
+  new SyntaxError('Invalid syntax: "foo"'),
+];
+```
+
+##### `scenario.warnings`
+
+Relative path to a file that contains a list of warnings expected to be emitted by the codemod.
+
+The referenced file has the same structure as the file referenced by the `errors` field.
+
+##### `files` (optional)
+
+This is necessary to handle collateral files that might be affected by the codemod (e.g. external component template files).
+
+If the `files` field is present:
+
+- The `files.input` object declares a set of additional mocked files present in the simulated filesystem exposed to the codemod test runner (where the object keys are the relative paths of the simulated files, and the object values are relative paths to files that contain the contents of that file)
+- The `files.output` object declares a set of files expected to be present in the simulated filesystem after the codemod test runner has finished executing (where the object keys are the relative paths of the simulated files, and the object values are relative paths to files that contain to the expected contents of that file)
+
+All paths within the `files` object key/values are relative to the directory that contains the `scenario.json` file.
