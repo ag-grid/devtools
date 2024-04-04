@@ -2,11 +2,10 @@
   "scenario": {
     "input": "input.vue",
     "output": "output.vue",
-    "errors": null,
+    "errors": "output.errors.cjs",
     "warnings": "output.warnings.cjs",
     "options": {
-      "lineEndings": "crlf",
-      "applyDangerousEdits": true
+      "lineEndings": "crlf"
     }
   }
 }

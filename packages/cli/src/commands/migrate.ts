@@ -51,10 +51,6 @@ export interface MigrateCommandArgs {
    */
   allowDirty: boolean;
   /**
-   * Automatically apply fixes that potentially change application behavior
-   */
-  applyDangerousEdits: boolean;
-  /**
    * Number of worker threads to spawn (defaults to the number of system cores)
    */
   numThreads: number | undefined;
@@ -82,18 +78,16 @@ function usage(env: CliEnv): string {
 Upgrade project source files to ensure compatibility with a specific AG Grid version
 
 Options:
+  Required arguments:
+    --from=<version>          AG Grid semver version to migrate from
+
   Optional arguments:
     --to=<version>            AG Grid semver version to migrate to (defaults to ${green(
       DEFAULT_TARGET_VERSION,
       env,
     )})
-    --from=<version>          AG Grid semver version to migrate from (defaults to ${green(
-      getPrecedingSemver(DEFAULT_TARGET_VERSION) ?? 'null',
-      env,
-    )})
     --allow-untracked, -u     Allow operating on files outside a git repository
     --allow-dirty, -d         Allow operating on repositories with uncommitted changes in the working tree
-    --apply-dangerous-edits   Automatically apply fixes that potentially change application behavior
     --num-threads             Number of worker threads to spawn (defaults to the number of system cores)
     --dry-run                 Show a diff output of the changes that would be made
 
@@ -108,11 +102,10 @@ Options:
 
 export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
   const options: MigrateCommandArgs = {
-    from: getPrecedingSemver(DEFAULT_TARGET_VERSION),
+    from: null,
     to: DEFAULT_TARGET_VERSION,
     allowUntracked: false,
     allowDirty: false,
-    applyDangerousEdits: false,
     numThreads: undefined,
     dryRun: false,
     verbose: false,
@@ -171,9 +164,6 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
       case '-d':
         options.allowDirty = true;
         break;
-      case '--allow-dangerous-edits':
-        options.applyDangerousEdits = true;
-        break;
       case '--num-threads': {
         const value = args.shift();
         if (!value || value.startsWith('-')) {
@@ -205,7 +195,10 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     }
   }
   if (options.help) return options;
-  if (options.from && semver.gte(options.from, options.to)) {
+  if (!options.from) {
+    throw new CliArgsError(`Missing --from migration starting version`, usage(env));
+  }
+  if (semver.gte(options.from, options.to)) {
     throw new CliArgsError(
       `Invalid --from migration starting version: ${green(options.from, env)}`,
       `Migration starting version must be less than target version (${green(options.to, env)})`,
@@ -231,17 +224,7 @@ async function migrate(
   args: Omit<MigrateCommandArgs, 'help'>,
   options: CliOptions,
 ): Promise<Array<string>> {
-  const {
-    from,
-    to,
-    allowUntracked,
-    allowDirty,
-    applyDangerousEdits,
-    numThreads,
-    dryRun,
-    verbose,
-    input,
-  } = args;
+  const { from, to, allowUntracked, allowDirty, numThreads, dryRun, verbose, input } = args;
   const { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
 
@@ -303,18 +286,19 @@ async function migrate(
   if (!toSemver) throw new CliError(`Invalid target semver version: ${green(to, env)}`);
 
   const fromSemver = from ? semver.parse(from) : null;
-  if (from && !fromSemver) throw new CliError(`Invalid starting semver version: ${green(to, env)}`);
+  if (!fromSemver) {
+    throw new CliError(`Invalid starting semver version: ${green(from || 'null', env)}`);
+  }
 
-  const codemodVersions = fromSemver
-    ? versions.filter(({ version }) => {
-        const versionSemver = semver.parse(version);
-        if (!versionSemver) return false;
-        return versionSemver.compare(fromSemver) > 0 && versionSemver.compare(toSemver) <= 0;
-      })
-    : [toVersion];
+  const codemodVersions = versions.filter(({ version }) => {
+    const versionSemver = semver.parse(version);
+    if (!versionSemver) return false;
+    return versionSemver.compare(fromSemver) > 0 && versionSemver.compare(toSemver) <= 0;
+  });
+
   await log(
     stderr,
-    `Migrating${from ? ` from version ${green(from, env)}` : ''} to version ${green(to, env)}...`,
+    `Migrating from version ${green(from || 'null', env)} to version ${green(to, env)}...`,
   );
 
   if (codemodVersions.length === 0) {
@@ -369,7 +353,6 @@ async function migrate(
         );
         return executeCodemodSingleThreaded(codemod, inputFilePaths, {
           dryRun,
-          applyDangerousEdits,
           onStart,
           onComplete,
         });
@@ -390,7 +373,6 @@ async function migrate(
         const workerPool = new WorkerTaskQueue<CodemodTaskInput, CodemodTaskWorkerResult>(workers);
         return executeCodemodMultiThreaded(workerPool, inputFilePaths, {
           dryRun,
-          applyDangerousEdits,
           onQueue,
           onStart,
           onComplete,
@@ -486,19 +468,18 @@ function executeCodemodMultiThreaded(
   inputFilePaths: string[],
   options: {
     dryRun: boolean;
-    applyDangerousEdits: boolean;
     onQueue?: (inputFilePath: string) => void;
     onStart?: (inputFilePath: string) => void;
     onComplete?: (inputFilePath: string, stats: { runningTime: number }) => void;
   },
 ): Promise<CodemodExecutionResult> {
-  const { dryRun, applyDangerousEdits, onQueue, onStart, onComplete } = options;
+  const { dryRun, onQueue, onStart, onComplete } = options;
   // Process the tasks by dispatching them to the worker pool
   return Promise.all(
     inputFilePaths.map((inputFilePath) => {
       return workerPool
         .run(
-          { inputFilePath, dryRun, applyDangerousEdits },
+          { inputFilePath, dryRun },
           {
             onQueue: onQueue?.bind(null, inputFilePath),
             onStart: onStart?.bind(null, inputFilePath),
@@ -534,12 +515,11 @@ function executeCodemodSingleThreaded(
   inputFilePaths: string[],
   options: {
     dryRun: boolean;
-    applyDangerousEdits: boolean;
     onStart?: (inputFilePath: string) => void;
     onComplete?: (inputFilePath: string, stats: { runningTime: number }) => void;
   },
 ): Promise<CodemodExecutionResult> {
-  const { dryRun, applyDangerousEdits, onStart, onComplete } = options;
+  const { dryRun, onStart, onComplete } = options;
   const task = createCodemodTask(codemod);
   const runner = { fs: createFsHelpers() };
   // Run the codemod for each input file
@@ -548,7 +528,7 @@ function executeCodemodSingleThreaded(
       const startTime = Date.now();
       onStart?.(inputFilePath);
       return task
-        .run({ inputFilePath, dryRun, applyDangerousEdits }, runner)
+        .run({ inputFilePath, dryRun }, runner)
         .then(({ result, errors, warnings }) => ({
           path: inputFilePath,
           result,
@@ -607,17 +587,6 @@ function getMinorSemverVersion(version: string): string | null {
   const parsed = semver.parse(version);
   if (!parsed) return null;
   return [parsed.major, parsed.minor, 0].join('.');
-}
-
-function getPrecedingSemver(version: string): string | null {
-  const parsed = semver.parse(version);
-  if (!parsed) return null;
-  const isPatchRelease = parsed.patch > 0;
-  const isMinorRelease = !isPatchRelease && parsed.minor > 0;
-  const isMajorRelease = !isMinorRelease && parsed.major > 0;
-  if (isPatchRelease || isMinorRelease) return [parsed.major, 0, 0].join('.');
-  if (isMajorRelease) return [parsed.major - 1, 0, 0].join('.');
-  return null;
 }
 
 function getUnifiedDiff(

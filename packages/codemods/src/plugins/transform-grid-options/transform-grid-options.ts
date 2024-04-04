@@ -725,57 +725,39 @@ export function removeProperty(
       // Ensure this property is not transformed multiple times
       if (path.shouldSkip) return;
       path.skip();
-      if (!context.opts.applyDangerousEdits) {
-        context.opts.warn(path, deprecationWarning);
-        return;
-      }
-      path.remove();
+      context.opts.warn(path, deprecationWarning);
+      return;
     },
     get(path, context) {
       // Ensure this property is not transformed multiple times
       if (path.shouldSkip) return;
       path.skip();
-      if (!context.opts.applyDangerousEdits) {
-        context.opts.warn(path, deprecationWarning);
-        return;
-      }
-      path.replaceWith(t.identifier('undefined'));
+      context.opts.warn(path, deprecationWarning);
+      return;
     },
     set(path, context) {
       // Ensure this property is not transformed multiple times
       if (path.shouldSkip) return;
       path.skip();
-      if (!context.opts.applyDangerousEdits) {
-        context.opts.warn(path, deprecationWarning);
-        return;
-      }
-      removePropertyAssignment(path);
+      context.opts.warn(path, deprecationWarning);
+      return;
     },
     jsxAttribute(path, element, context) {
       // Ensure this property is not transformed multiple times
       if (path.shouldSkip) return;
       path.skip();
-      if (!context.opts.applyDangerousEdits) {
-        context.opts.warn(path, deprecationWarning);
-        return;
-      }
-      path.remove();
+      context.opts.warn(path, deprecationWarning);
+      return;
     },
     angularAttribute(attributeNode, component, element, context) {
-      if (!context.opts.applyDangerousEdits) {
-        // FIXME: show Angular template element location in deprecation warnings
-        context.opts.warn(null, deprecationWarning);
-        return;
-      }
-      removeTemplateNode(attributeNode);
+      // FIXME: show Angular template element location in deprecation warnings
+      context.opts.warn(null, deprecationWarning);
+      return;
     },
     vueAttribute(attributeNode, component, element, context) {
-      if (!context.opts.applyDangerousEdits) {
-        // FIXME: show Vue template element location in deprecation warnings
-        context.opts.warn(null, deprecationWarning);
-        return;
-      }
-      removeTemplateNode(attributeNode);
+      // FIXME: show Vue template element location in deprecation warnings
+      context.opts.warn(null, deprecationWarning);
+      return;
     },
   };
 }

@@ -26,7 +26,6 @@ export interface FileMetadata {
 }
 
 export interface AstCliContext extends FsContext {
-  applyDangerousEdits: boolean;
   warn(node: NodePath<AstNode> | null, message: string): void;
   fail(node: NodePath<AstNode> | null, message: string): void;
 }

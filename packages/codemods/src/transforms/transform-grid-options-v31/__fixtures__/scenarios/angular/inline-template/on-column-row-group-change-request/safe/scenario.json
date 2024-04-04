@@ -1,8 +1,0 @@
-{
-  "scenario": {
-    "input": "input.component.ts",
-    "output": null,
-    "errors": null,
-    "warnings": "output.warnings.cjs"
-  }
-}

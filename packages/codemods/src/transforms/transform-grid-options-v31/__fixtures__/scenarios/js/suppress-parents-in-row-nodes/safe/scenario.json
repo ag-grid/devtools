@@ -1,8 +1,0 @@
-{
-  "scenario": {
-    "input": "input.js",
-    "output": null,
-    "errors": null,
-    "warnings": "output.warnings.cjs"
-  }
-}
