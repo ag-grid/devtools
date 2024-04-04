@@ -12,6 +12,13 @@ import {
   type Replacement,
   type Types,
   NodeMatcher,
+  AstTransformContext,
+  AstType,
+  BabelPluginContext,
+  inferAstTypes,
+  inferGlobalTypes,
+  inferImportedTypes,
+  NodePath,
 } from '@ag-grid-devtools/ast';
 import { isGridApiReference } from '@ag-grid-devtools/codemod-utils';
 import { nonNull } from '@ag-grid-devtools/utils';
@@ -39,9 +46,44 @@ export function transformGridApiMethods(options: {
   deprecations: Array<GridApiDeprecation>;
 }): AstTransform<AstCliContext> {
   const { replacements, deprecations } = options;
+
+  const ColumnDefType = AstType.Object({});
+  const ColumnDefsType = AstType.Array(ColumnDefType);
+  const GridOptionsType = AstType.Object({
+    columnDefs: ColumnDefsType,
+  });
+  const GridInstanceType = AstType.Object({});
+  const CreateGridType = AstType.Function(
+    AstType.Tuple([AstType.Any(), GridOptionsType]),
+    GridInstanceType,
+  );
+  const AgGridModuleType = AstType.Object({
+    createGrid: CreateGridType,
+  });
+
+  function getAgGridTypeAnnotations(program: NodePath<Types.Program>): Map<NodePath, Set<AstType>> {
+    return new Map([
+      ...inferImportedTypes(program, {
+        'ag-grid-community': AgGridModuleType,
+        'ag-grid-enterprise': AgGridModuleType,
+        '@ag-grid-community/core': AgGridModuleType,
+        '@ag-grid-enterprise/core': AgGridModuleType,
+      }),
+      ...inferGlobalTypes(program, {
+        agGrid: AgGridModuleType,
+      }),
+    ]);
+  }
+
   return function transformGridApiMethods(babel) {
+    const STATE_KEY_TYPED_NODES = Symbol('typedNodes');
+    const { types: t } = babel;
     return {
       visitor: {
+        Program(path, context) {
+          const typedNodes = getAgGridTypeAnnotations(path);
+          assignNodeTypes(typedNodes, context);
+        },
         // Transform deprecated Grid API method invocations
         CallExpression(path, context) {
           // Iterate over each of the replacements until a match is found
@@ -52,7 +94,7 @@ export function transformGridApiMethods(options: {
 
             // If this is an incidental match (naming collision with an identically-named user method), skip the replacement
             const { node, refs } = result;
-            if (!isGridApiReference(refs.api, context)) continue;
+            if (!isGridApiInstance(refs.api, context)) continue;
 
             // We've found a match, so replace the current AST node with the rewritten node and stop processing this node
             // FIXME: Match quote style in generated option key string literal
@@ -69,7 +111,7 @@ export function transformGridApiMethods(options: {
 
             // If this is an incidental match (naming collision with an identically-named user method), skip the replacement
             const { api } = result;
-            if (!isGridApiReference(api, context)) continue;
+            if (!isGridApiInstance(api, context)) continue;
 
             context.opts.fail(path, 'This method has been deprecated');
 
@@ -79,6 +121,22 @@ export function transformGridApiMethods(options: {
         },
       },
     };
+
+    function assignNodeTypes(typedNodes: Map<NodePath, Set<AstType>>, context: BabelPluginContext) {
+      context.set(STATE_KEY_TYPED_NODES, inferAstTypes(typedNodes));
+    }
+
+    function isGridApiInstance(
+      path: NodePath<Expression>,
+      context: BabelPluginContext & AstTransformContext<AstCliContext>,
+    ): boolean {
+      const typedNodes: ReturnType<typeof inferAstTypes> | undefined =
+        context.get(STATE_KEY_TYPED_NODES);
+      const isGridInstance = typedNodes?.get(path)?.has(GridInstanceType) ?? false;
+      if (isGridInstance) return true;
+      // Legacy utility method, used to locate Grid API references within framework components
+      return isGridApiReference(path, context);
+    }
   };
 }
 
