@@ -1,10 +1,8 @@
-import { ast, matchNode, pattern as p, replace, template, node as t, type Types } from '@ag-grid-devtools/ast';
+import { ast, matchNode, pattern as p, replace, node as t, template, type Types } from '@ag-grid-devtools/ast';
 import {
   type GridApiDeprecation,
   type GridApiReplacement,
 } from '../../plugins/transform-grid-api-methods';
-type Identifier = Types.Identifier;
-type StringLiteral = Types.StringLiteral;
 
 export const replacements: Array<GridApiReplacement> = [
   replace(
@@ -22,3 +20,5 @@ export const replacements: Array<GridApiReplacement> = [
   ),
   )
 ];
+
+export const deprecations: Array<GridApiDeprecation> = [];
