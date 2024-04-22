@@ -1,0 +1,13 @@
+import { type TransformManifest, type VersionManifest } from '@ag-grid-devtools/types';
+
+import transformGridApiMethodsV31_3 from '../../transforms/transform-grid-api-methods-v31-3/manifest.ts';
+
+const transforms: Array<TransformManifest> = [transformGridApiMethodsV31_3];
+
+const manifest: VersionManifest = {
+  version: '31.3.0',
+  codemodPath: 'version/31.3.0',
+  transforms,
+};
+
+export default manifest;
