@@ -63,7 +63,7 @@ Changes are committed to the repository as follows:
 3. Rebase on the latest `develop` branch to incorporate upstream changes
 4. Raise a PR that targets `develop` as its base branch
 5. Wait for CI tests to pass
-6. Merge the PR using the 'rebase' merge stragegy
+6. Merge the PR using the 'rebase' merge strategy
 
 ### Releasing
 
@@ -76,7 +76,7 @@ When the contents of the `develop` branch are ready to be released, follow these
     ```
 2. Raise a new PR that merges `develop` into `main`
 3. Wait for CI tests to pass
-4. Merge the PR using the 'merge commit' merge stragegy
+4. Merge the PR using the 'merge commit' merge strategy
 
 This will cause CI to perform the following actions:
 
