@@ -6,6 +6,8 @@ import v31_1_0 from './31.1.0/manifest';
 
 import v31_2_0 from './31.2.0/manifest';
 
-const versions: Array<VersionManifest> = [v31_0_0, v31_1_0, v31_2_0];
+import v31_3_0 from './31.3.0/manifest';
+
+const versions: Array<VersionManifest> = [v31_0_0, v31_1_0, v31_2_0, v31_3_0];
 
 export default versions;
