@@ -28,10 +28,10 @@ const TEST_TYPE_PLUGIN = 'plugin';
 const TEST_TYPES = [TEST_TYPE_TRANSFORM, TEST_TYPE_RELEASE, TEST_TYPE_PLUGIN];
 
 const FRAMEWORK_JS = 'js';
-const FRAMEWORK_GRID_VANILLA = 'grid:vanilla';
-const FRAMEWORK_GRID_REACT = 'grid:jsx';
-const FRAMEWORK_GRID_ANGULAR = 'grid:angular';
-const FRAMEWORK_GRID_VUE = 'grid:vue';
+const FRAMEWORK_GRID_VANILLA = 'vanilla';
+const FRAMEWORK_GRID_REACT = 'jsx';
+const FRAMEWORK_GRID_ANGULAR = 'angular';
+const FRAMEWORK_GRID_VUE = 'vue';
 const FRAMEWORKS = [
   FRAMEWORK_JS,
   FRAMEWORK_GRID_VANILLA,
