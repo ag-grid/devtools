@@ -67,7 +67,7 @@ Changes are committed to the repository as follows:
 
 ### Releasing
 
-When the contents of the `develop` branch are ready to be released, follow these steps to publish a new version:
+When the contents of the `develop` branch are ready to be released, follow these steps to publish a new version: 
 
 1. Ensure that `@ag-grid-devtools/cli` package version has been incremented in the `develop` branch:
     ```
