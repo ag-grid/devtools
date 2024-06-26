@@ -52,6 +52,9 @@
       },
       "./version/31.3.0": {
         "require": "./version/31.3.0.cjs"
+      },
+      "./version/32.0.0": {
+        "require": "./version/32.0.0.cjs"
       }
     }
   },
