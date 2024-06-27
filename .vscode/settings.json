@@ -3,8 +3,5 @@
         "Codemod",
         "codemods",
         "organised"
-    ],
-
-    // enable format on save
-    "editor.formatOnSave": true,
+    ]
 }
