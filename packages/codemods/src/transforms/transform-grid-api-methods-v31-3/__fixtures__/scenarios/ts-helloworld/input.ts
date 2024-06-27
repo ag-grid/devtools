@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createGrid } from '@ag-grid-community/core';
 
 const gridApi = createGrid(document.body, {
@@ -7,11 +8,6 @@ const gridApi = createGrid(document.body, {
 
 const col = 'foo';
 const row = {};
-gridApi.getCellValue({
-  colKey: col,
-  rowNode: row
-});
-gridApi?.getCellValue({
-  colKey: 'colId',
-  rowNode: row
-});
+gridApi.getValue(col, row);
+gridApi?.getValue('colId', row);
+gridApi!.getValue('x', row);

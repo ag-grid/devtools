@@ -59,6 +59,7 @@ import { VueComponentCliContext } from './transform';
 
 type AssignmentExpression = Types.AssignmentExpression;
 type CallExpression = Types.CallExpression;
+type OptionalCallExpression = Types.OptionalCallExpression;
 type Class = Types.Class;
 type ClassMethod = Types.ClassMethod;
 type Expression = Types.Expression;
@@ -247,17 +248,20 @@ export function visitObjectExpression<
 export function visitGridOptionsProperties<
   S extends AstTransformContext<AstCliContext & VueComponentCliContext>,
 >(visitor: ObjectPropertyVisitor<S>): AstNodeVisitor<S> {
+  function CallExpression(path: NodePath, context: S) {
+    const gridInitializer = matchJsGridApiInitializer(path);
+    if (!gridInitializer) return;
+    const { options } = gridInitializer;
+    if (!options) return;
+    const accessors = getAccessorExpressionPaths(options);
+    if (!accessors) return;
+    accessors.forEach((accessor) => visitObjectAccessor(accessor, visitor, context));
+  }
+
   return {
     // Traverse plain JS grid API instances
-    CallExpression(path, context) {
-      const gridInitializer = matchJsGridApiInitializer(path);
-      if (!gridInitializer) return;
-      const { options } = gridInitializer;
-      if (!options) return;
-      const accessors = getAccessorExpressionPaths(options);
-      if (!accessors) return;
-      accessors.forEach((accessor) => visitObjectAccessor(accessor, visitor, context));
-    },
+    CallExpression,
+    OptionalCallExpression: CallExpression,
     // Traverse React grid elements
     JSXElement(path, context) {
       if (!isAgGridJsxElement(path)) return;
@@ -479,8 +483,8 @@ function retrieveObjectLiteralPropertyAccessor(
         const key = property.isObjectProperty()
           ? property.get('key')
           : property.isObjectMethod()
-          ? property.get('key')
-          : null;
+            ? property.get('key')
+            : null;
         const computed = property.node.computed;
         if (!key) return null;
         return { key, computed, property };
@@ -646,8 +650,9 @@ export function getJsGridApiReferences(
 }
 
 function matchJsGridApiInitializer(path: NodePath<AstNode>): JsGridApiDefinition | null {
-  if (!path.isCallExpression()) return null;
-  const callee = path.get('callee');
+  if (!path.isCallExpression() && !path.isOptionalCallExpression()) return null;
+  const typedPath = path as NodePath<CallExpression | OptionalCallExpression>;
+  const callee = typedPath.get('callee');
   if (!callee.isExpression()) return null;
   const gridApiImport = getNamedModuleImportExpression(
     callee,
@@ -656,12 +661,14 @@ function matchJsGridApiInitializer(path: NodePath<AstNode>): JsGridApiDefinition
     AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME,
   );
   if (!gridApiImport) return null;
-  const { element, options } = parseJsGridApiInitializerArguments(path.get('arguments'));
+  const { element, options } = parseJsGridApiInitializerArguments(typedPath.get('arguments'));
   return GridApiDefinition.Js({ initializer: path, element, options });
 }
 
 function parseJsGridApiInitializerArguments(
-  args: Array<NodePath<CallExpression['arguments'][number]>>,
+  args: Array<
+    NodePath<CallExpression['arguments'][number] | OptionalCallExpression['arguments'][number]>
+  >,
 ): {
   element: NodePath<Expression> | null;
   options: NodePath<Expression> | null;
