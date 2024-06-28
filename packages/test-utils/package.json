@@ -55,7 +55,7 @@
     "@vitest/expect": "^1",
     "@vitest/runner": "^1",
     "eslint": "^8",
-    "typedoc": "^0.25",
+    "typedoc": "^0.26",
     "typescript": "^5",
     "vite": "^5",
     "vitest": "^1"
