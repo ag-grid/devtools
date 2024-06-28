@@ -479,8 +479,8 @@ function retrieveObjectLiteralPropertyAccessor(
         const key = property.isObjectProperty()
           ? property.get('key')
           : property.isObjectMethod()
-          ? property.get('key')
-          : null;
+            ? property.get('key')
+            : null;
         const computed = property.node.computed;
         if (!key) return null;
         return { key, computed, property };

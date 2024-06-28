@@ -11,6 +11,7 @@
     "build:lib": "pnpm run --recursive --parallel build:lib && pnpm run build:docs && pnpm run coverage",
     "build:docs": "typedoc",
     "verify": "pnpm run /^\\(lint\\|test\\)$/",
+    "eslint:fix": " pnpm run --recursive --parallel lint:eslint --fix",
     "lint": "pnpm run /^lint:.*/ && pnpm run --recursive --parallel lint",
     "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
     "lint:typescript": "tsc --noEmit",
@@ -24,13 +25,14 @@
   },
   "peerDependencies": {
     "@vitest/coverage-v8": "^1",
-    "typedoc": "^0.25",
-    "typescript": "^5",
     "vite": "^5",
     "vitest": "^1"
   },
   "devDependencies": {
     "@types/glob": "8.1.0",
-    "glob": "10.3.10"
+    "glob": "10.4.2",
+    "prettier": "3.3.2",
+    "typedoc": "^0.26.3",
+    "typescript": "5.5.2"
   }
 }

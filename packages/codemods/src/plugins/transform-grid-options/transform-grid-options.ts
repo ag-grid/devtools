@@ -860,12 +860,12 @@ export function invertOptionalBooleanValue<
         value === true
           ? createVueBooleanLiteral(false)
           : value.node.type === 'VLiteral'
-          ? createVueBooleanLiteral(value.node.value !== '')
-          : (() => {
-              const expression = getVueExpressionContainerExpression(value.node);
-              if (!expression) return null;
-              return invertVueBooleanExpression(expression);
-            })();
+            ? createVueBooleanLiteral(value.node.value !== '')
+            : (() => {
+                const expression = getVueExpressionContainerExpression(value.node);
+                if (!expression) return null;
+                return invertVueBooleanExpression(expression);
+              })();
       if (!invertedValue) {
         context.opts.warn(
           component,
@@ -1292,8 +1292,8 @@ function getRewrittenVueAttribute(
             ? null
             : updatedValue
           : existingValue === true
-          ? null
-          : existingValue.node,
+            ? null
+            : existingValue.node,
       });
     },
     Directive: ({ attribute }) => {
@@ -1307,8 +1307,8 @@ function getRewrittenVueAttribute(
             ? null
             : updatedValue
           : existingValue === true
-          ? null
-          : existingValue.node,
+            ? null
+            : existingValue.node,
       });
     },
   });
