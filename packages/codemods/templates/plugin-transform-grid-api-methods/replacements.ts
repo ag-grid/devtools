@@ -1,20 +1,27 @@
 import { ast, matchNode, pattern as p, replace, template } from '@ag-grid-devtools/ast';
-import {
-  type GridApiDeprecation,
-  type GridApiReplacement,
-} from '../../plugins/<%= plugin %>';
+import { type GridApiDeprecation, type GridApiReplacement } from '../../plugins/<%= plugin %>';
 
 export const replacements: Array<GridApiReplacement> = [
-  replace(
-    matchNode(({ api }) => ast.expression`${api}.helloWorld()`, {
-      api: p.expression(),
-    }),
-    template(({ api }) => ast.expression`${api}.sayHello('world')`),
-  ),
+  ...['', '?', '!']
+    .map((apiOptionalChaining) => [
+      // Replace helloWorld() with sayHello('world')
+      replace(
+        matchNode(({ api }) => ast.expression`${api}${apiOptionalChaining}.helloWorld()`, {
+          api: p.expression(),
+        }),
+        template(({ api }) => ast.expression`${api}${apiOptionalChaining}.sayHello('world')`),
+      ),
+    ])
+    .flat(),
 ];
 
 export const deprecations: Array<GridApiDeprecation> = [
-  matchNode(({ api }) => ast.expression`${api}.goodbyeWorld()`, {
-    api: p.expression(),
-  }),
+  ...['', '?', '!']
+    .map((apiOptionalChaining) => [
+      // Deprecate goodbyeWorld()
+      matchNode(({ api }) => ast.expression`${api}${apiOptionalChaining}goodbyeWorld()`, {
+        api: p.expression(),
+      }),
+    ])
+    .flat(),
 ];

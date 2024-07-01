@@ -6,3 +6,4 @@ let gridApi = createGrid(document.body, {
 });
 
 gridApi.setGridOption("serverSideDatasource", value);
+gridApi?.setGridOption("serverSideDatasource", value);

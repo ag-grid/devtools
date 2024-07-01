@@ -144,7 +144,7 @@ export function getGridOptionSetterReplacements(
             replace(
               matchNode(
                 ({ api, value, source }) =>
-                  ast.expression`${api}.${t.identifier(method)}(${value}, ${source})`,
+                  ast.expression`${api}${apiOptionalChaining}.${t.identifier(method)}(${value}, ${source})`,
                 {
                   api: p.expression(),
                   value: p.expression(),

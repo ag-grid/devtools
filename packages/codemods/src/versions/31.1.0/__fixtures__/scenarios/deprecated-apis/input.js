@@ -32,19 +32,24 @@ const gridApi = createGrid(document.body, {
 });
 
 gridApi.getModel().getRow(3);
+gridApi?.getModel().getRow(3);
 gridApi.getModel().getRowNode('foo');
+gridApi?.getModel().getRowNode('foo');
 gridApi.getModel().getRowCount();
 gridApi.getModel().isEmpty();
 gridApi.getModel().forEachNode(() => {});
 gridApi.getModel().forEachNode(() => {}, true);
+gridApi?.getModel().forEachNode(() => {}, true);
 gridApi.getFirstDisplayedRow();
+gridApi?.getFirstDisplayedRow();
 gridApi.getLastDisplayedRow();
+gridApi?.getLastDisplayedRow();
 gridApi.getFilterInstance('foo');
-gridApi.getFilterInstance('foo', () => {});
+gridApi?.getFilterInstance('foo', () => {});
 gridApi.flashCells({
   flashDelay: 1000,
   fadeDelay: 3000,
-  foo: true,
+  foo: true
 });
 gridApi.removeRowGroupColumn('foo');
 gridApi.addRowGroupColumn('foo');
@@ -63,5 +68,5 @@ gridApi.setColumnWidth('foo', 300);
 gridApi.setColumnWidth('foo', 300, true);
 gridApi.setColumnWidth('foo', 300, true, 'api');
 gridApi.setColumnVisible('foo', true);
-gridApi.showColumnMenuAfterButtonClick('foo', document.body.firstChild);
+gridApi?.showColumnMenuAfterButtonClick('foo', document.body.firstChild);
 gridApi.showColumnMenuAfterMouseEvent('foo', new MouseEvent('click'));

@@ -6,6 +6,7 @@ const gridApi = createGrid(document.body, {
 });
 
 gridApi.getModel().getRow(3);
+gridApi?.getModel().getRow(3);
 gridApi.getModel().getRowNode('foo');
 gridApi.getModel().getRowCount();
 gridApi.getModel().isEmpty();
@@ -39,3 +40,4 @@ gridApi.setColumnWidth('foo', 300, true, 'api');
 gridApi.setColumnVisible('foo', true);
 gridApi.showColumnMenuAfterButtonClick('foo', document.body.firstChild);
 gridApi.showColumnMenuAfterMouseEvent('foo', new MouseEvent('click'));
+gridApi?.showColumnMenuAfterMouseEvent('foo', new MouseEvent('click'));
