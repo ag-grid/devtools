@@ -8,36 +8,45 @@ import {
 
 const GRID_API_REPLACEMENTS: Array<GridApiReplacement> = [
   ...['', '?', '!']
-    .map((apiCoalesce) => [
+    .map((apiOptionalChaining) => [
       replace(
-        matchNode(({ api }) => ast.expression`${api}${apiCoalesce}.refreshServerSideStore()`, {
-          api: p.expression(),
-        }),
-        template(({ api }) => ast.expression`${api}${apiCoalesce}.refreshServerSide()`),
+        matchNode(
+          ({ api }) => ast.expression`${api}${apiOptionalChaining}.refreshServerSideStore()`,
+          {
+            api: p.expression(),
+          },
+        ),
+        template(({ api }) => ast.expression`${api}${apiOptionalChaining}.refreshServerSide()`),
       ),
       replace(
         matchNode(
           ({ api, params }) =>
-            ast.expression`${api}${apiCoalesce}.refreshServerSideStore(${params})`,
+            ast.expression`${api}${apiOptionalChaining}.refreshServerSideStore(${params})`,
           {
             api: p.expression(),
             params: p.expression(),
           },
         ),
         template(
-          ({ api, params }) => ast.expression`${api}${apiCoalesce}.refreshServerSide(${params})`,
+          ({ api, params }) =>
+            ast.expression`${api}${apiOptionalChaining}.refreshServerSide(${params})`,
         ),
       ),
       replace(
-        matchNode(({ api }) => ast.expression`${api}${apiCoalesce}.getServerSideStoreState()`, {
-          api: p.expression(),
-        }),
-        template(({ api }) => ast.expression`${api}${apiCoalesce}.getServerSideGroupLevelState()`),
+        matchNode(
+          ({ api }) => ast.expression`${api}${apiOptionalChaining}.getServerSideStoreState()`,
+          {
+            api: p.expression(),
+          },
+        ),
+        template(
+          ({ api }) => ast.expression`${api}${apiOptionalChaining}.getServerSideGroupLevelState()`,
+        ),
       ),
       replace(
         matchNode(
           ({ api, value }) =>
-            ast.expression`${api}${apiCoalesce}.setProcessSecondaryColDef(${value})`,
+            ast.expression`${api}${apiOptionalChaining}.setProcessSecondaryColDef(${value})`,
           {
             api: p.expression(),
             value: p.expression(),
@@ -45,13 +54,13 @@ const GRID_API_REPLACEMENTS: Array<GridApiReplacement> = [
         ),
         template(
           ({ api, value }) =>
-            ast.expression`${api}${apiCoalesce}.setGridOption('processPivotResultColDef', ${value})`,
+            ast.expression`${api}${apiOptionalChaining}.setGridOption('processPivotResultColDef', ${value})`,
         ),
       ),
       replace(
         matchNode(
           ({ api, value }) =>
-            ast.expression`${api}${apiCoalesce}.setProcessSecondaryColGroupDef(${value})`,
+            ast.expression`${api}${apiOptionalChaining}.setProcessSecondaryColGroupDef(${value})`,
           {
             api: p.expression(),
             value: p.expression(),
@@ -59,13 +68,13 @@ const GRID_API_REPLACEMENTS: Array<GridApiReplacement> = [
         ),
         template(
           ({ api, value }) =>
-            ast.expression`${api}${apiCoalesce}.setGridOption('processPivotResultColGroupDef', ${value})`,
+            ast.expression`${api}${apiOptionalChaining}.setGridOption('processPivotResultColGroupDef', ${value})`,
         ),
       ),
       replace(
         matchNode(
           ({ api, value }) =>
-            ast.expression`${api}${apiCoalesce}.setGetServerSideStoreParams(${value})`,
+            ast.expression`${api}${apiOptionalChaining}.setGetServerSideStoreParams(${value})`,
           {
             api: p.expression(),
             value: p.expression(),
@@ -73,7 +82,7 @@ const GRID_API_REPLACEMENTS: Array<GridApiReplacement> = [
         ),
         template(
           ({ api, value }) =>
-            ast.expression`${api}${apiCoalesce}.setGridOption('getServerSideGroupLevelParams', ${value})`,
+            ast.expression`${api}${apiOptionalChaining}.setGridOption('getServerSideGroupLevelParams', ${value})`,
         ),
       ),
     ])
@@ -81,8 +90,8 @@ const GRID_API_REPLACEMENTS: Array<GridApiReplacement> = [
 ];
 
 const GRID_API_DEPRECATIONS: Array<GridApiDeprecation> = [
-  ...['', '?', '!'].map((apiCoalesce) =>
-    matchNode(({ api }) => ast.expression`${api}${apiCoalesce}.setGetRowId()`, {
+  ...['', '?', '!'].map((apiOptionalChaining) =>
+    matchNode(({ api }) => ast.expression`${api}${apiOptionalChaining}.setGetRowId()`, {
       api: p.expression(),
     }),
   ),
@@ -90,29 +99,29 @@ const GRID_API_DEPRECATIONS: Array<GridApiDeprecation> = [
 
 const COLUMNS_API_REPLACEMENTS: Array<GridApiReplacement> = [
   ...['', '?', '!']
-    .map((apiCoalesce) => [
+    .map((apiOptionalChaining) => [
       replace(
-        matchNode(({ api }) => ast.expression`${api}${apiCoalesce}.getAllColumns()`, {
+        matchNode(({ api }) => ast.expression`${api}${apiOptionalChaining}.getAllColumns()`, {
           api: p.expression(),
         }),
-        template(({ api }) => ast.expression`${api}${apiCoalesce}.getColumns()`),
+        template(({ api }) => ast.expression`${api}${apiOptionalChaining}.getColumns()`),
       ),
       replace(
-        matchNode(({ api }) => ast.expression`${api}${apiCoalesce}.getPrimaryColumns()`, {
+        matchNode(({ api }) => ast.expression`${api}${apiOptionalChaining}.getPrimaryColumns()`, {
           api: p.expression(),
         }),
-        template(({ api }) => ast.expression`${api}${apiCoalesce}.getColumns()`),
+        template(({ api }) => ast.expression`${api}${apiOptionalChaining}.getColumns()`),
       ),
       replace(
-        matchNode(({ api }) => ast.expression`${api}${apiCoalesce}.getSecondaryColumns()`, {
+        matchNode(({ api }) => ast.expression`${api}${apiOptionalChaining}.getSecondaryColumns()`, {
           api: p.expression(),
         }),
-        template(({ api }) => ast.expression`${api}${apiCoalesce}.getPivotResultColumns()`),
+        template(({ api }) => ast.expression`${api}${apiOptionalChaining}.getPivotResultColumns()`),
       ),
       replace(
         matchNode(
           ({ api, colDefs }) =>
-            ast.expression`${api}${apiCoalesce}.setSecondaryColumns(${colDefs})`,
+            ast.expression`${api}${apiOptionalChaining}.setSecondaryColumns(${colDefs})`,
           {
             api: p.expression(),
             colDefs: p.expression(),
@@ -120,13 +129,13 @@ const COLUMNS_API_REPLACEMENTS: Array<GridApiReplacement> = [
         ),
         template(
           ({ api, colDefs }) =>
-            ast.expression`${api}${apiCoalesce}.setPivotResultColumns(${colDefs})`,
+            ast.expression`${api}${apiOptionalChaining}.setPivotResultColumns(${colDefs})`,
         ),
       ),
       replace(
         matchNode(
           ({ api, pivotKeys, valueColKey }) =>
-            ast.expression`${api}${apiCoalesce}.getSecondaryPivotColumn(${pivotKeys}, ${valueColKey})`,
+            ast.expression`${api}${apiOptionalChaining}.getSecondaryPivotColumn(${pivotKeys}, ${valueColKey})`,
           {
             api: p.expression(),
             pivotKeys: p.expression(),
@@ -135,7 +144,7 @@ const COLUMNS_API_REPLACEMENTS: Array<GridApiReplacement> = [
         ),
         template(
           ({ api, pivotKeys, valueColKey }) =>
-            ast.expression`${api}${apiCoalesce}.getPivotResultColumn(${pivotKeys}, ${valueColKey})`,
+            ast.expression`${api}${apiOptionalChaining}.getPivotResultColumn(${pivotKeys}, ${valueColKey})`,
         ),
       ),
     ])

@@ -5,11 +5,11 @@ import {
 } from '../../plugins/transform-grid-api-methods';
 
 export const replacements: Array<GridApiReplacement> = [
-  ...['', '?', '!'].map((apiCoalesce) =>
+  ...['', '?', '!'].map((apiOptionalChaining) =>
     replace(
       matchNode(
         ({ api, colKey, rowNode }) =>
-          ast.expression`${api}${apiCoalesce}.getValue(${colKey}, ${rowNode})`,
+          ast.expression`${api}${apiOptionalChaining}.getValue(${colKey}, ${rowNode})`,
         {
           api: p.expression(),
           colKey: p.expression(),
@@ -17,7 +17,7 @@ export const replacements: Array<GridApiReplacement> = [
         },
       ),
       template(({ api, colKey, rowNode }) => {
-        return ast.expression`${api}${apiCoalesce}.getCellValue(${t.objectExpression([
+        return ast.expression`${api}${apiOptionalChaining}.getCellValue(${t.objectExpression([
           t.objectProperty(t.identifier('colKey'), colKey),
           t.objectProperty(t.identifier('rowNode'), rowNode),
         ])})`;

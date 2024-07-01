@@ -98,20 +98,20 @@ export function getGridOptionSetterReplacements(
 
       const transform = transformValue || ((value: Expression) => value);
 
-      for (const apiCoalesce of ['', '?', '!']) {
+      for (const apiOptionalChaining of ['', '?', '!']) {
         // Generate a zero-arg method replacement if method's value is optional
         if (optionalValue) {
           result.push(
             replace(
               matchNode(
-                ({ api }) => ast.expression`${api}${apiCoalesce}.${t.identifier(method)}()`,
+                ({ api }) => ast.expression`${api}${apiOptionalChaining}.${t.identifier(method)}()`,
                 {
                   api: p.expression(),
                 },
               ),
               template(
                 ({ api }) =>
-                  ast.expression`${api}${apiCoalesce}.setGridOption(${t.stringLiteral(
+                  ast.expression`${api}${apiOptionalChaining}.setGridOption(${t.stringLiteral(
                     option,
                   )}, undefined)`,
               ),
@@ -124,7 +124,7 @@ export function getGridOptionSetterReplacements(
           replace(
             matchNode(
               ({ api, value }) =>
-                ast.expression`${api}${apiCoalesce}.${t.identifier(method)}(${value})`,
+                ast.expression`${api}${apiOptionalChaining}.${t.identifier(method)}(${value})`,
               {
                 api: p.expression(),
                 value: p.expression(),
@@ -132,7 +132,7 @@ export function getGridOptionSetterReplacements(
             ),
             template(
               ({ api, value }) =>
-                ast.expression`${api}${apiCoalesce}.setGridOption(${t.stringLiteral(
+                ast.expression`${api}${apiOptionalChaining}.setGridOption(${t.stringLiteral(
                   option,
                 )}, ${transform(value)})`,
             ),
@@ -153,7 +153,7 @@ export function getGridOptionSetterReplacements(
               ),
               template(
                 ({ api, value, source }) =>
-                  ast.expression`${api}${apiCoalesce}.updateGridOptions({ options: { ${t.identifier(
+                  ast.expression`${api}${apiOptionalChaining}.updateGridOptions({ options: { ${t.identifier(
                     option,
                   )}: ${transform(value)} }, source: ${source} })`,
               ),
