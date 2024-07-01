@@ -4,8 +4,7 @@ import {
   type GridApiReplacement,
 } from '../../plugins/transform-grid-api-methods';
 
-export const replacements: Array<GridApiReplacement> = [
-];
+export const replacements: Array<GridApiReplacement> = [];
 
 export const deprecations: Array<GridApiDeprecation> = [
   matchNode(({ api }) => ast.expression`${api}.showLoadingOverlay()`, {
