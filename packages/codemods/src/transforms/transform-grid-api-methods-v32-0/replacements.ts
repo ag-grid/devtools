@@ -7,7 +7,9 @@ import {
 export const replacements: Array<GridApiReplacement> = [];
 
 export const deprecations: Array<GridApiDeprecation> = [
-  matchNode(({ api }) => ast.expression`${api}.showLoadingOverlay()`, {
-    api: p.expression(),
-  }),
+  ...['', '?', '!'].map((apiOptionalChaining) =>
+    matchNode(({ api }) => ast.expression`${api}${apiOptionalChaining}.showLoadingOverlay()`, {
+      api: p.expression(),
+    }),
+  ),
 ];

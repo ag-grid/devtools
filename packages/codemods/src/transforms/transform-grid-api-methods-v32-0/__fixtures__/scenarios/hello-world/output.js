@@ -6,3 +6,4 @@ const gridApi = createGrid(document.body, {
 });
 
 gridApi.showLoadingOverlay();
+gridApi?.showLoadingOverlay();
