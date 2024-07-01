@@ -1,6 +1,6 @@
 import { type Binding, type NodePath, type Types } from './types';
 import { getOptionalNodeFieldValue, getStaticPropertyKey, node as t } from './node';
-import { Enum, EnumVariant, match, matchString } from '@ag-grid-devtools/utils';
+import { Enum, EnumVariant, StringMatcher, match, matchString } from '@ag-grid-devtools/utils';
 
 type CallExpression = Types.CallExpression;
 type Expression = Types.Expression;
@@ -116,9 +116,9 @@ const NamedUmdImportBindingAccessor = Enum.create<
 
 export function getNamedModuleImportExpression(
   expression: NodePath<Expression | JSXIdentifier>,
-  packageName: string | RegExp,
-  umdGlobalName: string | RegExp | null,
-  importedName: string | RegExp,
+  packageName: StringMatcher,
+  umdGlobalName: StringMatcher | null,
+  importedName: StringMatcher,
 ): NamedImportBinding | null {
   if (expression.isIdentifier()) {
     const binding = expression.scope.getBinding(expression.node.name);
@@ -174,9 +174,9 @@ export function getNamedModuleImportExpression(
 
 function getNamedModuleImportBinding(
   binding: Binding,
-  packageName: string | RegExp,
-  umdGlobalName: string | RegExp | null,
-  importedName: string | RegExp,
+  packageName: StringMatcher,
+  umdGlobalName: StringMatcher | null,
+  importedName: StringMatcher,
 ): NamedImportBinding | null {
   switch (binding.kind) {
     case 'module':
@@ -196,8 +196,8 @@ function getNamedModuleImportBinding(
 
 function getNamedEsModuleImportBinding(
   binding: Binding,
-  packageName: string | RegExp,
-  importedName: string | RegExp,
+  packageName: StringMatcher,
+  importedName: StringMatcher,
 ): NamedImportBinding | null {
   const target = binding.path;
   if (!target.isImportSpecifier() || !target.parentPath.isImportDeclaration()) {
@@ -219,9 +219,9 @@ function getNamedEsModuleImportBinding(
 
 function getNamedUmdImportBinding(
   binding: Binding,
-  packageName: string | RegExp,
-  umdGlobalName: string | RegExp | null,
-  importedName: string | RegExp,
+  packageName: StringMatcher,
+  umdGlobalName: StringMatcher | null,
+  importedName: StringMatcher,
 ): NamedImportBinding | null {
   const target = binding.path;
   if (!target.isVariableDeclarator() || !target.parentPath.isVariableDeclaration()) return null;
@@ -312,8 +312,8 @@ function getNamedUmdImportBinding(
 
 export function getNamedPackageNamespaceImportExpression(
   expression: NodePath<Expression>,
-  packageName: string | RegExp,
-  umdGlobalName: string | RegExp | null,
+  packageName: StringMatcher,
+  umdGlobalName: StringMatcher | null,
 ): PackageNamespaceImportBinding | null {
   if (isCommonJsRequireExpression(expression)) {
     if (!matchString(expression.node.arguments[0].value, packageName)) return null;
@@ -356,7 +356,7 @@ export function getNamedPackageNamespaceImportExpression(
 
 function isNamedUmdGlobalNamespaceExpression(
   expression: NodePath<Expression>,
-  umdGlobalName: string | RegExp,
+  umdGlobalName: StringMatcher,
 ): expression is NodePath<Identifier> {
   if (!expression.isIdentifier()) return false;
   return matchString(expression.node.name, umdGlobalName);
@@ -364,8 +364,8 @@ function isNamedUmdGlobalNamespaceExpression(
 
 function getNamedPackageNamespaceImportBinding(
   binding: Binding,
-  packageName: string | RegExp,
-  umdGlobalName: string | RegExp | null,
+  packageName: StringMatcher,
+  umdGlobalName: StringMatcher | null,
 ): PackageNamespaceImportBinding | null {
   switch (binding.kind) {
     case 'module':
@@ -385,7 +385,7 @@ function getNamedPackageNamespaceImportBinding(
 
 function getNamedEsModulePackageNamespaceImportBinding(
   binding: Binding,
-  packageName: string | RegExp,
+  packageName: StringMatcher,
 ): PackageNamespaceImportBinding | null {
   const target = binding.path;
   if (!target.isImportNamespaceSpecifier() || !target.parentPath.isImportDeclaration()) {
@@ -404,8 +404,8 @@ function getNamedEsModulePackageNamespaceImportBinding(
 
 function getNamedUmdPackageNamespaceImportBinding(
   binding: Binding,
-  packageName: string | RegExp,
-  umdGlobalName: string | RegExp | null,
+  packageName: StringMatcher,
+  umdGlobalName: StringMatcher | null,
 ): PackageNamespaceImportBinding | null {
   const target = binding.path;
   if (!target.isVariableDeclarator() || !target.parentPath.isVariableDeclaration()) return null;
@@ -428,8 +428,8 @@ function getNamedUmdPackageNamespaceImportBinding(
 export function matchModuleImportName(
   declaration: ImportDeclaration,
   specifier: ImportSpecifier,
-  packageName: string | RegExp,
-  importedName: string | RegExp,
+  packageName: StringMatcher,
+  importedName: StringMatcher,
 ): {
   packageName: string;
   importedName: string;
@@ -443,7 +443,7 @@ export function matchModuleImportName(
 
 export function matchModuleImportPackageName(
   declaration: ImportDeclaration,
-  packageName: string | RegExp,
+  packageName: StringMatcher,
 ): string | null {
   const actualPackageName = declaration.source.value;
   if (!matchString(actualPackageName, packageName)) return null;
@@ -452,7 +452,7 @@ export function matchModuleImportPackageName(
 
 export function findNamedModuleImport(
   declaration: ImportDeclaration,
-  pattern: string | RegExp,
+  pattern: StringMatcher,
 ): ImportSpecifier | null {
   return (
     declaration.specifiers
@@ -479,7 +479,7 @@ export function getImportSpecifierImportedName(specifier: ImportSpecifier): stri
 
 function isNamedCommonJsRequireExpression(
   expression: NodePath<Expression>,
-  packageName: string | RegExp,
+  packageName: StringMatcher,
 ): expression is NodePath<CommonJsRequireExpression> {
   if (!isCommonJsRequireExpression(expression)) return false;
   const requirePath = expression.node.arguments[0].value;

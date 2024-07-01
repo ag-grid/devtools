@@ -11,7 +11,7 @@ export function createCodemodTask(codemod: Codemod): CodemodTask {
     run(input: CodemodTaskInput, runner: TaskRunnerEnvironment): Promise<CodemodTaskResult> {
       const { fs } = runner;
       const { readFile, writeFile } = fs;
-      const { inputFilePath, dryRun } = input;
+      const { inputFilePath, allowedImports, dryRun } = input;
       return readFile(inputFilePath, 'utf-8')
         .catch((error) =>
           Promise.reject(
@@ -23,7 +23,7 @@ export function createCodemodTask(codemod: Codemod): CodemodTask {
             source: updated,
             errors,
             warnings,
-          } = codemod({ path: inputFilePath, source }, { fs });
+          } = codemod({ path: inputFilePath, source }, { fs, allowedImports });
           const isUnchanged = updated === source;
           const result = { source, updated: isUnchanged ? null : updated };
           if (dryRun || !updated || isUnchanged) return { result, errors, warnings };

@@ -1,4 +1,5 @@
 import {
+  TransformContext,
   type AstCliContext,
   type AstTransform,
   type AstTransformResult,
@@ -19,7 +20,7 @@ import { printTemplate } from '../templateHelpers';
 
 type VElement = AST.VElement;
 
-export interface VueComponentCliContext {
+export interface VueComponentCliContext extends TransformContext {
   vue?: {
     template: VueTemplateNode<VElement> | undefined;
   };
@@ -55,6 +56,7 @@ export function transformVueSfcFile(
   };
   // Expose the template to the transforms via plugin context
   const vueTransformOptions: VueComponentCliContext = {
+    allowedImports: options.allowedImports,
     vue: {
       template,
     },

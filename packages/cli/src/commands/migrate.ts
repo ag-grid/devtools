@@ -70,6 +70,10 @@ export interface MigrateCommandArgs {
    * List of input files to operate on (defaults to all source files in the current working directory)
    */
   input: Array<string>;
+  /**
+   * List of additional imports to process (comma-separated), when ag-grid is wrapped in a custom module
+   */
+  allowedImports?: Array<string>;
 }
 
 function usage(env: CliEnv): string {
@@ -86,6 +90,7 @@ Options:
       DEFAULT_TARGET_VERSION,
       env,
     )})
+    --allowed-imports=<list>  List of additional imports to process (comma-separated), when ag-grid is wrapped in a custom module
     --allow-untracked, -u     Allow operating on files outside a git repository
     --allow-dirty, -d         Allow operating on repositories with uncommitted changes in the working tree
     --num-threads             Number of worker threads to spawn (defaults to the number of system cores)
@@ -111,7 +116,9 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     verbose: false,
     help: false,
     input: [],
+    allowedImports: undefined,
   };
+  let allowedImportsSet = new Set<string>();
   let arg;
   while ((arg = args.shift())) {
     if (arg.includes('=')) {
@@ -176,6 +183,22 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         options.numThreads = numThreads;
         break;
       }
+      case '--allowed-imports': {
+        const value = args.shift();
+        if (!value || value.startsWith('-')) {
+          throw new CliArgsError(`Missing value for ${arg}`, usage(env));
+        }
+        if (!options.allowedImports) {
+          options.allowedImports = [];
+        }
+        for (let v of value.split(',')) {
+          v = v.trim();
+          if (v) {
+            allowedImportsSet.add(v);
+          }
+        }
+        break;
+      }
       case '--dry-run':
         options.dryRun = true;
         break;
@@ -194,6 +217,11 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         break;
     }
   }
+
+  if (allowedImportsSet.size > 0) {
+    options.allowedImports = Array.from(allowedImportsSet);
+  }
+
   if (options.help) return options;
   if (!options.from) {
     throw new CliArgsError(`Missing --from migration starting version`, usage(env));
@@ -224,7 +252,17 @@ async function migrate(
   args: Omit<MigrateCommandArgs, 'help'>,
   options: CliOptions,
 ): Promise<Array<string>> {
-  const { from, to, allowUntracked, allowDirty, numThreads, dryRun, verbose, input } = args;
+  const {
+    from,
+    to,
+    allowUntracked,
+    allowDirty,
+    numThreads,
+    dryRun,
+    verbose,
+    allowedImports,
+    input,
+  } = args;
   const { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
 
@@ -353,6 +391,7 @@ async function migrate(
         );
         return executeCodemodSingleThreaded(codemod, inputFilePaths, {
           dryRun,
+          allowedImports: allowedImports || [],
           onStart,
           onComplete,
         });
@@ -373,6 +412,7 @@ async function migrate(
         const workerPool = new WorkerTaskQueue<CodemodTaskInput, CodemodTaskWorkerResult>(workers);
         return executeCodemodMultiThreaded(workerPool, inputFilePaths, {
           dryRun,
+          allowedImports,
           onQueue,
           onStart,
           onComplete,
@@ -468,18 +508,19 @@ function executeCodemodMultiThreaded(
   inputFilePaths: string[],
   options: {
     dryRun: boolean;
+    allowedImports: Array<string> | undefined;
     onQueue?: (inputFilePath: string) => void;
     onStart?: (inputFilePath: string) => void;
     onComplete?: (inputFilePath: string, stats: { runningTime: number }) => void;
   },
 ): Promise<CodemodExecutionResult> {
-  const { dryRun, onQueue, onStart, onComplete } = options;
+  const { dryRun, allowedImports, onQueue, onStart, onComplete } = options;
   // Process the tasks by dispatching them to the worker pool
   return Promise.all(
     inputFilePaths.map((inputFilePath) => {
       return workerPool
         .run(
-          { inputFilePath, dryRun },
+          { inputFilePath, dryRun, allowedImports },
           {
             onQueue: onQueue?.bind(null, inputFilePath),
             onStart: onStart?.bind(null, inputFilePath),
@@ -514,21 +555,22 @@ function executeCodemodSingleThreaded(
   codemod: Codemod,
   inputFilePaths: string[],
   options: {
+    allowedImports: Array<string> | undefined;
     dryRun: boolean;
     onStart?: (inputFilePath: string) => void;
     onComplete?: (inputFilePath: string, stats: { runningTime: number }) => void;
   },
 ): Promise<CodemodExecutionResult> {
-  const { dryRun, onStart, onComplete } = options;
+  const { dryRun, onStart, onComplete, allowedImports } = options;
   const task = createCodemodTask(codemod);
-  const runner = { fs: createFsHelpers() };
+  const runner = { fs: createFsHelpers(), allowedImports };
   // Run the codemod for each input file
   return Promise.all(
     inputFilePaths.map((inputFilePath) => {
       const startTime = Date.now();
       onStart?.(inputFilePath);
       return task
-        .run({ inputFilePath, dryRun }, runner)
+        .run({ inputFilePath, dryRun, allowedImports }, runner)
         .then(({ result, errors, warnings }) => ({
           path: inputFilePath,
           result,

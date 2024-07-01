@@ -11,15 +11,16 @@ export function loadCodemodExampleScenarios(
   options: {
     codemod: Codemod;
     vitest: ExampleVitestHelpers;
+    allowedImports?: string[];
   },
 ): void {
-  const { codemod, vitest } = options;
+  const { codemod, vitest, allowedImports } = options;
   return loadAstTransformExampleScenarios(scenariosPath, {
     vitest,
     runner: (input) => {
       const { source, errors, warnings } = codemod(
         { path: input.path, source: input.source },
-        { fs: createMockFsHelpers(memfs) },
+        { fs: createMockFsHelpers(memfs), allowedImports },
       );
       return { source, errors, warnings };
     },

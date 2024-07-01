@@ -25,13 +25,17 @@ export interface FileMetadata {
   filename: string;
 }
 
+export interface TransformContext {
+  allowedImports: string[] | undefined;
+}
+
+export interface FsContext extends TransformContext {
+  fs: FsUtils;
+}
+
 export interface AstCliContext extends FsContext {
   warn(node: NodePath<AstNode> | null, message: string): void;
   fail(node: NodePath<AstNode> | null, message: string): void;
-}
-
-export interface FsContext {
-  fs: FsUtils;
 }
 
 export type AstTransformResult = {

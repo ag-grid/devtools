@@ -1977,13 +1977,15 @@ function createTransformContext(
   filename: string,
   options: {
     fs: typeof memfs;
+    allowedImports?: string[];
   },
 ): AstTransformContext<FsContext> {
-  const { fs } = options;
+  const { fs, allowedImports } = options;
   return {
     filename,
     opts: {
       fs: createMockFsHelpers(fs),
+      allowedImports,
     },
   };
 }
