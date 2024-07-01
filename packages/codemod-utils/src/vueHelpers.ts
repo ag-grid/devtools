@@ -482,10 +482,10 @@ export function getVueTemplateNodeChild<
 ): T[K] extends Node
   ? VueTemplateNode<T[K]>
   : T[K] extends Node | null
-  ? VueTemplateNode<Extract<T[K], Node>> | null
-  : T[K] extends Array<Node>
-  ? Array<VueTemplateNode<T[K][number]>>
-  : never {
+    ? VueTemplateNode<Extract<T[K], Node>> | null
+    : T[K] extends Array<Node>
+      ? Array<VueTemplateNode<T[K][number]>>
+      : never {
   return getTemplateNodeChild(templateNode, key) as any;
 }
 
@@ -513,10 +513,10 @@ function printVueNode(node: Node, previous: Node | null, templateSource: string)
           ? // FIXME: allow printing newly-generated Vue attribute nodes
             null
           : !node.directive && !previous.directive
-          ? printVueAttributeNode(node, previous, templateSource)
-          : node.directive && previous.directive
-          ? printVueDirectiveNode(node, previous, templateSource)
-          : null;
+            ? printVueAttributeNode(node, previous, templateSource)
+            : node.directive && previous.directive
+              ? printVueDirectiveNode(node, previous, templateSource)
+              : null;
       if (typeof result === 'string') return result;
       break;
     }
@@ -584,35 +584,35 @@ function printVueAttributeNode(
             },
           ]
         : existingNode.value
-        ? [
-            {
-              source: templateSource,
-              range: {
-                start: existingNode.value.range[1],
-                end: existingNode.range[1],
+          ? [
+              {
+                source: templateSource,
+                range: {
+                  start: existingNode.value.range[1],
+                  end: existingNode.range[1],
+                },
               },
-            },
-          ]
-        : updatedNode.value
-        ? [
-            `="${escapeVueString(updatedNode.value.value)}"`,
-            {
-              source: templateSource,
-              range: {
-                start: existingNode.key.range[1],
-                end: existingNode.range[1],
-              },
-            },
-          ]
-        : [
-            {
-              source: templateSource,
-              range: {
-                start: existingNode.key.range[1],
-                end: existingNode.range[1],
-              },
-            },
-          ]
+            ]
+          : updatedNode.value
+            ? [
+                `="${escapeVueString(updatedNode.value.value)}"`,
+                {
+                  source: templateSource,
+                  range: {
+                    start: existingNode.key.range[1],
+                    end: existingNode.range[1],
+                  },
+                },
+              ]
+            : [
+                {
+                  source: templateSource,
+                  range: {
+                    start: existingNode.key.range[1],
+                    end: existingNode.range[1],
+                  },
+                },
+              ]
       : [
           {
             source: templateSource,
@@ -696,35 +696,35 @@ function printVueDirectiveNode(
             },
           ]
         : existingNode.value
-        ? [
-            {
-              source: templateSource,
-              range: {
-                start: existingNode.value.range[1],
-                end: existingNode.range[1],
+          ? [
+              {
+                source: templateSource,
+                range: {
+                  start: existingNode.value.range[1],
+                  end: existingNode.range[1],
+                },
               },
-            },
-          ]
-        : updatedNode.value
-        ? [
-            `="${escapeVueString(formatVueBindingExpression(updatedNode.value, templateSource))}"`,
-            {
-              source: templateSource,
-              range: {
-                start: existingNode.key.range[1],
-                end: existingNode.range[1],
-              },
-            },
-          ]
-        : [
-            {
-              source: templateSource,
-              range: {
-                start: existingNode.key.range[1],
-                end: existingNode.range[1],
-              },
-            },
-          ]
+            ]
+          : updatedNode.value
+            ? [
+                `="${escapeVueString(formatVueBindingExpression(updatedNode.value, templateSource))}"`,
+                {
+                  source: templateSource,
+                  range: {
+                    start: existingNode.key.range[1],
+                    end: existingNode.range[1],
+                  },
+                },
+              ]
+            : [
+                {
+                  source: templateSource,
+                  range: {
+                    start: existingNode.key.range[1],
+                    end: existingNode.range[1],
+                  },
+                },
+              ]
       : [
           {
             source: templateSource,
@@ -975,10 +975,10 @@ export function invertVueBooleanExpression(value: ESLintExpression): ESLintExpre
   const existingTruthinessValue = isVueESLintNullLiteral(value)
     ? false
     : isVueESLintBooleanLiteral(value) ||
-      isVueESLintStringLiteral(value) ||
-      isVueESLintNumberLiteral(value)
-    ? value.value
-    : null;
+        isVueESLintStringLiteral(value) ||
+        isVueESLintNumberLiteral(value)
+      ? value.value
+      : null;
   if (typeof existingTruthinessValue === 'boolean') {
     const invertedValue = !existingTruthinessValue;
     return createVueBooleanLiteral(invertedValue);
