@@ -5,6 +5,10 @@
     "type": "git",
     "url": "https://github.com/ag-grid/devtools.git"
   },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9.4.0"
+  },
   "scripts": {
     "ci": "pnpm run verify && pnpm run build",
     "build": "pnpm run --filter @ag-grid-devtools/cli build",
