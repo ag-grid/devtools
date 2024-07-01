@@ -465,10 +465,10 @@ function getDestructuredRestPatternPropertyPath(
   const key: AccessorKey | null = !precedingSiblings
     ? null
     : precedingSiblings.type === PrecedingFieldsType.Array
-    ? AccessorKey.ArrayRest({ startIndex: precedingSiblings.count })
-    : precedingSiblings.type === PrecedingFieldsType.Object
-    ? AccessorKey.ObjectRest({ excluded: precedingSiblings.fields })
-    : null;
+      ? AccessorKey.ArrayRest({ startIndex: precedingSiblings.count })
+      : precedingSiblings.type === PrecedingFieldsType.Object
+        ? AccessorKey.ObjectRest({ excluded: precedingSiblings.fields })
+        : null;
   if (!key) return null;
   return getDestructuredPropertyPath(identifier, id, {
     path: [...parentPattern.path, key],

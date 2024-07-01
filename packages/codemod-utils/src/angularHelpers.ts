@@ -350,10 +350,10 @@ export function getAngularTemplateNodeChild<
 ): T[K] extends AngularAstNode
   ? AngularTemplateNode<T[K]>
   : T[K] extends AngularAstNode | null
-  ? AngularTemplateNode<Extract<T[K], AngularAstNode>> | null
-  : T[K] extends Array<AngularAstNode>
-  ? Array<AngularTemplateNode<T[K][number]>>
-  : never {
+    ? AngularTemplateNode<Extract<T[K], AngularAstNode>> | null
+    : T[K] extends Array<AngularAstNode>
+      ? Array<AngularTemplateNode<T[K][number]>>
+      : never {
   return getTemplateNodeChild(templateNode, key) as any;
 }
 
@@ -550,16 +550,16 @@ function patchExistingAngularBoundAttributeNode(
           ]
         : [`="${formatAngularExpression(updatedNode.value, templateSource)}"`]
       : existingNode.valueSpan
-      ? [
-          {
-            source: templateSource,
-            range: {
-              start: existingNode.valueSpan.start.offset,
-              end: existingNode.sourceSpan.end.offset,
+        ? [
+            {
+              source: templateSource,
+              range: {
+                start: existingNode.valueSpan.start.offset,
+                end: existingNode.sourceSpan.end.offset,
+              },
             },
-          },
-        ]
-      : []),
+          ]
+        : []),
   ]);
 }
 
@@ -848,8 +848,8 @@ export function invertAngularBooleanExpression(expression: Angular.AST): Angular
   const existingTruthinessValue = isTypedAngularExpressionNode(Angular.LiteralPrimitive, value)
     ? Boolean(value.value)
     : isTypedAngularExpressionNode(Angular.EmptyExpr, value)
-    ? true
-    : null;
+      ? true
+      : null;
   if (typeof existingTruthinessValue === 'boolean') {
     const invertedValue = !existingTruthinessValue;
     return createAngularBooleanLiteral(invertedValue);

@@ -19,8 +19,8 @@ export function indentErrorMessage(error: any, options: { indent: string }) {
     error instanceof CliError
       ? error.toString()
       : error instanceof Error
-      ? error.stack || error.message
-      : String(error);
+        ? error.stack || error.message
+        : String(error);
   return indentString(message, options);
 }
 

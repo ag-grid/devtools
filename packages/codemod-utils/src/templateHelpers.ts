@@ -289,9 +289,9 @@ function formatUpdatedNode<TRoot, TNode>(
             return { path: [childKey, index], range: formatter.getNodeRange(child) };
           })
         : originalChild
-        ? [{ path: [childKey], range: formatter.getNodeRange(originalChild) }]
-        : // FIXME: support optional template node child keys
-          [];
+          ? [{ path: [childKey], range: formatter.getNodeRange(originalChild) }]
+          : // FIXME: support optional template node child keys
+            [];
     })
     .sort((a, b) => a.range.start - b.range.start);
   if (childSlots.length === 0) return [{ source, range }];
