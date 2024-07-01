@@ -43,9 +43,9 @@
     "@ag-grid-devtools/ast": "workspace:*",
     "@ag-grid-devtools/types": "workspace:*",
     "@ag-grid-devtools/utils": "workspace:*",
-    "@angular-eslint/template-parser": "17.0.1",
+    "@angular-eslint/template-parser": "17.5.2",
     "@angular/compiler": "17.0.1",
-    "@typescript-eslint/types": "6.6.0",
+    "@typescript-eslint/types": "7.14.1",
     "memfs": "4.6.0"
   },
   "devDependencies": {
