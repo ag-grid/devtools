@@ -27,11 +27,6 @@
     "version": "pnpm --filter @ag-grid-devtools/cli exec -- pnpm run --silent version",
     "publish": "pnpm run --filter @ag-grid-devtools/cli publish"
   },
-  "peerDependencies": {
-    "@vitest/coverage-v8": "^1",
-    "vite": "^5",
-    "vitest": "^1"
-  },
   "devDependencies": {
     "@babel/core": "7.23.2",
     "@babel/generator": "7.23.0",
