@@ -1,11 +1,10 @@
-/// <reference types="vitest" />
 import { globSync } from 'glob';
 import { dirname, extname, join, relative } from 'node:path';
 import { defineConfig, mergeConfig } from 'vite';
 import { configDefaults } from 'vitest/config';
 import workspace from './vitest.workspace.mts';
 
-import base from './packages/build-config/templates/vite/base.vite.config';
+import base from './packages/build-config/templates/vite/base.vitest.config';
 
 export default mergeConfig(
   base,
