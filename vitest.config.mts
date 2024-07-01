@@ -1,6 +1,6 @@
 import { globSync } from 'glob';
 import { dirname, extname, join, relative } from 'node:path';
-import { defineConfig, mergeConfig } from 'vite';
+import { defineConfig, mergeConfig } from 'vitest/config';
 import { configDefaults } from 'vitest/config';
 import workspace from './vitest.workspace.mts';
 
