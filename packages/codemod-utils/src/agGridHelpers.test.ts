@@ -1892,7 +1892,7 @@ describe(getGridApiReferences, () => {
       expect(actual).toEqual(expected);
     });
 
-    test.only('should allow imports in context allowedImports, react', () => {
+    test('should allow imports in context allowedImports, react', () => {
       const input = ast.module`
         import { AgGridReact } from 'my-custom-import/hello';
         import { useRef } from 'react';

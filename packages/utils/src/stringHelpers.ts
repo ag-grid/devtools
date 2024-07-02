@@ -28,7 +28,6 @@ export function matchImport(value: string, pattern: StringMatcher) {
   }
   if (typeof pattern === 'string') {
     if (value === pattern) {
-      console.log(new Error());
       return true;
     }
     if (
