@@ -5,4 +5,5 @@ export type AstTransformOptions = FileMetadata & AstTransformCliOptions;
 
 export interface AstTransformCliOptions {
   fs: FsUtils;
+  allowedImports: string[] | undefined;
 }

@@ -12,6 +12,7 @@ export interface CodemodInput {
 
 export interface CodemodOptions {
   fs: FsUtils;
+  allowedImports: string[] | undefined;
 }
 
 export interface CodemodResult {
@@ -24,6 +25,7 @@ export interface CodemodTask extends Task<CodemodTaskInput, CodemodTaskResult> {
 
 export interface CodemodTaskInput {
   inputFilePath: string;
+  allowedImports: string[] | undefined;
   dryRun: boolean;
 }
 

@@ -1,6 +1,7 @@
 import {
   AccessorKey,
   AccessorReference,
+  TransformContext,
   areAccessorKeysEqual,
   getAccessorExpressionPaths,
   getNamedModuleImportExpression,
@@ -18,6 +19,7 @@ import {
 } from '@ag-grid-devtools/ast';
 import {
   Enum,
+  StringMatcher,
   nonNull,
   unreachable,
   type EnumOptions,
@@ -101,7 +103,8 @@ const AG_GRID_ANGULAR_API_ACCESSOR_NAME = 'api';
 const AG_GRID_ANGULAR_COLUMN_API_ACCESSOR_NAME = 'columnApi';
 
 // FIXME: determine correct package names for vue2 vs vue3
-const AG_GRID_VUE_PACKAGE_NAME_PATTERN = /^(?:ag-grid-vue3?|@ag-grid-community\/vue)$/;
+const AG_GRID_VUE_PACKAGE_NAME_PATTERN: StringMatcher =
+  /^(?:ag-grid-vue3?|@ag-grid-community\/vue)$/;
 const AG_GRID_VUE_GRID_COMPONENT_NAME = 'AgGridVue';
 const AG_GRID_VUE_GRID_OPTIONS_ATTRIBUTE_NAME = 'gridOptions';
 const AG_GRID_VUE_API_ACCESSOR_NAME = 'api';
@@ -115,6 +118,15 @@ const AG_GRID_EVENT_NAMES = Object.values(Events)
 const AG_GRID_ANGULAR_EVENT_HANDLERS = new Set(AG_GRID_EVENT_NAMES.map(({ angular }) => angular));
 
 const AG_GRID_VUE_EVENT_HANDLERS = new Set(AG_GRID_EVENT_NAMES.map(({ vue }) => vue));
+
+function buildImportNamePattern(
+  packageNamePattern: StringMatcher,
+  context: AstTransformContext<TransformContext>,
+): StringMatcher {
+  if (typeof packageNamePattern === 'string') return packageNamePattern;
+  const { allowedImports } = context.opts;
+  return allowedImports ? [packageNamePattern, allowedImports] : packageNamePattern;
+}
 
 export function getFrameworkEventNames(eventKey: string): {
   js: string;
@@ -250,7 +262,7 @@ export function visitGridOptionsProperties<
   return {
     // Traverse plain JS grid API instances
     CallExpression(path, context) {
-      const gridInitializer = matchJsGridApiInitializer(path);
+      const gridInitializer = matchJsGridApiInitializer(path, context);
       if (!gridInitializer) return;
       const { options } = gridInitializer;
       if (!options) return;
@@ -260,7 +272,7 @@ export function visitGridOptionsProperties<
     },
     // Traverse React grid elements
     JSXElement(path, context) {
-      if (!isAgGridJsxElement(path)) return;
+      if (!isAgGridJsxElement(path, context)) return;
       path
         .get('openingElement')
         .get('attributes')
@@ -340,7 +352,7 @@ export function visitGridOptionsProperties<
     },
     // Traverse Vue grid components
     ObjectExpression(path, context) {
-      const gridElementNames = matchAgGridVueComponentElementNames(path);
+      const gridElementNames = matchAgGridVueComponentElementNames(path, context);
       if (!gridElementNames) return;
       const template = getVueComponentTemplate(path, context);
       if (!template) return;
@@ -578,8 +590,8 @@ export function getGridApiReferences(
   // bailing out if the accessor is invalid
   const accessorPaths = getAccessorExpressionPaths(accessor);
   if (!accessorPaths) return null;
-  const jsGridApiReferences = getJsGridApiReferences(accessorPaths);
-  const reactGridApiReferences = getReactGridApiReferences(accessorPaths);
+  const jsGridApiReferences = getJsGridApiReferences(accessorPaths, context);
+  const reactGridApiReferences = getReactGridApiReferences(accessorPaths, context);
   const angularGridApiReferences = getAngularGridApiReferences(accessorPaths, context);
   const vueGridApiReferences = getVueGridApiReferences(accessorPaths, context);
   if (
@@ -614,7 +626,7 @@ export function getColumnApiReferences(
   // bailing out if the accessor is invalid
   const accessorPaths = getAccessorExpressionPaths(accessor);
   if (!accessorPaths) return null;
-  const reactColumnApiReferences = getReactColumnApiReferences(accessorPaths);
+  const reactColumnApiReferences = getReactColumnApiReferences(accessorPaths, context);
   const angularColumnApiReferences = getAngularColumnApiReferences(accessorPaths, context);
   const vueColumnColumnReferences = getVueColumnApiReferences(accessorPaths, context);
   if (!reactColumnApiReferences && !angularColumnApiReferences && !vueColumnColumnReferences) {
@@ -629,6 +641,7 @@ export function getColumnApiReferences(
 
 export function getJsGridApiReferences(
   accessorPaths: Array<AccessorPath>,
+  context: AstTransformContext<TransformContext>,
 ): Array<GridApiDefinition> | null {
   // Match only accessor paths that are direct references to a grid initializer expression
   const targets = accessorPaths
@@ -636,7 +649,7 @@ export function getJsGridApiReferences(
       // Ignore accessor paths that drill down within the root expression value
       if (path.length > 0) return null;
       // Attempt to parse the expression value as a grid API initializer
-      return matchJsGridApiInitializer(root.target);
+      return matchJsGridApiInitializer(root.target, context);
     })
     .filter(nonNull);
   if (targets.length === 0) return null;
@@ -645,13 +658,16 @@ export function getJsGridApiReferences(
   return deduplicatedTargets;
 }
 
-function matchJsGridApiInitializer(path: NodePath<AstNode>): JsGridApiDefinition | null {
+function matchJsGridApiInitializer(
+  path: NodePath<AstNode>,
+  context: AstTransformContext<TransformContext>,
+): JsGridApiDefinition | null {
   if (!path.isCallExpression()) return null;
   const callee = path.get('callee');
   if (!callee.isExpression()) return null;
   const gridApiImport = getNamedModuleImportExpression(
     callee,
-    AG_GRID_JS_PACKAGE_NAME_PATTERN,
+    buildImportNamePattern(AG_GRID_JS_PACKAGE_NAME_PATTERN, context),
     AG_GRID_JS_UMD_GLOBAL_NAME,
     AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME,
   );
@@ -684,19 +700,26 @@ function parseJsGridApiInitializerArguments(
 
 export function getReactGridApiReferences(
   accessorPaths: Array<AccessorPath>,
+  context: AstTransformContext<TransformContext>,
 ): Array<ReactGridApiDefinition> | null {
-  return getReactPublicApiReferences(AG_GRID_REACT_API_ACCESSOR_NAME, accessorPaths);
+  return getReactPublicApiReferences(AG_GRID_REACT_API_ACCESSOR_NAME, accessorPaths, context);
 }
 
 export function getReactColumnApiReferences(
   accessorPaths: Array<AccessorPath>,
+  context: AstTransformContext<TransformContext>,
 ): Array<ReactGridApiDefinition> | null {
-  return getReactPublicApiReferences(AG_GRID_REACT_COLUMN_API_ACCESSOR_NAME, accessorPaths);
+  return getReactPublicApiReferences(
+    AG_GRID_REACT_COLUMN_API_ACCESSOR_NAME,
+    accessorPaths,
+    context,
+  );
 }
 
 function getReactPublicApiReferences(
   apiName: string,
   accessorPaths: Array<AccessorPath>,
+  context: AstTransformContext<TransformContext>,
 ): Array<ReactGridApiDefinition> | null {
   // Get a list of JSX grid elements referred to via the accessor
   const results = accessorPaths
@@ -717,7 +740,7 @@ function getReactPublicApiReferences(
         .map((reference) => {
           const { binding } = reference;
           const element = getReactBoundElementRef(binding);
-          if (!element || !isAgGridJsxElement(element)) return null;
+          if (!element || !isAgGridJsxElement(element, context)) return null;
           return element;
         })
         .filter(nonNull);
@@ -732,13 +755,17 @@ function getReactPublicApiReferences(
   return results.length === 0 ? null : results;
 }
 
-function isAgGridJsxElement(element: NodePath<JSXElement>): boolean {
+function isAgGridJsxElement(
+  element: NodePath<JSXElement>,
+  context: AstTransformContext<TransformContext>,
+): boolean {
   const elementName = element.get('openingElement').get('name');
   // FIXME: consider supporting namespaced JSX element names
   if (!elementName.isJSXIdentifier()) return false;
+
   const importDeclaration = getNamedModuleImportExpression(
     elementName,
-    AG_GRID_REACT_PACKAGE_NAME_PATTERN,
+    buildImportNamePattern(AG_GRID_REACT_PACKAGE_NAME_PATTERN, context),
     null,
     AG_GRID_REACT_GRID_COMPONENT_NAME,
   );
@@ -828,7 +855,7 @@ function getAngularPublicApiReferences(
             if (!component.isClass() || !property.isClassProperty()) return null;
             const namedViewChild = getAngularViewChildMetadata(property);
             if (!namedViewChild) return null;
-            if (isAgGridAngularComponentImportReference(namedViewChild)) {
+            if (isAgGridAngularComponentImportReference(namedViewChild, context)) {
               return { component, elementId: null, accessor };
             }
             if (namedViewChild.isStringLiteral()) {
@@ -977,10 +1004,13 @@ function getAngularPublicApiReferences(
   return gridReferences.length === 0 ? null : gridReferences;
 }
 
-function isAgGridAngularComponentImportReference(reference: NodePath<Expression>): boolean {
+function isAgGridAngularComponentImportReference(
+  reference: NodePath<Expression>,
+  context: AstTransformContext<TransformContext>,
+): boolean {
   const importDeclaration = getNamedModuleImportExpression(
     reference,
-    AG_GRID_ANGULAR_PACKAGE_NAME_PATTERN,
+    buildImportNamePattern(AG_GRID_ANGULAR_PACKAGE_NAME_PATTERN, context),
     null,
     AG_GRID_ANGULAR_GRID_COMPONENT_NAME,
   );
@@ -1074,7 +1104,7 @@ function getVuePublicApiReferences(
             return null;
           }
           const gridComponentElementNames = Array.from(templateComponentDeclarations)
-            .filter(([, value]) => isAgGridVueComponentImportReference(value))
+            .filter(([, value]) => isAgGridVueComponentImportReference(value, context))
             .map(([elementName]) => elementName);
           if (gridComponentElementNames.length === 0) return null;
           const template = getVueComponentTemplate(component, context);
@@ -1175,11 +1205,12 @@ function updateVueComponentTemplate(
 
 function matchAgGridVueComponentElementNames(
   component: NodePath<ObjectExpression>,
+  context: AstTransformContext<TransformContext>,
 ): Array<string> | null {
   const componentDeclarations = getVueComponentComponentDeclarations(component);
   if (!componentDeclarations) return null;
   const agGridElementNames = Array.from(componentDeclarations.entries())
-    .filter(([, reference]) => isAgGridVueComponentImportReference(reference))
+    .filter(([, reference]) => isAgGridVueComponentImportReference(reference, context))
     .map(([elementName]) => elementName);
   return agGridElementNames;
 }
@@ -1221,10 +1252,13 @@ function isVueElementBoundAttribute(
   return true;
 }
 
-function isAgGridVueComponentImportReference(reference: NodePath<Expression>): unknown {
+function isAgGridVueComponentImportReference(
+  reference: NodePath<Expression>,
+  context: AstTransformContext<TransformContext>,
+): boolean {
   const importDeclaration = getNamedModuleImportExpression(
     reference,
-    AG_GRID_VUE_PACKAGE_NAME_PATTERN,
+    buildImportNamePattern(AG_GRID_VUE_PACKAGE_NAME_PATTERN, context),
     null,
     AG_GRID_VUE_GRID_COMPONENT_NAME,
   );

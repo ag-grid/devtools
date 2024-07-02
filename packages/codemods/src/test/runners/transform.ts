@@ -16,15 +16,17 @@ export function loadTransformScenarios(
   options: {
     transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>;
     vitest: ExampleVitestHelpers;
+    allowedImports?: string[];
   },
 ): void {
-  const { transforms, vitest } = options;
+  const { transforms, vitest, allowedImports } = options;
   return loadAstTransformExampleScenarios(scenariosPath, {
     vitest,
     runner: (input) => {
       const { source, errors, warnings } = transformFileAst(input.source, transforms, {
         filename: input.path,
         fs: createMockFsHelpers(memfs),
+        allowedImports,
       });
       return { source, errors, warnings };
     },
