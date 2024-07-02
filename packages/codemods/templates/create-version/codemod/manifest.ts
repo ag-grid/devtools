@@ -4,7 +4,7 @@ const transforms: Array<TransformManifest> = [];
 
 const manifest: VersionManifest = {
   version: '<%= version %>',
-  codemodPath: 'version/<%= version %>/codemod.cjs',
+  codemodPath: 'version/<%= version %>',
   transforms,
 };
 

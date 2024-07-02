@@ -5,15 +5,20 @@
     "type": "git",
     "url": "https://github.com/ag-grid/devtools.git"
   },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9.4.0"
+  },
   "scripts": {
     "ci": "pnpm run verify && pnpm run build",
     "build": "pnpm run --filter @ag-grid-devtools/cli build",
     "build:lib": "pnpm run --recursive --parallel build:lib && pnpm run build:docs && pnpm run coverage",
     "build:docs": "typedoc",
     "verify": "pnpm run /^\\(lint\\|test\\)$/",
+    "eslint:fix": " pnpm run --recursive --parallel lint:eslint --fix",
     "lint": "pnpm run /^lint:.*/ && pnpm run --recursive --parallel lint",
     "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
-    "lint:typescript": "tsc --noEmit",
+    "lint:typescript": "tsc --noEmit && pnpm run --recursive --parallel lint:typescript",
     "test": "vitest run",
     "test:watch": "vitest watch",
     "coverage": "vitest run --coverage",
@@ -22,15 +27,20 @@
     "version": "pnpm --filter @ag-grid-devtools/cli exec -- pnpm run --silent version",
     "publish": "pnpm run --filter @ag-grid-devtools/cli publish"
   },
-  "peerDependencies": {
-    "@vitest/coverage-v8": "^1",
-    "typedoc": "^0.25",
-    "typescript": "^5",
-    "vite": "^5",
-    "vitest": "^1"
-  },
   "devDependencies": {
+    "@babel/core": "7.23.2",
+    "@babel/generator": "7.23.0",
+    "@babel/parser": "7.23.0",
+    "@babel/template": "7.22.15",
+    "@babel/traverse": "7.23.2",
+    "@babel/types": "7.23.0",
     "@types/glob": "8.1.0",
-    "glob": "10.3.10"
+    "glob": "10.4.2",
+    "prettier": "3.3.2",
+    "typedoc": "^0.26.3",
+    "typescript": "5.5.2",
+    "vite": "5.3.2",
+    "vitest": "1.6.0",
+    "@vitest/coverage-v8": "1.6.0"
   }
 }

@@ -22,12 +22,6 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
       transformObjectListValue(
         transformObjectProperties({
           suppressCellFlash: migrateProperty('enableCellChangeFlash', invertOptionalBooleanValue()),
-          dndSource: removeProperty(
-            getDeprecationMessage('columnDefs[..].dndSource', MIGRATION_URL),
-          ),
-          dndSourceOnRowDrag: removeProperty(
-            getDeprecationMessage('columnDefs[..].dndSourceOnRowDrag', MIGRATION_URL),
-          ),
         }),
       ),
     ),

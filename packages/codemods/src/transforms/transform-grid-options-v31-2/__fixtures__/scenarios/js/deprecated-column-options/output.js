@@ -4,17 +4,12 @@ const gridApi = createGrid(document.body, {
   columnDefs: [
     {
       colId: 'foo',
-      dndSource: true,
+      enableCellChangeFlash: false,
     },
     {
       colId: 'bar',
-      dndSource: false,
-    },
-    {
-      colId: 'baz',
-      dndSource: () => {},
-      dndSourceOnRowDrag: () => {},
-    }
+      enableCellChangeFlash: true,
+    },   
   ],
   rowData: [],
 });
