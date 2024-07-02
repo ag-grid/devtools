@@ -26,7 +26,7 @@ export interface FileMetadata {
 }
 
 export interface TransformContext {
-  allowedImports: string[] | undefined;
+  allowedImports?: string[];
 }
 
 export interface FsContext extends TransformContext {

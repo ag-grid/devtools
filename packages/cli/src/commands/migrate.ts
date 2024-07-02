@@ -188,9 +188,6 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         if (!value || value.startsWith('-')) {
           throw new CliArgsError(`Missing value for ${arg}`, usage(env));
         }
-        if (!options.allowedImports) {
-          options.allowedImports = [];
-        }
         for (let v of value.split(',')) {
           v = v.trim();
           if (v) {

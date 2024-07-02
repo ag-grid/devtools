@@ -1865,6 +1865,83 @@ describe(getGridApiReferences, () => {
       });
     });
   });
+
+  describe('allowedImports', () => {
+    test('should allow imports in context allowedImports, vanilla js', () => {
+      const input = ast.module`
+      import { createGrid } from 'my-custom-import/hello';
+      createGrid(document.body, {});
+    `;
+      const program = getModuleRoot(input);
+      const statements = program.get('body');
+      const finalStatement = statements[statements.length - 1];
+      const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.js', {
+          fs: memfs,
+          allowedImports: ['my-custom-import/hello'],
+        }),
+      );
+      const actual =
+        gridApis &&
+        gridApis.map((gridApi) =>
+          GridApiDefinition.Js.is(gridApi) ? generate(gridApi.initializer.node) : null,
+        );
+      const expected = ['createGrid(document.body, {})'];
+      expect(actual).toEqual(expected);
+    });
+
+    test.only('should allow imports in context allowedImports, react', () => {
+      const input = ast.module`
+        import { AgGridReact } from 'my-custom-import/hello';
+        import { useRef } from 'react';
+
+        function MyComponent(props) {
+          const gridRef = useRef(null);
+          const resetState = useCallback(() => {
+            gridRef.current.api.resetColumnState();
+          }, []);
+          return (
+            <>
+              <AgGridReact ref={gridRef} />
+              <button onClick={resetState}>Reset State</button>
+            </>
+          );
+        }
+      `;
+      const program = getModuleRoot(input);
+      const {
+        refs: { gridApi },
+      } = matchNode(({ gridApi }) => ast.expression`${gridApi}.resetColumnState()`, {
+        gridApi: p.expression(),
+      }).find(program)!;
+      const gridApis = getGridApiReferences(
+        gridApi,
+        createTransformContext('./app.jsx', {
+          fs: memfs,
+          allowedImports: ['my-custom-import/hello'],
+        }),
+      );
+      const actual =
+        gridApis &&
+        gridApis.map((gridApi) =>
+          GridApiDefinition.React.is(gridApi)
+            ? {
+                element: generate(gridApi.element.node),
+                refAccessor: formatAccessorPath(gridApi.refAccessor),
+              }
+            : null,
+        );
+      const expected = [
+        {
+          element: '<AgGridReact ref={gridRef} />',
+          refAccessor: 'useRef(null).current.api',
+        },
+      ];
+      expect(actual).toEqual(expected);
+    });
+  });
 });
 
 function formatAccessorPath(accessor: AccessorPath): string {

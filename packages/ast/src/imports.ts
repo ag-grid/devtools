@@ -1,6 +1,13 @@
 import { type Binding, type NodePath, type Types } from './types';
 import { getOptionalNodeFieldValue, getStaticPropertyKey, node as t } from './node';
-import { Enum, EnumVariant, StringMatcher, match, matchString } from '@ag-grid-devtools/utils';
+import {
+  Enum,
+  EnumVariant,
+  StringMatcher,
+  match,
+  matchString,
+  matchImport,
+} from '@ag-grid-devtools/utils';
 
 type CallExpression = Types.CallExpression;
 type Expression = Types.Expression;
@@ -316,7 +323,7 @@ export function getNamedPackageNamespaceImportExpression(
   umdGlobalName: StringMatcher | null,
 ): PackageNamespaceImportBinding | null {
   if (isCommonJsRequireExpression(expression)) {
-    if (!matchString(expression.node.arguments[0].value, packageName)) return null;
+    if (!matchImport(expression.node.arguments[0].value, packageName)) return null;
     return PackageNamespaceImportBinding.CommonJs({
       require: expression,
       local: null,
@@ -359,7 +366,7 @@ function isNamedUmdGlobalNamespaceExpression(
   umdGlobalName: StringMatcher,
 ): expression is NodePath<Identifier> {
   if (!expression.isIdentifier()) return false;
-  return matchString(expression.node.name, umdGlobalName);
+  return matchImport(expression.node.name, umdGlobalName);
 }
 
 function getNamedPackageNamespaceImportBinding(
@@ -446,7 +453,7 @@ export function matchModuleImportPackageName(
   packageName: StringMatcher,
 ): string | null {
   const actualPackageName = declaration.source.value;
-  if (!matchString(actualPackageName, packageName)) return null;
+  if (!matchImport(actualPackageName, packageName)) return null;
   return actualPackageName;
 }
 
@@ -459,7 +466,7 @@ export function findNamedModuleImport(
       .filter((node): node is ImportSpecifier => t.isImportSpecifier(node))
       .find((specifier) => {
         const importedItem = getImportSpecifierImportedName(specifier);
-        if (!matchString(importedItem, pattern)) return null;
+        if (!matchImport(importedItem, pattern)) return null;
         return true;
       }) || null
   );
@@ -483,7 +490,7 @@ function isNamedCommonJsRequireExpression(
 ): expression is NodePath<CommonJsRequireExpression> {
   if (!isCommonJsRequireExpression(expression)) return false;
   const requirePath = expression.node.arguments[0].value;
-  return matchString(requirePath, packageName);
+  return matchImport(requirePath, packageName);
 }
 
 function isCommonJsRequireExpression(
