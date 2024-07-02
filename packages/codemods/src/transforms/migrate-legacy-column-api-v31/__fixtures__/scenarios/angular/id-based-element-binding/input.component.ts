@@ -27,6 +27,11 @@ export class AppComponent {
 
   resetState() {
     this.grid.columnApi.resetColumnState();
+    this.grid?.columnApi.resetColumnState();
+    this.grid!.columnApi.resetColumnState();
+
+    this.grid?.columnApi?.resetColumnState();
+    this.grid!.columnApi!.resetColumnState();
   }
 
   onGridReady(params: GridReadyEvent<IOlympicData>) {

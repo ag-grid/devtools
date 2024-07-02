@@ -29,6 +29,8 @@ export class AppComponent {
       .subscribe((data) => {
         this.rowData = data;
         gridApi!.resetColumnState();
+        gridApi?.resetColumnState();
+        gridApi.resetColumnState();
       });
   }
 }
