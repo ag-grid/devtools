@@ -6,3 +6,4 @@ let gridApi = createGrid(document.body, {
 });
 
 gridApi.setGetRowId();
+gridApi?.setGetRowId();

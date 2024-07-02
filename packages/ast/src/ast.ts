@@ -12,8 +12,34 @@ const TEMPLATE_OPTIONS: TemplateBuilderOptions = {
 
 export function expression<T extends Expression = Expression>(
   literals: TemplateStringsArray,
-  ...interpolations: Array<AstNode>
+  ...interpolations: Array<AstNode | string>
 ): T {
+  // If interpolations contains a string, we need to merge it with the literal and excluding it from the interpolations
+  if (interpolations.some((interpolation) => typeof interpolation === 'string')) {
+    const newRawLiterals: string[] = [];
+    const newLiterals: string[] & { raw: string[] } = [] as any;
+    newLiterals.raw = newRawLiterals;
+    const newInterpolations: Array<AstNode> = [];
+
+    let currentLiteral = literals[0];
+    for (let i = 0; i < interpolations.length; i++) {
+      const interpolation = interpolations[i];
+      if (typeof interpolation === 'string') {
+        currentLiteral += interpolation + literals[i + 1];
+      } else {
+        newRawLiterals.push(currentLiteral);
+        newLiterals.push(currentLiteral);
+        newInterpolations.push(interpolation);
+        currentLiteral = literals[i + 1];
+      }
+    }
+    newRawLiterals.push(currentLiteral);
+    newLiterals.push(currentLiteral);
+
+    literals = newLiterals;
+    interpolations = newInterpolations;
+  }
+
   return stripTopLevelExpressionParentheses(
     template.expression(TEMPLATE_OPTIONS).ast(literals, ...interpolations) as T,
   );

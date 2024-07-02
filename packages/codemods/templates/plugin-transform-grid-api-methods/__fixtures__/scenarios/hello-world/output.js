@@ -6,4 +6,4 @@ const gridApi = createGrid(document.body, {
 });
 
 gridApi.sayHello("world");
-gridApi.goodbyeWorld();
+gridApi?.goodbyeWorld();

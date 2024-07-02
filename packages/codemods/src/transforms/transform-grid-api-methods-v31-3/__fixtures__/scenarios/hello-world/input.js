@@ -8,4 +8,4 @@ const gridApi = createGrid(document.body, {
 const col = 'foo';
 const row = {};
 gridApi.getValue(col, row);
-gridApi.getValue('colId', row);
+gridApi?.getValue('colId', row);

@@ -6,3 +6,4 @@ var gridApi = createGrid(document.body, {
 });
 
 gridApi.setServerSideDatasource(value);
+gridApi?.setServerSideDatasource(value);

@@ -29,6 +29,7 @@ type Literal = Types.Literal;
 type Method = Types.Method;
 type LVal = Types.LVal;
 type MemberExpression = Types.MemberExpression;
+type OptionalMemberExpression = Types.OptionalMemberExpression;
 type ObjectExpression = Types.ObjectExpression;
 type ObjectPattern = Types.ObjectPattern;
 type PrivateName = Types.PrivateName;
@@ -45,6 +46,7 @@ export function getAccessorExpressionPaths(
 ): Array<AccessorPath> | null {
   if (expression.isIdentifier()) return getIdentifierAccessorPaths(expression);
   if (expression.isMemberExpression()) return getMemberExpressionAccessorPaths(expression);
+  if (expression.isOptionalMemberExpression()) return getMemberExpressionAccessorPaths(expression);
   if (expression.isAssignmentExpression()) {
     return getAccessorExpressionPaths(expression.get('right'));
   }
@@ -54,7 +56,7 @@ export function getAccessorExpressionPaths(
 }
 
 function getMemberExpressionAccessorPaths(
-  expression: NodePath<MemberExpression>,
+  expression: NodePath<MemberExpression | OptionalMemberExpression>,
 ): Array<AccessorPath> | null {
   const object = expression.get('object');
   const property = expression.get('property');
@@ -76,7 +78,7 @@ function getMemberExpressionAccessorPaths(
 
 function getClassMemberExpressionAccessorPaths(
   classDefinition: NodePath<Class | ObjectExpression>,
-  accessor: NodePath<MemberExpression>,
+  accessor: NodePath<MemberExpression | OptionalMemberExpression>,
 ): Array<AccessorPath> | null {
   const property = accessor.get('property');
   const computed = accessor.node.computed;
@@ -99,7 +101,7 @@ function getClassMemberExpressionAccessorPaths(
     .filter(nonNull);
   const reassignments = accessors
     .map((accessor) => {
-      if (accessor.isMemberExpression()) {
+      if (accessor.isMemberExpression() || accessor.isOptionalMemberExpression()) {
         // FIXME: support nested member expression assignments (e.g. this.foo.bar.baz = qux)
         if (
           accessor.parentPath.isAssignmentExpression() &&
@@ -140,9 +142,9 @@ function getClassMemberExpressionAccessorPaths(
 
 export function findClassMemberAccessorExpressions(
   classDefinition: NodePath<Class | ObjectExpression>,
-  property: NodePath<MemberExpression['property']>,
+  property: NodePath<MemberExpression['property']> | NodePath<OptionalMemberExpression['property']>,
   computed: boolean,
-): Array<NodePath<Property | MemberExpression>> | null {
+): Array<NodePath<Property | MemberExpression | OptionalMemberExpression>> | null {
   if (!computed && property.isIdentifier()) {
     return findNamedClassMemberAccessorExpressions(classDefinition, property.node.name);
   }
@@ -158,10 +160,10 @@ export function findClassMemberAccessorExpressions(
 export function findNamedClassMemberAccessorExpressions(
   classDefinition: NodePath<Class | ObjectExpression>,
   fieldName: string,
-): Array<NodePath<Property | MemberExpression>> {
+): Array<NodePath<Property | MemberExpression | OptionalMemberExpression>> {
   return findClassMemberAccessors(classDefinition, null, (path) => {
     if (path.isProperty()) return matchNamedClassMemberPropertyExpression(fieldName, path);
-    if (path.isMemberExpression()) {
+    if (path.isMemberExpression() || path.isOptionalMemberExpression()) {
       const property = path.get('property');
       const computed = path.node.computed;
       return matchNamedPropertyKeyExpression(fieldName, property, computed);
@@ -181,7 +183,7 @@ function matchNamedClassMemberPropertyExpression(
 function findPrivateClassMemberAccessorExpressions(
   classDefinition: NodePath<Class | ObjectExpression>,
   fieldName: NodePath<PrivateName>,
-): Array<NodePath<Property | MemberExpression>> {
+): Array<NodePath<Property | MemberExpression | OptionalMemberExpression>> {
   return findClassMemberAccessors(classDefinition, null, (path) => {
     if (path.isProperty()) return matchPrivateClassMemberPropertyExpression(fieldName, path);
     if (path.isMemberExpression()) {
@@ -205,12 +207,12 @@ function matchPrivateClassMemberPropertyExpression(
 function findLiteralClassMemberAccessorExpressions(
   classDefinition: NodePath<Class | ObjectExpression>,
   fieldName: NodePath<Literal>,
-): Array<NodePath<Property | MemberExpression>> | null {
+): Array<NodePath<Property | MemberExpression | OptionalMemberExpression>> | null {
   const propertyKey = getLiteralPropertyKey(fieldName.node);
   if (typeof propertyKey !== 'string') return null;
   return findClassMemberAccessors(classDefinition, null, (path) => {
     if (path.isProperty()) return matchComputedClassMemberPropertyExpression(propertyKey, path);
-    if (path.isMemberExpression()) {
+    if (path.isMemberExpression() || path.isOptionalMemberExpression()) {
       const property = path.get('property');
       const computed = path.node.computed;
       return getStaticPropertyKey(property.node, computed) === propertyKey;
@@ -435,7 +437,7 @@ function getDestructuredPropertyPath(
   if (propertyPath.isIdentifier()) {
     return propertyPath.node.name === id.name ? parentPattern.path : null;
   }
-  if (propertyPath.isMemberExpression()) {
+  if (propertyPath.isMemberExpression() || propertyPath.isOptionalMemberExpression()) {
     // FIXME: Support extended destructuring syntax
     return null;
   }
