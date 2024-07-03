@@ -71,6 +71,7 @@ type ClassProperty = Types.ClassProperty;
 type Decorator = Types.Decorator;
 type Expression = Types.Expression;
 type MemberExpression = Types.MemberExpression;
+type OptionalMemberExpression = Types.OptionalMemberExpression;
 type ObjectExpression = Types.ObjectExpression;
 type ObjectProperty = Types.ObjectProperty;
 type Property = Types.Property;
@@ -827,7 +828,7 @@ export function findNamedAngularTemplateElements(
 export function getAngularComponentDataFieldReferences(
   component: NodePath<Class>,
   fieldName: string,
-): Array<NodePath<Property | MemberExpression>> {
+): Array<NodePath<Property | MemberExpression | OptionalMemberExpression>> {
   return findNamedClassMemberAccessorExpressions(component, fieldName);
 }
 

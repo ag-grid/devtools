@@ -61,6 +61,7 @@ import { VueComponentCliContext } from './transform';
 
 type AssignmentExpression = Types.AssignmentExpression;
 type CallExpression = Types.CallExpression;
+type OptionalCallExpression = Types.OptionalCallExpression;
 type Class = Types.Class;
 type ClassMethod = Types.ClassMethod;
 type Expression = Types.Expression;
@@ -71,6 +72,7 @@ type JSXExpressionContainer = Types.JSXExpressionContainer;
 type JSXIdentifier = Types.JSXIdentifier;
 type JSXSpreadAttribute = Types.JSXSpreadAttribute;
 type MemberExpression = Types.MemberExpression;
+type OptionalMemberExpression = Types.OptionalMemberExpression;
 type ObjectExpression = Types.ObjectExpression;
 type ObjectMethod = Types.ObjectMethod;
 type ObjectProperty = Types.ObjectProperty;
@@ -189,9 +191,13 @@ export type VueGridApiDefinition = EnumVariant<GridApiDefinition, 'Vue'>;
 
 export type PropertyInitializerNode = ObjectProperty | ObjectMethod;
 export type PropertyAssignmentNode = AssignmentExpression & {
-  left: MemberExpression;
+  left: MemberExpression | OptionalMemberExpression;
 };
-export type PropertyAccessorNode = Identifier | MemberExpression | ObjectProperty;
+export type PropertyAccessorNode =
+  | Identifier
+  | MemberExpression
+  | OptionalMemberExpression
+  | ObjectProperty;
 
 export function isPropertyInitializerNode(
   value: NodePath<AstNode>,
@@ -205,7 +211,9 @@ export function isPropertyInitializerNode(
 export function isPropertyAssignmentNode(
   value: NodePath<AstNode>,
 ): value is NodePath<PropertyAssignmentNode> {
-  return value.isAssignmentExpression() && value.get('left').isMemberExpression();
+  if (!value.isAssignmentExpression()) return false;
+  const left = value.get('left');
+  return left.isMemberExpression() || left.isOptionalMemberExpression();
 }
 
 export function isPropertyAccessorNode(
@@ -214,6 +222,7 @@ export function isPropertyAccessorNode(
   return (
     value.isIdentifier() ||
     value.isMemberExpression() ||
+    value.isOptionalMemberExpression() ||
     (value.isObjectProperty() && value.parentPath.isObjectPattern())
   );
 }
@@ -250,17 +259,20 @@ export function visitObjectExpression<
 export function visitGridOptionsProperties<
   S extends AstTransformContext<AstCliContext & VueComponentCliContext>,
 >(visitor: ObjectPropertyVisitor<S>): AstNodeVisitor<S> {
+  function CallExpression(path: NodePath, context: S) {
+    const gridInitializer = matchJsGridApiInitializer(path, context);
+    if (!gridInitializer) return;
+    const { options } = gridInitializer;
+    if (!options) return;
+    const accessors = getAccessorExpressionPaths(options);
+    if (!accessors) return;
+    accessors.forEach((accessor) => visitObjectAccessor(accessor, visitor, context));
+  }
+
   return {
     // Traverse plain JS grid API instances
-    CallExpression(path, context) {
-      const gridInitializer = matchJsGridApiInitializer(path, context);
-      if (!gridInitializer) return;
-      const { options } = gridInitializer;
-      if (!options) return;
-      const accessors = getAccessorExpressionPaths(options);
-      if (!accessors) return;
-      accessors.forEach((accessor) => visitObjectAccessor(accessor, visitor, context));
-    },
+    CallExpression,
+    OptionalCallExpression: CallExpression,
     // Traverse React grid elements
     JSXElement(path, context) {
       if (!isAgGridJsxElement(path, context)) return;
@@ -412,10 +424,13 @@ function visitObjectAccessor<S>(
   });
   references.forEach((reference) => {
     // Determine whether the reference is accessing a field on the object
-    if (reference.accessor.parentPath.isMemberExpression()) {
+    if (
+      reference.accessor.parentPath.isMemberExpression() ||
+      reference.accessor.parentPath.isOptionalMemberExpression()
+    ) {
       const propertyAccessor = reference.accessor.parentPath;
       const object = propertyAccessor.get('object');
-      if (reference.accessor.node !== object.node) return;
+      if (Array.isArray(object) || reference.accessor.node !== object.node) return;
       // Determine whether the reference is setting the object field
       if (isPropertyAssignmentNode(propertyAccessor.parentPath)) {
         // FIXME: add tests for (optionally nested) renamed property assignments
@@ -653,8 +668,9 @@ function matchJsGridApiInitializer(
   path: NodePath<AstNode>,
   context: AstTransformContext<TransformContext>,
 ): JsGridApiDefinition | null {
-  if (!path.isCallExpression()) return null;
-  const callee = path.get('callee');
+  if (!path.isCallExpression() && !path.isOptionalCallExpression()) return null;
+  const typedPath = path as NodePath<CallExpression | OptionalCallExpression>;
+  const callee = typedPath.get('callee');
   if (!callee.isExpression()) return null;
   const gridApiImport = getNamedModuleImportExpression(
     callee,
@@ -664,12 +680,14 @@ function matchJsGridApiInitializer(
     context,
   );
   if (!gridApiImport) return null;
-  const { element, options } = parseJsGridApiInitializerArguments(path.get('arguments'));
+  const { element, options } = parseJsGridApiInitializerArguments(typedPath.get('arguments'));
   return GridApiDefinition.Js({ initializer: path, element, options });
 }
 
 function parseJsGridApiInitializerArguments(
-  args: Array<NodePath<CallExpression['arguments'][number]>>,
+  args: Array<
+    NodePath<CallExpression['arguments'][number] | OptionalCallExpression['arguments'][number]>
+  >,
 ): {
   element: NodePath<Expression> | null;
   options: NodePath<Expression> | null;

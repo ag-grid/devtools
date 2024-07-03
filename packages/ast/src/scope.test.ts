@@ -6,6 +6,7 @@ import { NodePath, getModuleRoot } from './parse';
 import { generateUniqueScopeBinding, getAccessorExpressionPaths } from './scope';
 import { AccessorKey, AccessorReference, type AccessorPath, type Types } from './types';
 import { match, unreachable } from '@ag-grid-devtools/utils';
+import { OptionalMemberExpression } from '@babel/types';
 
 type Class = Types.Class;
 type ClassBody = Types.ClassBody;
@@ -371,15 +372,19 @@ function formatPropertyAccessorClassName(target: NodePath<Class | ObjectExpressi
   return target.isClass() && target.node.id ? target.node.id.name : '{}';
 }
 
-function formatPropertyAccessorFieldName(accessor: NodePath<Property | MemberExpression>): string {
+function formatPropertyAccessorFieldName(
+  accessor: NodePath<Property | MemberExpression | OptionalMemberExpression>,
+): string {
   if (accessor.isProperty()) {
     const key = accessor.get('key');
     const computed = isPublicProperty(accessor) ? accessor.node.computed : false;
     return formatPropertyAccessorKey(key, computed);
   }
   if (accessor.isMemberExpression()) {
-    const key = accessor.get('property');
-    return formatPropertyAccessorKey(key, accessor.node.computed);
+    return formatPropertyAccessorKey(accessor.get('property'), accessor.node.computed);
+  }
+  if (accessor.isOptionalMemberExpression()) {
+    return formatPropertyAccessorKey(accessor.get('property'), accessor.node.computed);
   }
   return '[]';
 }
