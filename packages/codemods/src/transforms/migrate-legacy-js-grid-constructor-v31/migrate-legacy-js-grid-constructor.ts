@@ -84,6 +84,7 @@ const transform: AstTransform<AstCliContext> = function migrateLegacyJsGridConst
           AG_GRID_JS_PACKAGE_NAME_PATTERN,
           AG_GRID_JS_UMD_GLOBAL_NAME,
           LEGACY_GRID_API_EXPORT_NAME,
+          state,
         );
         if (!legacyGridApiImport) return;
 
@@ -95,6 +96,7 @@ const transform: AstTransform<AstCliContext> = function migrateLegacyJsGridConst
                 const existingConstructorImport = findNamedModuleImport(
                   declaration.node,
                   UPDATED_CONSTRUCTOR_EXPORT_NAME,
+                  state,
                 );
                 if (existingConstructorImport) return existingConstructorImport.local;
                 return insertNamedModuleImport(
@@ -262,6 +264,7 @@ const transform: AstTransform<AstCliContext> = function migrateLegacyJsGridConst
                 target.node,
                 AG_GRID_JS_PACKAGE_NAME_PATTERN,
                 LEGACY_GRID_API_EXPORT_NAME,
+                state,
               )
             )
               return;

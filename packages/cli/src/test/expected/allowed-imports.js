@@ -1,4 +1,4 @@
-const { Grid, createGrid } = require('@hello/world');
+import { createGrid } from '@hello/world';
 (() => {
   const gridOptions = { foo: 'bar' };
   gridOptions.baz = 3;

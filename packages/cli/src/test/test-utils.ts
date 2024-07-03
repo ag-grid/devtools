@@ -16,7 +16,7 @@ export async function loadExpectedSource(name: string) {
 }
 
 export async function loadTempSource(name: string) {
-  const filepath = path.resolve(EXPECTED_FOLDER, name);
+  const filepath = path.resolve(TEMP_FOLDER, name);
   return prettier.format(await readFile(filepath, 'utf-8'), { filepath });
 }
 

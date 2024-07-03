@@ -22,7 +22,7 @@ describe('cli e2e', () => {
         '--num-threads=1',
         '--allow-untracked',
         '--from=30.0.0',
-        '--allowed-imports="@hello/world"',
+        '--allowed-imports=@hello/world',
       ],
       {
         cwd: TEMP_FOLDER,

@@ -119,15 +119,6 @@ const AG_GRID_ANGULAR_EVENT_HANDLERS = new Set(AG_GRID_EVENT_NAMES.map(({ angula
 
 const AG_GRID_VUE_EVENT_HANDLERS = new Set(AG_GRID_EVENT_NAMES.map(({ vue }) => vue));
 
-function buildImportNamePattern(
-  packageNamePattern: StringMatcher,
-  context: AstTransformContext<TransformContext>,
-): StringMatcher {
-  if (typeof packageNamePattern === 'string') return packageNamePattern;
-  const { allowedImports } = context.opts;
-  return allowedImports ? [packageNamePattern, allowedImports] : packageNamePattern;
-}
-
 export function getFrameworkEventNames(eventKey: string): {
   js: string;
   react: string;
@@ -667,9 +658,10 @@ function matchJsGridApiInitializer(
   if (!callee.isExpression()) return null;
   const gridApiImport = getNamedModuleImportExpression(
     callee,
-    buildImportNamePattern(AG_GRID_JS_PACKAGE_NAME_PATTERN, context),
+    AG_GRID_JS_PACKAGE_NAME_PATTERN,
     AG_GRID_JS_UMD_GLOBAL_NAME,
     AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME,
+    context,
   );
   if (!gridApiImport) return null;
   const { element, options } = parseJsGridApiInitializerArguments(path.get('arguments'));
@@ -765,9 +757,10 @@ function isAgGridJsxElement(
 
   const importDeclaration = getNamedModuleImportExpression(
     elementName,
-    buildImportNamePattern(AG_GRID_REACT_PACKAGE_NAME_PATTERN, context),
+    AG_GRID_REACT_PACKAGE_NAME_PATTERN,
     null,
     AG_GRID_REACT_GRID_COMPONENT_NAME,
+    context,
   );
   if (!importDeclaration) return false;
   return true;
@@ -853,7 +846,7 @@ function getAngularPublicApiReferences(
             if (!AccessorReference.Property.is(reference)) return null;
             const { target: component, accessor: property } = reference;
             if (!component.isClass() || !property.isClassProperty()) return null;
-            const namedViewChild = getAngularViewChildMetadata(property);
+            const namedViewChild = getAngularViewChildMetadata(property, context);
             if (!namedViewChild) return null;
             if (isAgGridAngularComponentImportReference(namedViewChild, context)) {
               return { component, elementId: null, accessor };
@@ -1010,9 +1003,10 @@ function isAgGridAngularComponentImportReference(
 ): boolean {
   const importDeclaration = getNamedModuleImportExpression(
     reference,
-    buildImportNamePattern(AG_GRID_ANGULAR_PACKAGE_NAME_PATTERN, context),
+    AG_GRID_ANGULAR_PACKAGE_NAME_PATTERN,
     null,
     AG_GRID_ANGULAR_GRID_COMPONENT_NAME,
+    context,
   );
   if (!importDeclaration) return false;
   return true;
@@ -1258,9 +1252,10 @@ function isAgGridVueComponentImportReference(
 ): boolean {
   const importDeclaration = getNamedModuleImportExpression(
     reference,
-    buildImportNamePattern(AG_GRID_VUE_PACKAGE_NAME_PATTERN, context),
+    AG_GRID_VUE_PACKAGE_NAME_PATTERN,
     null,
     AG_GRID_VUE_GRID_COMPONENT_NAME,
+    context,
   );
   if (!importDeclaration) return false;
   return true;

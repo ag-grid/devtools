@@ -7,6 +7,7 @@ import {
   type FileMetadata,
   type NodePath,
   type Types,
+  TransformContext,
 } from '@ag-grid-devtools/ast';
 import { Enum, match } from '@ag-grid-devtools/utils';
 import {
@@ -112,7 +113,7 @@ export function parseAngularComponentTemplate(
   template: AngularTemplateNode<TmplAST>;
 } | null {
   const { filename: filePath = './component.html' } = context;
-  const componentMetadata = getAngularComponentMetadata(component);
+  const componentMetadata = getAngularComponentMetadata(component, context);
   if (!componentMetadata) return null;
   const templateDefinition = getAngularComponentTemplateDefinition(componentMetadata, context);
   if (!templateDefinition) return null;
@@ -731,11 +732,12 @@ function getAngularComponentMetadataNamedFieldValue(
 
 export function getAngularComponentMetadata(
   component: NodePath<Class>,
+  context: AstTransformContext<TransformContext>,
 ): NodePath<ObjectExpression> | null {
   const decorators = component.get('decorators');
   if (!decorators || !Array.isArray(decorators)) return null;
   const componentDecorators = decorators
-    .map((decorator) => getAngularComponentDecoratorOptions(decorator))
+    .map((decorator) => getAngularComponentDecoratorOptions(decorator, context))
     .filter(Boolean);
   if (componentDecorators.length === 0) return null;
   const [componentDecorator] = componentDecorators;
@@ -744,6 +746,7 @@ export function getAngularComponentMetadata(
 
 export function getAngularComponentDecoratorOptions(
   decorator: NodePath<Decorator>,
+  context: AstTransformContext<TransformContext>,
 ): NodePath<ObjectExpression> | null {
   const expression = decorator.get('expression');
   if (!expression.isCallExpression()) return null;
@@ -754,6 +757,7 @@ export function getAngularComponentDecoratorOptions(
     ANGULAR_PACKAGE_NAME,
     null,
     ANGULAR_COMPONENT_DECORATOR_IMPORT_NAME,
+    context,
   );
   if (!componentDecoratorImport) return null;
   const decoratorArguments = expression.get('arguments');
@@ -765,11 +769,12 @@ export function getAngularComponentDecoratorOptions(
 
 export function getAngularViewChildMetadata(
   property: NodePath<ClassProperty>,
+  context: AstTransformContext<TransformContext>,
 ): NodePath<Expression> | null {
   const decorators = property.get('decorators');
   if (!decorators || !Array.isArray(decorators)) return null;
   const viewChildDecorators = decorators
-    .map((decorator) => getAngularViewChildDecoratorOptions(decorator))
+    .map((decorator) => getAngularViewChildDecoratorOptions(decorator, context))
     .filter(Boolean);
   if (viewChildDecorators.length === 0) return null;
   const [componentDecorator] = viewChildDecorators;
@@ -778,6 +783,7 @@ export function getAngularViewChildMetadata(
 
 function getAngularViewChildDecoratorOptions(
   decorator: NodePath<Decorator>,
+  context: AstTransformContext<TransformContext>,
 ): NodePath<Expression> | null {
   const expression = decorator.get('expression');
   if (!expression.isCallExpression()) return null;
@@ -788,6 +794,7 @@ function getAngularViewChildDecoratorOptions(
     ANGULAR_PACKAGE_NAME,
     null,
     ANGULAR_VIEW_CHILD_DECORATOR_IMPORT_NAME,
+    context,
   );
   if (!viewChildDecoratorImport) return null;
   const viewChildArguments = expression.get('arguments');

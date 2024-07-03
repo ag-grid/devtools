@@ -1,7 +1,7 @@
-const { Grid } = require('@hello/world');
+import { Grid as AgGrid } from '@hello/world';
 (() => {
   const gridOptions = { foo: 'bar' };
   gridOptions.baz = 3;
-  new Grid(document.getQuerySelector('main'), gridOptions);
+  new AgGrid(document.getQuerySelector('main'), gridOptions);
   gridOptions.api.sizeColumnsToFit();
 })();

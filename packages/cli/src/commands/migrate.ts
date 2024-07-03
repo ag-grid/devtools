@@ -4,6 +4,7 @@ import {
   Codemod,
   CodemodTaskInput,
   CodemodTaskWorkerResult,
+  TaskRunnerEnvironment,
   type VersionManifest,
 } from '@ag-grid-devtools/types';
 import { createFsHelpers } from '@ag-grid-devtools/worker-utils';
@@ -576,8 +577,8 @@ function executeCodemodSingleThreaded(
   },
 ): Promise<CodemodExecutionResult> {
   const { dryRun, onStart, onComplete, allowedImports } = options;
+  const runner: TaskRunnerEnvironment = { fs: createFsHelpers() };
   const task = createCodemodTask(codemod);
-  const runner = { fs: createFsHelpers(), allowedImports };
   // Run the codemod for each input file
   return Promise.all(
     inputFilePaths.map((inputFilePath) => {
