@@ -5,7 +5,7 @@ const gridApi = createGrid(document.body, {
   rowData: [],
 });
 
-gridApi.paginationSetPageSize();
+gridApi?.paginationSetPageSize();
 gridApi.paginationSetPageSize(value);
 gridApi.setAdvancedFilterBuilderParams();
 gridApi.setAdvancedFilterBuilderParams(value);
@@ -14,7 +14,7 @@ gridApi.setAlwaysShowHorizontalScroll(value);
 gridApi.setAlwaysShowVerticalScroll(value);
 gridApi.setAnimateRows(value);
 gridApi.setAutoGroupColumnDef(value);
-gridApi.setAutoGroupColumnDef(value, 'api');
+gridApi?.setAutoGroupColumnDef(value, 'api');
 gridApi.setCacheBlockSize(value);
 gridApi.setColumnDefs(value);
 gridApi.setColumnDefs(value, 'api');

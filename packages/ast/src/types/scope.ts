@@ -7,6 +7,7 @@ type Class = Types.Class;
 type Expression = Types.Expression;
 type Identifier = Types.Identifier;
 type MemberExpression = Types.MemberExpression;
+type OptionalMemberExpression = Types.OptionalMemberExpression;
 type ObjectExpression = Types.ObjectExpression;
 type Property = Types.Property;
 
@@ -129,7 +130,7 @@ export type AccessorReference = Enum<{
   };
   Property: {
     target: NodePath<Class | ObjectExpression>;
-    accessor: NodePath<Property | MemberExpression>;
+    accessor: NodePath<Property | MemberExpression | OptionalMemberExpression>;
   };
 }>;
 
