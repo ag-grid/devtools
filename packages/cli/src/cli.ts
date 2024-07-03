@@ -1,4 +1,4 @@
-import { Enum, match } from '@ag-grid-devtools/utils';
+import { Enum, dynamicRequire, match } from '@ag-grid-devtools/utils';
 import {
   parseArgs as parseMigrateCommandArgs,
   cli as migrate,
@@ -70,6 +70,16 @@ export async function cli(args: Array<string>, cli: CliOptions): Promise<void> {
     await printUsage(stdout, env);
     throw null;
   }
+
+  // Add optional typescript support by loading tsx or ts-node
+  try {
+    dynamicRequire.require('tsx/cjs', import.meta);
+  } catch {
+    try {
+      dynamicRequire.require('ts-node/register', import.meta);
+    } catch {}
+  }
+
   const task = match(options.command, {
     Migrate: ({ args }) => migrate(args, cli),
   });

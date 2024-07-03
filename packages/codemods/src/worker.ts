@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module';
 import { isMainThread, workerData } from 'node:worker_threads';
 import {
   composeCodemods,
@@ -6,6 +5,7 @@ import {
   initCodemodTaskWorker,
 } from '@ag-grid-devtools/codemod-task-utils';
 import type { Codemod } from '@ag-grid-devtools/types';
+import { dynamicRequire } from '@ag-grid-devtools/utils';
 
 if (isMainThread) throw new Error('This module must be run in a worker thread');
 
@@ -15,7 +15,10 @@ if (!isStringArray(codemodPaths)) throw new Error('Invalid worker data');
 
 // Load the specified codemod modules
 const codemods = codemodPaths.map((codemodPath) => {
-  const codemod = requireDynamicModule<Codemod>(codemodPath, import.meta);
+  let codemod = dynamicRequire.require<Codemod | { default: Codemod }>(codemodPath, import.meta);
+  if (typeof codemod === 'object' && codemod !== null) {
+    codemod = codemod.default; // handle default exports
+  }
   if (typeof codemod !== 'function') {
     throw new Error(`Invalid codemod path: ${JSON.stringify(codemodPath)}`);
   }
@@ -37,9 +40,4 @@ function isTypedArray<T>(
   predicate: (item: unknown) => item is T,
 ): value is Array<T> {
   return Array.isArray(value) && value.every((item) => predicate(item));
-}
-
-function requireDynamicModule<T = unknown>(path: string, meta: ImportMeta): T {
-  const require = createRequire(meta.url);
-  return require(path);
 }

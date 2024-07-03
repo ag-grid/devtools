@@ -22,7 +22,7 @@ import { basename, extname, resolve, relative } from '../utils/path';
 import { getCliCommand, getCliPackageVersion } from '../utils/pkg';
 import { green, indentErrorMessage, log } from '../utils/stdio';
 import { Worker, WorkerTaskQueue, type WorkerOptions } from '../utils/worker';
-import { requireDynamicModule, resolveDynamicModule } from '../utils/module';
+import { dynamicRequire } from '@ag-grid-devtools/utils';
 
 const { versions } = codemods;
 
@@ -383,7 +383,7 @@ async function migrate(
         // Load the codemod and wrap it in a task helper
         const codemod = composeCodemods(
           codemodPaths.map((codemodPath) =>
-            requireDynamicModule<Codemod>(codemodPath, import.meta),
+            dynamicRequire.require<Codemod>(codemodPath, import.meta),
           ),
         );
         return executeCodemodSingleThreaded(codemod, inputFilePaths, {
@@ -400,12 +400,29 @@ async function migrate(
         }
 
         // Create a worker pool to run the codemods in parallel
-        const scriptPath = resolveDynamicModule(WORKER_PATH, import.meta);
+        let scriptPath: string | URL = dynamicRequire.resolve(WORKER_PATH, import.meta);
+
+        const resolvedCodemodPaths = codemodPaths.map((codemodPath) =>
+          dynamicRequire.resolve(codemodPath, import.meta),
+        );
+
         const config: WorkerOptions = {
           // Pass the list of codemod paths to the worker via workerData
-          workerData: codemodPaths,
+          workerData: resolvedCodemodPaths,
+          env: process.env,
+          argv: [scriptPath],
+          eval: true,
         };
-        const workers = Array.from({ length: numWorkers }, () => new Worker(scriptPath, config));
+
+        const workers = Array.from(
+          { length: numWorkers },
+          () =>
+            new Worker(
+              // Add optional typescript support by loading tsx or ts-node
+              `try { require("tsx/cjs"); } catch (_) { try { require("ts-node/register"); } catch (__) {} } require(${JSON.stringify(scriptPath)});`,
+              config,
+            ),
+        );
         const workerPool = new WorkerTaskQueue<CodemodTaskInput, CodemodTaskWorkerResult>(workers);
         return executeCodemodMultiThreaded(workerPool, inputFilePaths, {
           dryRun,

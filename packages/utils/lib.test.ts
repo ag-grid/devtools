@@ -16,5 +16,6 @@ test('module exports', () => {
     nonNull: lib.nonNull,
     partition: lib.partition,
     unreachable: lib.unreachable,
+    dynamicRequire: lib.dynamicRequire,
   });
 });
