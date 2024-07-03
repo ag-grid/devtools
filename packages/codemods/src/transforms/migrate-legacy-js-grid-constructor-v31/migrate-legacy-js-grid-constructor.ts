@@ -204,9 +204,15 @@ const transform: AstTransform<AstCliContext> = function migrateLegacyJsGridConst
           ? optionsVariableBinding.referencePaths
               .map((path) => {
                 const propertyAccessor = path.parentPath;
-                if (!propertyAccessor || !propertyAccessor.isMemberExpression()) return null;
-                const object = propertyAccessor.get('object');
-                const property = propertyAccessor.get('property');
+                if (
+                  !propertyAccessor ||
+                  (!propertyAccessor.isMemberExpression() &&
+                    !propertyAccessor.isOptionalMemberExpression())
+                ) {
+                  return null;
+                }
+                const object = propertyAccessor.get('object') as NodePath<t.Expression>;
+                const property = propertyAccessor.get('property') as NodePath<t.Expression>;
                 const computed = propertyAccessor.node.computed;
                 if (object.node !== path.node) return null;
                 const isApiProperty = matchNamedPropertyKeyExpression(

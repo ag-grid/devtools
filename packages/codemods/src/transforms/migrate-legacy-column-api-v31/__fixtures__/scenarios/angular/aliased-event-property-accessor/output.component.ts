@@ -23,12 +23,12 @@ export class AppComponent {
   constructor(private http: HttpClient) {}
 
   onGridReady(params: GridReadyEvent<IOlympicData>) {
-    const gridApi = params.api;
+    const gridApi = params?.api;
     this.http
       .get<IOlympicData[]>('https://www.ag-grid.com/example-assets/olympic-winners.json')
       .subscribe((data) => {
         this.rowData = data;
-        gridApi.resetColumnState();
+        gridApi!.resetColumnState();
       });
   }
 }

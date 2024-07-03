@@ -31,6 +31,7 @@ export type { AST } from 'vue-eslint-parser';
 type ArrowFunctionExpression = Types.ArrowFunctionExpression;
 type Expression = Types.Expression;
 type MemberExpression = Types.MemberExpression;
+type OptionalMemberExpression = Types.OptionalMemberExpression;
 type ObjectExpression = Types.ObjectExpression;
 type ObjectMethod = Types.ObjectMethod;
 type ObjectProperty = Types.ObjectProperty;
@@ -337,28 +338,40 @@ function getVueComponentScopedMethodDataFieldReferences(
         dataObjectAccessors.set(accessor, accessor.parentPath);
         return true;
       }
-      if (!accessor.isMemberExpression()) return false;
+      if (!accessor.isMemberExpression() && !accessor.isOptionalMemberExpression()) return false;
       return isNamedMemberExpression(accessor, fieldName);
     },
   ).map((accessor) => dataObjectAccessors.get(accessor) || accessor);
 }
 
-function isNamedMemberExpression(accessor: NodePath<MemberExpression>, key: string): boolean {
+function isNamedMemberExpression(
+  accessor: NodePath<MemberExpression | OptionalMemberExpression>,
+  key: string,
+): boolean {
   const property = accessor.get('property');
   const computed = accessor.node.computed;
   return getStaticPropertyKey(property.node, computed) === key;
 }
 
 function isVueComponentDataObjectAccessor(
-  accessor: NodePath<Property | MemberExpression>,
+  accessor: NodePath<Property | MemberExpression | OptionalMemberExpression>,
   fieldName: string,
 ): accessor is NodePath<MemberExpression> & { parentPath: NodePath<MemberExpression> } {
-  if (!accessor.isMemberExpression()) return false;
+  if (!accessor.isMemberExpression() && !accessor.isOptionalMemberExpression()) return false;
   if (!isNamedMemberExpression(accessor, VUE_COMPONENT_INSTANCE_DATA_FIELD_NAME)) return false;
-  if (!accessor.parentPath.isMemberExpression()) return false;
-  const parentObject = accessor.parentPath.get('object');
+  if (!accessor.parentPath.isMemberExpression() && !accessor.isOptionalMemberExpression()) {
+    return false;
+  }
+  const parentObject = accessor.parentPath.get('object') as NodePath<Expression>;
   if (parentObject.node !== accessor.node) return false;
-  if (!isNamedMemberExpression(accessor.parentPath, fieldName)) return false;
+  if (
+    !isNamedMemberExpression(
+      accessor.parentPath as NodePath<MemberExpression> | NodePath<OptionalMemberExpression>,
+      fieldName,
+    )
+  ) {
+    return false;
+  }
   return true;
 }
 

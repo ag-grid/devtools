@@ -1,5 +1,6 @@
 import {
   getLiteralPropertyKey,
+  type AstTransformContext,
   type AstCliContext,
   type AstTransform,
   type NodePath,
@@ -17,10 +18,41 @@ const GRID_API_PROPERTY_NAME = 'api';
 
 const transform: AstTransform<AstCliContext> = function migrateLegacyColumnApi(babel) {
   const { types: t } = babel;
+
+  const MemberExpression = (
+    path: NodePath<Types.MemberExpression>,
+    context: AstTransformContext<AstCliContext>,
+  ) => {
+    const object = path.get('object');
+    const property = path.get('property');
+    const computed = path.node.computed;
+    // Ignore any property accesses that refer to named fields on the current `this` object
+    if (object.isThisExpression()) return;
+    // Ignore any property accesses that do not refer to the `.columnApi` property
+    if (!isNamedPropertyAccess(COLUMN_API_PROPERTY_NAME, property, computed)) return;
+    // Ignore any property accesses that do not target a grid column API
+    if (!isColumnApiReference(path, context)) return;
+    // Now that we know we are dealing with a grid column API, rename the field
+    property.replaceWith(t.identifier(GRID_API_PROPERTY_NAME));
+  };
+
   return {
     visitor: {
       // Replace `_.columnApi` property accessors with `_.api`
       MemberExpression(path, context) {
+        const object = path.get('object');
+        const property = path.get('property');
+        const computed = path.node.computed;
+        // Ignore any property accesses that refer to named fields on the current `this` object
+        if (object.isThisExpression()) return;
+        // Ignore any property accesses that do not refer to the `.columnApi` property
+        if (!isNamedPropertyAccess(COLUMN_API_PROPERTY_NAME, property, computed)) return;
+        // Ignore any property accesses that do not target a grid column API
+        if (!isColumnApiReference(path, context)) return;
+        // Now that we know we are dealing with a grid column API, rename the field
+        property.replaceWith(t.identifier(GRID_API_PROPERTY_NAME));
+      },
+      OptionalMemberExpression(path, context) {
         const object = path.get('object');
         const property = path.get('property');
         const computed = path.node.computed;

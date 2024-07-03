@@ -1,5 +1,7 @@
 {
   "cSpell.words": ["Codemod", "codemods", "organised"],
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  "prettier.ignorePath": ".vscode/.prettierignore"
 }
