@@ -127,7 +127,7 @@ const NamedUmdImportBindingAccessor = Enum.create<
   Namespaced: true,
 });
 
-export function buildImportNamePattern(
+function buildImportNamePattern(
   packageNamePattern: StringMatcher,
   context: AstTransformContext<TransformContext>,
 ): StringMatcher {

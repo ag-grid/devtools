@@ -21,7 +21,12 @@ export async function loadTempSource(name: string) {
 }
 
 export async function prepareTestDataFiles() {
-  await rmdir(TEMP_FOLDER, { recursive: true });
+  try {
+    await rmdir(TEMP_FOLDER, { recursive: true });
+  } catch {
+    // already deleted
+  }
+
   await mkdir(TEMP_FOLDER, { recursive: true });
 
   await cp(path.resolve(ROOT_FOLDER, INPUT_FOLDER), TEMP_FOLDER, {
