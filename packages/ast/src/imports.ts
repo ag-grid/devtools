@@ -270,6 +270,8 @@ function matchImportedSpecifier(
   if (importedSpecifier === importedSpecifierMatcher) {
     return { fromUserConfig: null };
   }
+
+  return null;
 }
 
 export interface PackageNamespaceImport {
