@@ -13,7 +13,7 @@ describe('cli e2e', () => {
     patchDynamicRequire();
   });
 
-  test('allowedImports', async () => {
+  test('userConfig', async () => {
     await prepareTestDataFiles();
 
     await cli(
@@ -22,11 +22,13 @@ describe('cli e2e', () => {
         '--num-threads=1',
         '--allow-untracked',
         '--from=30.0.0',
-        '--allowed-imports=@hello/world',
+        '--user-config=../user-config.ts',
       ],
       {
         cwd: TEMP_FOLDER,
-        env: {},
+        env: {
+          cwd: TEMP_FOLDER,
+        },
         stdio: {
           stdin: process.stdin,
           stdout: process.stdout,
@@ -35,8 +37,8 @@ describe('cli e2e', () => {
       },
     );
 
-    expect(await loadExpectedSource('allowed-imports.js')).toEqual(
-      await loadTempSource('allowed-imports.js'),
+    expect(await loadExpectedSource('custom-imports.js')).toEqual(
+      await loadTempSource('custom-imports.js'),
     );
   });
 });

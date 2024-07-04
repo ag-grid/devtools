@@ -241,6 +241,9 @@ importers:
       '@ag-grid-devtools/types':
         specifier: workspace:*
         version: link:../types
+      '@ag-grid-devtools/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@ag-grid-devtools/worker-utils':
         specifier: workspace:*
         version: link:../worker-utils

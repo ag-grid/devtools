@@ -13,11 +13,11 @@ const codemod: Codemod = function codemodV31_0_0(
   options: CodemodOptions,
 ): CodemodResult {
   const { path, source } = file;
-  const { fs, allowedImports } = options;
+  const { fs, userConfig } = options;
   return transformFileAst(source, transforms, {
     filename: path,
     fs,
-    allowedImports,
+    userConfig,
   });
 };
 

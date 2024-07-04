@@ -4,6 +4,7 @@ import * as lib from './lib';
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({
+    AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME: lib.AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME,
     AccessorKey: lib.AccessorKey,
     AccessorReference: lib.AccessorReference,
     areAccessorKeysEqual: lib.areAccessorKeysEqual,

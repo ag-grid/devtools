@@ -1,16 +1,21 @@
 import codemods from '@ag-grid-devtools/codemods';
-import { composeCodemods, createCodemodTask } from '@ag-grid-devtools/codemod-task-utils';
+import {
+  composeCodemods,
+  createCodemodTask,
+  loadUserConfig,
+} from '@ag-grid-devtools/codemod-task-utils';
 import {
   Codemod,
   CodemodTaskInput,
   CodemodTaskWorkerResult,
   TaskRunnerEnvironment,
+  UserConfig,
   type VersionManifest,
 } from '@ag-grid-devtools/types';
 import { createFsHelpers } from '@ag-grid-devtools/worker-utils';
 import { nonNull } from '@ag-grid-devtools/utils';
 import { createTwoFilesPatch } from 'diff';
-import { join } from 'node:path';
+import { join, resolve as pathResolve } from 'node:path';
 import { cpus } from 'node:os';
 import semver from 'semver';
 
@@ -72,9 +77,9 @@ export interface MigrateCommandArgs {
    */
   input: Array<string>;
   /**
-   * List of additional imports to process (comma-separated), when ag-grid is wrapped in a custom module
+   * The path of the user config to load
    */
-  allowedImports?: Array<string>;
+  userConfigPath?: string;
 }
 
 function usage(env: CliEnv): string {
@@ -117,9 +122,8 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     verbose: false,
     help: false,
     input: [],
-    allowedImports: undefined,
+    userConfigPath: undefined,
   };
-  let allowedImportsSet = new Set<string>();
   let arg;
   while ((arg = args.shift())) {
     if (arg.includes('=')) {
@@ -184,16 +188,19 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         options.numThreads = numThreads;
         break;
       }
-      case '--allowed-imports': {
-        const value = args.shift();
-        if (!value || value.startsWith('-')) {
+      case '--user-config': {
+        let value = args.shift()?.trim();
+        if (!value) {
           throw new CliArgsError(`Missing value for ${arg}`, usage(env));
         }
-        for (let v of value.split(',')) {
-          v = v.trim();
-          if (v) {
-            allowedImportsSet.add(v);
+        if (value.startsWith('require:')) {
+          value = value.slice('require:'.length);
+          if (!value) {
+            throw new CliArgsError(`Missing value for ${arg}`, usage(env));
           }
+          options.userConfigPath = value;
+        } else {
+          options.userConfigPath = pathResolve(env.cwd ?? process.cwd(), value);
         }
         break;
       }
@@ -214,10 +221,6 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         options.input.push(arg);
         break;
     }
-  }
-
-  if (allowedImportsSet.size > 0) {
-    options.allowedImports = Array.from(allowedImportsSet);
   }
 
   if (options.help) return options;
@@ -258,7 +261,7 @@ async function migrate(
     numThreads,
     dryRun,
     verbose,
-    allowedImports,
+    userConfigPath,
     input,
   } = args;
   const { cwd, env, stdio } = options;
@@ -389,7 +392,7 @@ async function migrate(
         );
         return executeCodemodSingleThreaded(codemod, inputFilePaths, {
           dryRun,
-          allowedImports: allowedImports || [],
+          userConfigPath,
           onStart,
           onComplete,
         });
@@ -409,7 +412,10 @@ async function migrate(
 
         const config: WorkerOptions = {
           // Pass the list of codemod paths to the worker via workerData
-          workerData: resolvedCodemodPaths,
+          workerData: {
+            codemodPaths: resolvedCodemodPaths,
+            userConfigPath,
+          },
           env: process.env,
           argv: [scriptPath],
           eval: true,
@@ -427,7 +433,6 @@ async function migrate(
         const workerPool = new WorkerTaskQueue<CodemodTaskInput, CodemodTaskWorkerResult>(workers);
         return executeCodemodMultiThreaded(workerPool, inputFilePaths, {
           dryRun,
-          allowedImports,
           onQueue,
           onStart,
           onComplete,
@@ -523,19 +528,18 @@ function executeCodemodMultiThreaded(
   inputFilePaths: string[],
   options: {
     dryRun: boolean;
-    allowedImports: Array<string> | undefined;
     onQueue?: (inputFilePath: string) => void;
     onStart?: (inputFilePath: string) => void;
     onComplete?: (inputFilePath: string, stats: { runningTime: number }) => void;
   },
 ): Promise<CodemodExecutionResult> {
-  const { dryRun, allowedImports, onQueue, onStart, onComplete } = options;
+  const { dryRun, onQueue, onStart, onComplete } = options;
   // Process the tasks by dispatching them to the worker pool
   return Promise.all(
     inputFilePaths.map((inputFilePath) => {
       return workerPool
         .run(
-          { inputFilePath, dryRun, allowedImports },
+          { inputFilePath, dryRun },
           {
             onQueue: onQueue?.bind(null, inputFilePath),
             onStart: onStart?.bind(null, inputFilePath),
@@ -570,22 +574,26 @@ function executeCodemodSingleThreaded(
   codemod: Codemod,
   inputFilePaths: string[],
   options: {
-    allowedImports: Array<string> | undefined;
+    userConfigPath: string | undefined;
     dryRun: boolean;
     onStart?: (inputFilePath: string) => void;
     onComplete?: (inputFilePath: string, stats: { runningTime: number }) => void;
   },
 ): Promise<CodemodExecutionResult> {
-  const { dryRun, onStart, onComplete, allowedImports } = options;
-  const runner: TaskRunnerEnvironment = { fs: createFsHelpers() };
-  const task = createCodemodTask(codemod);
+  const { dryRun, onStart, onComplete, userConfigPath } = options;
+  const userConfig = loadUserConfig(userConfigPath);
+  const runner: TaskRunnerEnvironment = {
+    fs: createFsHelpers(),
+    userConfig,
+  };
+  const task = createCodemodTask(codemod, userConfig);
   // Run the codemod for each input file
   return Promise.all(
     inputFilePaths.map((inputFilePath) => {
       const startTime = Date.now();
       onStart?.(inputFilePath);
       return task
-        .run({ inputFilePath, dryRun, allowedImports }, runner)
+        .run({ inputFilePath, dryRun }, runner)
         .then(({ result, errors, warnings }) => ({
           path: inputFilePath,
           result,

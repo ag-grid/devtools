@@ -1,4 +1,9 @@
-import { type CodemodTask, type CodemodTaskInput, type FsUtils } from '@ag-grid-devtools/types';
+import {
+  UserConfig,
+  type CodemodTask,
+  type CodemodTaskInput,
+  type FsUtils,
+} from '@ag-grid-devtools/types';
 import {
   configureWorkerTask,
   createFsHelpers,
@@ -7,21 +12,22 @@ import {
 
 export function initCodemodTaskWorker(
   task: CodemodTask,
-  options?: {
+  options: {
     fs?: FsUtils;
+    userConfig: UserConfig | undefined;
   },
 ): void {
-  const { fs = createFsHelpers() } = options || {};
+  const { fs = createFsHelpers(), userConfig } = options;
   const workerTask = configureWorkerTask(task, {
     main: parseMainThreadTaskInput,
     worker: parseWorkerThreadTaskInput,
   });
-  initTaskWorker(workerTask, { fs });
+  initTaskWorker(workerTask, { fs, userConfig });
 }
 
 function parseMainThreadTaskInput(env: Pick<NodeJS.Process, 'argv' | 'env'>): CodemodTaskInput {
   const {
-    env: { INPUT_FILE, DRY_RUN, ALLOWED_IMPORTS },
+    env: { INPUT_FILE, DRY_RUN },
   } = env;
   if (!INPUT_FILE) throw new Error('Missing INPUT_FILE environment variable');
   const inputFilePath = INPUT_FILE;
@@ -29,15 +35,17 @@ function parseMainThreadTaskInput(env: Pick<NodeJS.Process, 'argv' | 'env'>): Co
   return {
     inputFilePath,
     dryRun,
-    allowedImports: parseAllowedImports(ALLOWED_IMPORTS),
   };
 }
 
 function parseWorkerThreadTaskInput(data: unknown): CodemodTaskInput {
   if (!data || typeof data !== 'object') throw new Error('Invalid task input');
-  let { inputFilePath, allowedImports, dryRun } = data as Record<string, unknown>;
+  let { inputFilePath, userConfigPath, dryRun } = data as Record<string, unknown>;
   if (typeof inputFilePath !== 'string') {
     throw new Error(`Invalid inputFilePath field value: ${JSON.stringify(inputFilePath)}`);
+  }
+  if (typeof userConfigPath !== 'string' && userConfigPath !== undefined) {
+    throw new Error(`Invalid userConfigPath field value: ${JSON.stringify(userConfigPath)}`);
   }
   if (typeof dryRun !== 'boolean') {
     throw new Error(`Invalid dryRun field value: ${JSON.stringify(dryRun)}`);
@@ -45,7 +53,6 @@ function parseWorkerThreadTaskInput(data: unknown): CodemodTaskInput {
   return {
     inputFilePath,
     dryRun: Boolean(dryRun),
-    allowedImports: parseAllowedImports(allowedImports),
   };
 }
 
@@ -58,24 +65,4 @@ function parseBooleanEnvVar(value: string | undefined): boolean {
     default:
       return true;
   }
-}
-
-function parseAllowedImports(allowedImports: unknown): string[] | undefined {
-  if (!allowedImports) {
-    return undefined;
-  }
-  if (typeof allowedImports === 'string') {
-    allowedImports = allowedImports
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s);
-  }
-
-  if (!Array.isArray(allowedImports) || !allowedImports.every((s) => typeof s === 'string')) {
-    throw new Error(`Invalid allowedImports field value: ${JSON.stringify(allowedImports)}`);
-  }
-  if (!allowedImports.length) {
-    return undefined;
-  }
-  return allowedImports;
 }

@@ -10,23 +10,24 @@ import {
   memfs,
   type ExampleVitestHelpers,
 } from '@ag-grid-devtools/test-utils';
+import { UserConfig } from '@ag-grid-devtools/types';
 
 export function loadTransformScenarios(
   scenariosPath: string,
   options: {
     transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>;
     vitest: ExampleVitestHelpers;
-    allowedImports?: string[];
+    userConfig?: UserConfig;
   },
 ): void {
-  const { transforms, vitest, allowedImports } = options;
+  const { transforms, vitest, userConfig } = options;
   return loadAstTransformExampleScenarios(scenariosPath, {
     vitest,
     runner: (input) => {
       const { source, errors, warnings } = transformFileAst(input.source, transforms, {
         filename: input.path,
         fs: createMockFsHelpers(memfs),
-        allowedImports,
+        userConfig,
       });
       return { source, errors, warnings };
     },

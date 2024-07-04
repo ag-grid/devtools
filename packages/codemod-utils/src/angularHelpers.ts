@@ -7,7 +7,8 @@ import {
   type FileMetadata,
   type NodePath,
   type Types,
-  TransformContext,
+  type TransformContext,
+  type ImportedModuleMatcher,
 } from '@ag-grid-devtools/ast';
 import { Enum, match } from '@ag-grid-devtools/utils';
 import {
@@ -30,7 +31,6 @@ import {
   getTemplateNodeChild,
   mergeSourceChunks,
   printTemplate,
-  SourceChunk,
   type TemplateEngine,
   type TemplateFormatter,
   type TemplateMutation,
@@ -78,6 +78,14 @@ type Property = Types.Property;
 type TemplateLiteral = Types.TemplateLiteral;
 
 const ANGULAR_PACKAGE_NAME = '@angular/core';
+
+const ANGULAR_PACKAGE_NAME_MATCHER: ImportedModuleMatcher = {
+  importModulePattern: ANGULAR_PACKAGE_NAME,
+  importUmdPattern: null,
+  framework: 'vanilla',
+  skipUserConfig: true,
+};
+
 const ANGULAR_COMPONENT_DECORATOR_IMPORT_NAME = 'Component';
 const ANGULAR_COMPONENT_METADATA_TEMPLATE_FIELD_NAME = 'template';
 const ANGULAR_COMPONENT_METADATA_TEMPLATE_URL_FIELD_NAME = 'templateUrl';
@@ -755,8 +763,7 @@ export function getAngularComponentDecoratorOptions(
   if (!callee.isExpression()) return null;
   const componentDecoratorImport = getNamedModuleImportExpression(
     callee,
-    ANGULAR_PACKAGE_NAME,
-    null,
+    ANGULAR_PACKAGE_NAME_MATCHER,
     ANGULAR_COMPONENT_DECORATOR_IMPORT_NAME,
     context,
   );
@@ -792,8 +799,7 @@ function getAngularViewChildDecoratorOptions(
   if (!callee.isExpression()) return null;
   const viewChildDecoratorImport = getNamedModuleImportExpression(
     callee,
-    ANGULAR_PACKAGE_NAME,
-    null,
+    ANGULAR_PACKAGE_NAME_MATCHER,
     ANGULAR_VIEW_CHILD_DECORATOR_IMPORT_NAME,
     context,
   );

@@ -59,7 +59,7 @@ function transformJsFile<S>(
     BabelTransformJsxOptions &
     Required<Pick<ParserOptions, 'sourceType'>>,
 ): AstTransformResult {
-  const { filename, fs, allowedImports } = options;
+  const { filename, fs, userConfig } = options;
   // Transform the AST
   const uniqueErrors = new Map<string, { fatal: boolean; error: SyntaxError }>();
   const transformContext: AstTransformContext<AstCliContext> = {
@@ -74,7 +74,7 @@ function transformJsFile<S>(
         uniqueErrors.set(error.message, { error, fatal: true });
       },
       fs,
-      allowedImports,
+      userConfig,
     },
   };
   const plugins = transforms.map((plugin): AstTransformWithOptions<AstCliContext> => {

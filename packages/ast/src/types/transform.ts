@@ -1,4 +1,4 @@
-import { type FsUtils } from '@ag-grid-devtools/types';
+import type { UserConfig, FsUtils, IsGridModuleArgs } from '@ag-grid-devtools/types';
 import type { NodePath, PluginObj, PluginPass, Visitor } from '@babel/core';
 import type * as BabelCore from '@babel/core';
 
@@ -12,6 +12,11 @@ export type BabelPluginWithOptions<S = PluginPass, T extends object = object> = 
 
 export type AstTransform<S extends object> = BabelPlugin<PluginPass & AstTransformContext<S>>;
 
+export interface ImportMatcherResult {
+  /** True if the resolution happened via custom user config */
+  fromUserConfig: boolean;
+}
+
 export type AstTransformWithOptions<
   S extends object = object,
   T extends object = object,
@@ -19,6 +24,9 @@ export type AstTransformWithOptions<
 
 export interface AstTransformContext<S extends object = object> extends FileMetadata {
   opts: S;
+
+  _userConfigIsGridModuleCache?: Map<string, IsGridModuleArgs | null>;
+  _userConfigIsGridModuleExportCache?: Map<string, ImportMatcherResult | null>;
 }
 
 export interface FileMetadata {
@@ -26,7 +34,7 @@ export interface FileMetadata {
 }
 
 export interface TransformContext {
-  allowedImports?: string[];
+  userConfig?: UserConfig;
 }
 
 export interface FsContext extends TransformContext {

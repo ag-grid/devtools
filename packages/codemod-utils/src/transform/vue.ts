@@ -56,7 +56,7 @@ export function transformVueSfcFile(
   };
   // Expose the template to the transforms via plugin context
   const vueTransformOptions: VueComponentCliContext = {
-    allowedImports: options.allowedImports,
+    userConfig: options.userConfig,
     vue: {
       template,
     },

@@ -11,8 +11,6 @@ test('module exports', () => {
     instantiateEnum: lib.instantiateEnum,
     isEnumVariant: lib.isEnumVariant,
     match: lib.match,
-    matchString: lib.matchString,
-    matchImport: lib.matchImport,
     nonNull: lib.nonNull,
     partition: lib.partition,
     unreachable: lib.unreachable,

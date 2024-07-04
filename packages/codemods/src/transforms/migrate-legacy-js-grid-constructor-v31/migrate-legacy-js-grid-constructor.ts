@@ -15,11 +15,9 @@ import {
   type Types,
   getNamedObjectLiteralStaticProperty,
   NodePath,
+  AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME,
 } from '@ag-grid-devtools/ast';
-import {
-  AG_GRID_JS_PACKAGE_NAME_PATTERN,
-  AG_GRID_JS_UMD_GLOBAL_NAME,
-} from '@ag-grid-devtools/codemod-utils';
+import { AG_GRID_JS_PACKAGE_NAME_MATCHER } from '@ag-grid-devtools/codemod-utils';
 import { match, nonNull } from '@ag-grid-devtools/utils';
 
 type Expression = Types.Expression;
@@ -30,7 +28,6 @@ type ObjectProperty = Types.ObjectProperty;
 const LEGACY_GRID_API_EXPORT_NAME = 'Grid';
 const GRID_API_ACCESSOR_NAME = 'api';
 const COLUMN_API_ACCESSOR_NAME = 'columnApi';
-const UPDATED_CONSTRUCTOR_EXPORT_NAME = 'createGrid';
 
 // Used to denote that this plugin has modified the module source
 // (this allows us to skip unused import cleanup if there are no changes to the current file)
@@ -81,34 +78,38 @@ const transform: AstTransform<AstCliContext> = function migrateLegacyJsGridConst
         // Determine whether the constructor refers to the legacy Grid class, and bail out if not
         const legacyGridApiImport = getNamedModuleImportExpression(
           constructorClass,
-          AG_GRID_JS_PACKAGE_NAME_PATTERN,
-          AG_GRID_JS_UMD_GLOBAL_NAME,
+          AG_GRID_JS_PACKAGE_NAME_MATCHER,
           LEGACY_GRID_API_EXPORT_NAME,
           state,
         );
         if (!legacyGridApiImport) return;
 
+        const updatedConstructorExportName =
+          (legacyGridApiImport.importMatcherResult.fromUserConfig &&
+            state.opts.userConfig?.createGridName) ||
+          AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME;
+
         // Rewrite the legacy Grid import to the new-style createGrid import
-        const updatedConstructorClass = match(legacyGridApiImport, {
+        const updatedConstructorClass = match(legacyGridApiImport.binding, {
           Module: ({ declaration, accessor }) =>
             match(accessor, {
               Named: ({}) => {
                 const existingConstructorImport = findNamedModuleImport(
                   declaration.node,
-                  UPDATED_CONSTRUCTOR_EXPORT_NAME,
+                  updatedConstructorExportName,
                   state,
                 );
                 if (existingConstructorImport) return existingConstructorImport.local;
                 return insertNamedModuleImport(
                   declaration,
                   t.importSpecifier(
-                    generateUniqueScopeBinding(path.scope, UPDATED_CONSTRUCTOR_EXPORT_NAME),
-                    t.identifier(UPDATED_CONSTRUCTOR_EXPORT_NAME),
+                    generateUniqueScopeBinding(path.scope, updatedConstructorExportName),
+                    t.identifier(updatedConstructorExportName),
                   ),
                 );
               },
               Namespaced: ({ accessor, local }) => {
-                const exportedName = t.identifier(UPDATED_CONSTRUCTOR_EXPORT_NAME);
+                const exportedName = t.identifier(updatedConstructorExportName);
                 const key = exportedName;
                 const computed = false;
                 const [updatedAccessor] = accessor.replaceWith(
@@ -123,12 +124,12 @@ const transform: AstTransform<AstCliContext> = function migrateLegacyJsGridConst
                 const existingConstructorImportReference =
                   findNamedDestructuredPropertyLocalIdentifier(
                     accessors,
-                    UPDATED_CONSTRUCTOR_EXPORT_NAME,
+                    updatedConstructorExportName,
                   );
                 if (existingConstructorImportReference) {
                   return existingConstructorImportReference.node;
                 }
-                const exportedName = t.identifier(UPDATED_CONSTRUCTOR_EXPORT_NAME);
+                const exportedName = t.identifier(updatedConstructorExportName);
                 const localIdentifier = generateUniqueScopeBinding(path.scope, exportedName.name);
                 const key = exportedName;
                 const value = localIdentifier;
@@ -141,7 +142,7 @@ const transform: AstTransform<AstCliContext> = function migrateLegacyJsGridConst
                 return localIdentifier;
               },
               Namespaced: ({ accessor, local }) => {
-                const exportedName = t.identifier(UPDATED_CONSTRUCTOR_EXPORT_NAME);
+                const exportedName = t.identifier(updatedConstructorExportName);
                 const key = exportedName;
                 const computed = false;
                 const [updatedAccessor] = accessor.replaceWith(
@@ -156,12 +157,12 @@ const transform: AstTransform<AstCliContext> = function migrateLegacyJsGridConst
                 const existingConstructorImportReference =
                   findNamedDestructuredPropertyLocalIdentifier(
                     accessors,
-                    UPDATED_CONSTRUCTOR_EXPORT_NAME,
+                    updatedConstructorExportName,
                   );
                 if (existingConstructorImportReference) {
                   return existingConstructorImportReference.node;
                 }
-                const exportedName = t.identifier(UPDATED_CONSTRUCTOR_EXPORT_NAME);
+                const exportedName = t.identifier(updatedConstructorExportName);
                 const localIdentifier = generateUniqueScopeBinding(path.scope, exportedName.name);
                 const key = exportedName;
                 const value = localIdentifier;
@@ -174,7 +175,7 @@ const transform: AstTransform<AstCliContext> = function migrateLegacyJsGridConst
                 return localIdentifier;
               },
               Namespaced: ({ accessor, local }) => {
-                const exportedName = t.identifier(UPDATED_CONSTRUCTOR_EXPORT_NAME);
+                const exportedName = t.identifier(updatedConstructorExportName);
                 const key = exportedName;
                 const computed = false;
                 const [updatedAccessor] = accessor.replaceWith(
@@ -268,7 +269,7 @@ const transform: AstTransform<AstCliContext> = function migrateLegacyJsGridConst
               !matchModuleImportName(
                 target.parentPath.node,
                 target.node,
-                AG_GRID_JS_PACKAGE_NAME_PATTERN,
+                AG_GRID_JS_PACKAGE_NAME_MATCHER,
                 LEGACY_GRID_API_EXPORT_NAME,
                 state,
               )

@@ -4,23 +4,23 @@ import {
   memfs,
   type ExampleVitestHelpers,
 } from '@ag-grid-devtools/test-utils';
-import { type Codemod } from '@ag-grid-devtools/types';
+import { UserConfig, type Codemod } from '@ag-grid-devtools/types';
 
 export function loadCodemodExampleScenarios(
   scenariosPath: string,
   options: {
     codemod: Codemod;
     vitest: ExampleVitestHelpers;
-    allowedImports?: string[];
+    userConfig?: UserConfig;
   },
 ): void {
-  const { codemod, vitest, allowedImports } = options;
+  const { codemod, vitest, userConfig } = options;
   return loadAstTransformExampleScenarios(scenariosPath, {
     vitest,
     runner: (input) => {
       const { source, errors, warnings } = codemod(
         { path: input.path, source: input.source },
-        { fs: createMockFsHelpers(memfs), allowedImports },
+        { fs: createMockFsHelpers(memfs), userConfig },
       );
       return { source, errors, warnings };
     },

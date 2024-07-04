@@ -1,5 +1,6 @@
 import { type FsUtils } from './fs';
 import { type Task } from './task';
+import { UserConfig } from './user-config';
 
 export interface Codemod {
   (file: CodemodInput, options: CodemodOptions): CodemodResult;
@@ -12,7 +13,7 @@ export interface CodemodInput {
 
 export interface CodemodOptions {
   fs: FsUtils;
-  allowedImports: string[] | undefined;
+  userConfig: UserConfig | undefined;
 }
 
 export interface CodemodResult {
@@ -25,7 +26,6 @@ export interface CodemodTask extends Task<CodemodTaskInput, CodemodTaskResult> {
 
 export interface CodemodTaskInput {
   inputFilePath: string;
-  allowedImports: string[] | undefined;
   dryRun: boolean;
 }
 
