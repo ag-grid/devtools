@@ -60,6 +60,7 @@ type JSXIdentifier = Types.JSXIdentifier;
 type JSXNamespacedName = Types.JSXNamespacedName;
 type Literal = Types.Literal;
 type MemberExpression = Types.MemberExpression;
+type OptionalMemberExpression = Types.OptionalMemberExpression;
 type ObjectExpression = Types.ObjectExpression;
 type ObjectMethod = Types.ObjectMethod;
 type ObjectProperty = Types.ObjectProperty;
@@ -443,6 +444,10 @@ function parseObjectPropertyGetterAccessor(
       const { property: key, computed } = property.node;
       return { key, computed };
     }
+    case 'OptionalMemberExpression': {
+      const { property: key, computed } = property.node;
+      return { key, computed };
+    }
     default:
       unreachable(property.node);
   }
@@ -454,7 +459,7 @@ function parseObjectPropertyAssignmentAccessor(
   switch (property.node.type) {
     case 'AssignmentExpression': {
       const { left: target } = property.node;
-      if (!t.isMemberExpression(target)) return null;
+      if (!t.isMemberExpression(target) && !t.isOptionalMemberExpression(target)) return null;
       const { property: key, computed } = target;
       return { key, computed };
     }
@@ -600,6 +605,11 @@ export function migrateProperty<S extends AstTransformContext<AstCliContext>>(
         const { key, computed } = renamedAccessor;
         const optional = false;
         path.replaceWith(t.memberExpression(object.node, key, computed, optional));
+      } else if (path.isOptionalMemberExpression()) {
+        const object = path.get('object');
+        const { key, computed } = renamedAccessor;
+        const optional = false;
+        path.replaceWith(t.optionalMemberExpression(object.node, key, computed, optional));
       }
     },
     set(path, context) {
@@ -945,8 +955,8 @@ function getDynamicPropertyAssignmentTarget(
   path: NodePath<AssignmentExpression>,
 ): NodePath<Expression> | null {
   const target = path.get('left');
-  if (!target.isMemberExpression()) return null;
-  return target.get('object');
+  if (!target.isMemberExpression() && !target.isOptionalMemberExpression()) return null;
+  return target.get('object') as NodePath<Expression>;
 }
 
 function arePropertyAccessorsEqual(left: PropertyAccessor, right: PropertyAccessor): boolean {
@@ -1041,8 +1051,16 @@ function renameObjectPropertyAssignment(
     existingKey !== targetAccessor.key
       ? existingKey.replaceWith(targetAccessor.key)
       : [existingKey];
+
   const [updatedTarget] = existingTarget.replaceWith(
-    t.memberExpression(existingTarget.node.object, updatedKey.node, targetAccessor.computed),
+    existingTarget.isOptionalMemberExpression()
+      ? t.optionalMemberExpression(
+          existingTarget.node.object,
+          updatedKey.node as Expression,
+          targetAccessor.computed,
+          existingTarget.node.optional,
+        )
+      : t.memberExpression(existingTarget.node.object, updatedKey.node, targetAccessor.computed),
   );
   const [transformed] = assignment.replaceWith(
     t.assignmentExpression(assignment.node.operator, updatedTarget.node, assignment.node.right),
@@ -1064,7 +1082,14 @@ function rewritePropertyAssignment(
   const updatedTarget =
     key === existingTarget.node.property && computed === existingTarget.node.computed
       ? existingTarget.node
-      : t.memberExpression(existingTarget.node.object, key, computed);
+      : existingTarget.isOptionalMemberExpression()
+        ? t.optionalMemberExpression(
+            existingTarget.node.object,
+            key as Expression,
+            computed,
+            existingTarget.node.optional,
+          )
+        : t.memberExpression(existingTarget.node.object, key, computed);
   property.replaceWith(
     t.assignmentExpression(
       property.node.operator,

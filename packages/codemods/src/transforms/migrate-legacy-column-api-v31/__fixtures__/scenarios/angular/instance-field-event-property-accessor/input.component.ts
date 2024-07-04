@@ -24,7 +24,8 @@ export class AppComponent {
   constructor(private http: HttpClient) {}
 
   resetState() {
-    this.gridApi.resetColumnState();
+    this.gridApi?.resetColumnState();
+    this.gridApi!.resetColumnState();
   }
 
   onGridReady(params: GridReadyEvent<IOlympicData>) {

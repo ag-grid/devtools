@@ -1,0 +1,6 @@
+node_modules
+__fixtures__
+coverage
+docs
+dist
+pnpm-lock.yaml
