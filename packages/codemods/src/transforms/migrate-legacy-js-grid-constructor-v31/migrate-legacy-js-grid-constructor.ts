@@ -84,9 +84,9 @@ const transform: AstTransform<AstCliContext> = function migrateLegacyJsGridConst
         );
         if (!legacyGridApiImport) return;
 
+        const fromUserConfig = legacyGridApiImport.importMatcherResult.fromUserConfig;
         const updatedConstructorExportName =
-          (legacyGridApiImport.importMatcherResult.fromUserConfig &&
-            state.opts.userConfig?.createGridName) ||
+          (fromUserConfig && state.opts.userConfig?.getCreateGridName?.(fromUserConfig)) ||
           AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME;
 
         // Rewrite the legacy Grid import to the new-style createGrid import

@@ -1,4 +1,9 @@
-import type { UserConfig, FsUtils, IsGridModuleArgs } from '@ag-grid-devtools/types';
+import type {
+  UserConfig,
+  FsUtils,
+  IsGridModuleArgs,
+  IsGridModuleExportArgs,
+} from '@ag-grid-devtools/types';
 import type { NodePath, PluginObj, PluginPass, Visitor } from '@babel/core';
 import type * as BabelCore from '@babel/core';
 
@@ -13,8 +18,8 @@ export type BabelPluginWithOptions<S = PluginPass, T extends object = object> = 
 export type AstTransform<S extends object> = BabelPlugin<PluginPass & AstTransformContext<S>>;
 
 export interface ImportMatcherResult {
-  /** True if the resolution happened via custom user config */
-  fromUserConfig: boolean;
+  /** Contains the arguments passed to UserConfig.isGridModuleExport, if this is a customized import */
+  fromUserConfig: IsGridModuleExportArgs | null;
 }
 
 export type AstTransformWithOptions<

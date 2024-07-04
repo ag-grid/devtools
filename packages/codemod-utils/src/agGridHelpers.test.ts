@@ -1868,7 +1868,7 @@ describe(getGridApiReferences, () => {
   });
 
   describe('userConfig', () => {
-    test('custom createGridName, vanilla js', () => {
+    test('custom createGrid, vanilla js', () => {
       const input = ast.module`
       import { myCreateGrid } from 'my-custom-import/hello';
       myCreateGrid(document.body, {});
@@ -1882,7 +1882,11 @@ describe(getGridApiReferences, () => {
         createTransformContext('./app.js', {
           fs: memfs,
           userConfig: {
-            createGridName: 'myCreateGrid',
+            getCreateGridName(args) {
+              return args.module.importedModule === 'my-custom-import/hello'
+                ? 'myCreateGrid'
+                : null;
+            },
             isGridModule: (args) => args.importedModule === 'my-custom-import/hello',
           },
         }),

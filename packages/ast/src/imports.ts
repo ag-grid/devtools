@@ -8,7 +8,7 @@ import {
 } from './types';
 import { getOptionalNodeFieldValue, getStaticPropertyKey, node as t } from './node';
 import { Enum, EnumVariant, match } from '@ag-grid-devtools/utils';
-import type { FrameworkType, ModuleType } from '@ag-grid-devtools/types';
+import type { FrameworkType, IsGridModuleExportArgs, ModuleType } from '@ag-grid-devtools/types';
 
 export const AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME = 'createGrid';
 
@@ -163,7 +163,7 @@ function matchImportedSpecifier(
       : patternToCheck.test(importedModule)
   ) {
     if (importedSpecifier == importedSpecifierMatcher) {
-      return { fromUserConfig: false };
+      return { fromUserConfig: null };
     }
     return null;
   }
@@ -221,23 +221,23 @@ function matchImportedSpecifier(
         return result; // UserConfig has already answered this question.
       }
 
-      if (
-        userConfig.isGridModuleExport({
-          module: moduleArgs,
-          match: importedSpecifierMatcher,
-          exported: importedSpecifier,
-        })
-      ) {
-        result = { fromUserConfig: true };
+      const args: IsGridModuleExportArgs = {
+        module: moduleArgs,
+        match: importedSpecifierMatcher,
+        exported: importedSpecifier,
+      };
+
+      if (userConfig.isGridModuleExport(args)) {
+        result = { fromUserConfig: args };
       }
 
       if (
         !result &&
         framework === 'vanilla' &&
         importedSpecifierMatcher === AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME &&
-        importedSpecifier === userConfig.createGridName
+        userConfig.getCreateGridName
       ) {
-        result = { fromUserConfig: true }; // Special case for the config createGridName
+        result = { fromUserConfig: args }; // Special case for createGrid
       }
 
       if (!result) {
@@ -247,21 +247,29 @@ function matchImportedSpecifier(
       userConfigIsGridModuleExportCache.set(specifierCacheKey, result);
       return result;
     }
+
+    if (importedSpecifier === importedSpecifierMatcher) {
+      return { fromUserConfig: null };
+    }
+
+    if (
+      framework === 'vanilla' &&
+      importedSpecifierMatcher === AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME &&
+      userConfig.getCreateGridName
+    ) {
+      return {
+        fromUserConfig: {
+          module: moduleArgs,
+          match: importedSpecifierMatcher,
+          exported: importedSpecifier,
+        },
+      }; // Special case for the config createGridName
+    }
   }
 
   if (importedSpecifier === importedSpecifierMatcher) {
-    return { fromUserConfig: false };
+    return { fromUserConfig: null };
   }
-
-  if (
-    framework === 'vanilla' &&
-    importedSpecifierMatcher === AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME &&
-    importedSpecifier === userConfig.createGridName
-  ) {
-    return { fromUserConfig: true }; // Special case for the config createGridName
-  }
-
-  return null;
 }
 
 export interface PackageNamespaceImport {

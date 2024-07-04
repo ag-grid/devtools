@@ -29,22 +29,10 @@ export interface IsGridModuleExportArgs {
 
 export interface UserConfig {
   /**
-   * The name of the function to create a grid. Default is "createGrid".
-   *
-   * Usually, this is the usage of createGrid:
-   *
-   * ```ts
-   * import { createGrid } from '@ag-grid-community/core';
-   * const optionsApi = createGrid(document.body, { ... });
-   * ```
-   *
-   */
-  createGridName?: string;
-
-  /**
    * Custom interceptor to check if a module is a grid module.
    * @param args - The input to check.
    * @returns `true` if the module is a grid module to process or not.
+   * @returns true if the module is a custom grid module.
    */
   isGridModule?(args: IsGridModuleArgs): boolean;
 
@@ -62,6 +50,31 @@ export interface UserConfig {
    * ```
    *
    * @param args - The input to check.
+   * @returns true if the export is a custom grid module export.
    */
   isGridModuleExport?(args: IsGridModuleExportArgs): boolean;
+
+  /**
+   * Custom interceptor to provide a different name to the function to create a grid.
+   * Default is "createGrid".
+   *
+   * This is used when fixing the old style Grid constructor with the new 'createGrid' function.
+   *
+   * Usually, this is the usage of createGrid:
+   *
+   * ```ts
+   * import { myCreateGrid } from 'my-library';
+   * const optionsApi = myCreateGrid(document.body, { ... });
+   * ```
+   *
+   * A typical implementation would be:
+   *
+   * ```ts
+   * getCreateGridName: () => 'myCreateGrid'
+   * ```
+   *
+   * @returns The name of the function to create a grid. If this function returns null, undefined or empty string, "createGrid" will be used.
+   *
+   */
+  getCreateGridName?(args: IsGridModuleExportArgs): string | null | undefined;
 }

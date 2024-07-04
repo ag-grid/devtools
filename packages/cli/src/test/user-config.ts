@@ -1,7 +1,9 @@
 import { defineUserConfig } from '../user-config';
 
 module.exports = defineUserConfig({
-  createGridName: 'myCreateGrid',
+  getCreateGridName() {
+    return 'myCreateGrid';
+  },
 
   isGridModule({ importedModule }) {
     return importedModule === '@hello/world';
