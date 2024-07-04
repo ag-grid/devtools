@@ -96,7 +96,7 @@ Options:
       DEFAULT_TARGET_VERSION,
       env,
     )})
-    --allowed-imports=<list>  List of additional imports to process (comma-separated), when ag-grid is wrapped in a custom module
+    --user-config=<file>      Loads a configuration file to customize the codemod behavior (advanced).
     --allow-untracked, -u     Allow operating on files outside a git repository
     --allow-dirty, -d         Allow operating on repositories with uncommitted changes in the working tree
     --num-threads             Number of worker threads to spawn (defaults to the number of system cores)
