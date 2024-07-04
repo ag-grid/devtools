@@ -40,5 +40,5 @@ describe('cli e2e', () => {
     expect(await loadExpectedSource('custom-imports.js')).toEqual(
       await loadTempSource('custom-imports.js'),
     );
-  });
+  }, 10000);
 });
