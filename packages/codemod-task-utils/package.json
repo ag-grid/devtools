@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "@ag-grid-devtools/types": "workspace:*",
+    "@ag-grid-devtools/utils": "workspace:*",
     "@ag-grid-devtools/worker-utils": "workspace:*"
   },
   "devDependencies": {

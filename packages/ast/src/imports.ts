@@ -1,6 +1,21 @@
-import { type Binding, type NodePath, type Types } from './types';
+import {
+  AstTransformContext,
+  ImportMatcherResult,
+  TransformContext,
+  type Binding,
+  type NodePath,
+  type Types,
+} from './types';
 import { getOptionalNodeFieldValue, getStaticPropertyKey, node as t } from './node';
-import { Enum, EnumVariant, match, matchString } from '@ag-grid-devtools/utils';
+import { Enum, EnumVariant, match } from '@ag-grid-devtools/utils';
+import {
+  Framework,
+  MatchGridImportNameArgs,
+  ImportType,
+  KnownExportName,
+  AgGridExportName,
+  isAgGridExportName,
+} from '@ag-grid-devtools/types';
 
 type CallExpression = Types.CallExpression;
 type Expression = Types.Expression;
@@ -114,77 +129,266 @@ const NamedUmdImportBindingAccessor = Enum.create<
   Namespaced: true,
 });
 
+export interface ImportedModuleMatcher {
+  /** The basic pattern or module name to match */
+  importModulePattern: RegExp | string;
+
+  /** The umd pattern or module name to match */
+  importUmdPattern: RegExp | string | null;
+
+  /** The framework type, passed as is to the user config isGridModule method. */
+  framework: Framework;
+
+  /** If true, the UserConfig callbacks will not be called. Default is false. */
+  skipUserConfig?: boolean;
+}
+
+function matchImportedSpecifier(
+  moduleType: ImportType,
+  importPath: string,
+  importedModuleMatcher: ImportedModuleMatcher,
+  importName: string,
+  agGridExportName: KnownExportName,
+  context: AstTransformContext<TransformContext>,
+): ImportMatcherResult | null {
+  const {
+    importModulePattern: pattern,
+    importUmdPattern: umdPattern,
+    framework,
+    skipUserConfig,
+  } = importedModuleMatcher;
+  let patternToCheck = pattern;
+  if (moduleType === 'umd' && umdPattern) {
+    patternToCheck = umdPattern;
+  }
+
+  if (
+    typeof patternToCheck === 'string'
+      ? importPath === patternToCheck
+      : patternToCheck.test(importPath)
+  ) {
+    if (importName == agGridExportName) {
+      return { fromUserConfig: null };
+    }
+    return null;
+  }
+
+  if (skipUserConfig) {
+    return null;
+  }
+
+  if (!isAgGridExportName(agGridExportName)) {
+    return null; // This specifier is not an ag-grid export, no user config needed.
+  }
+
+  const userConfig = context.opts.userConfig;
+  if (!userConfig) {
+    return null;
+  }
+
+  const filename = context.filename;
+
+  if (userConfig.matchGridImport) {
+    // Store in the cache so we don't ask the same question to the UserConfig isGridModule
+    const cacheKey = importPath + '\n' + framework + '\n' + moduleType + '\n' + filename;
+    let userConfigIsGridModuleCache = context._userConfigIsGridModuleCache;
+    if (!userConfigIsGridModuleCache) {
+      userConfigIsGridModuleCache = new Map();
+      context._userConfigIsGridModuleCache = userConfigIsGridModuleCache;
+    }
+
+    let moduleArgs = userConfigIsGridModuleCache.get(cacheKey);
+    if (moduleArgs === null) {
+      return null; // UserConfig has already said this is not a grid module.
+    }
+    if (moduleArgs === undefined) {
+      moduleArgs = {
+        importPath: importPath,
+        framework,
+        importType: moduleType,
+        sourceFilePath: filename,
+      };
+
+      if (!userConfig.matchGridImport(moduleArgs)) {
+        userConfigIsGridModuleCache.set(cacheKey, null);
+        return null; // UserConfig has said this is not a grid module.
+      }
+      userConfigIsGridModuleCache.set(cacheKey, moduleArgs);
+    }
+
+    if (userConfig.matchGridImportName) {
+      // Store in the cache so we don't ask the same question to the UserConfig isGridModuleExport
+      const specifierCacheKey = cacheKey + '\n' + match + '\n' + importName;
+
+      let userConfigIsGridModuleExportCache = context._userConfigIsGridModuleExportCache;
+
+      let result: ImportMatcherResult | null | undefined;
+
+      if (!userConfigIsGridModuleExportCache) {
+        userConfigIsGridModuleExportCache = new Map();
+        context._userConfigIsGridModuleExportCache = userConfigIsGridModuleExportCache;
+      } else {
+        result = userConfigIsGridModuleExportCache.get(specifierCacheKey);
+      }
+
+      if (result !== undefined) {
+        return result; // UserConfig has already answered this question.
+      }
+
+      const fromUserConfig: MatchGridImportNameArgs = {
+        ...moduleArgs,
+        agGridExportName,
+        importName,
+      };
+
+      if (userConfig.matchGridImportName(fromUserConfig)) {
+        result = { fromUserConfig };
+      }
+
+      if (
+        !result &&
+        framework === 'vanilla' &&
+        agGridExportName === AgGridExportName.createGrid &&
+        userConfig.getCreateGridName
+      ) {
+        result = { fromUserConfig }; // Special case for createGrid
+      }
+
+      if (!result) {
+        result = null;
+      }
+
+      userConfigIsGridModuleExportCache.set(specifierCacheKey, result);
+      return result;
+    }
+
+    if (importName === agGridExportName) {
+      return { fromUserConfig: null };
+    }
+
+    if (
+      framework === 'vanilla' &&
+      agGridExportName === AgGridExportName.createGrid &&
+      userConfig.getCreateGridName
+    ) {
+      return {
+        fromUserConfig: {
+          ...moduleArgs,
+          agGridExportName,
+          importName,
+        },
+      }; // Special case for the config createGridName
+    }
+  }
+
+  if (importName === agGridExportName) {
+    return { fromUserConfig: null };
+  }
+
+  return null;
+}
+
+export interface PackageNamespaceImport {
+  binding: NamedImportBinding;
+  importMatcherResult: ImportMatcherResult;
+}
+
 export function getNamedModuleImportExpression(
   expression: NodePath<Expression | JSXIdentifier>,
-  packageName: string | RegExp,
-  umdGlobalName: string | RegExp | null,
-  importedName: string | RegExp,
-): NamedImportBinding | null {
+  importedModuleMatcher: ImportedModuleMatcher,
+  importedModuleSpecifierMatcher: KnownExportName,
+  context: AstTransformContext<TransformContext>,
+): PackageNamespaceImport | null {
   if (expression.isIdentifier()) {
     const binding = expression.scope.getBinding(expression.node.name);
     if (!binding) return null;
-    return getNamedModuleImportBinding(binding, packageName, umdGlobalName, importedName);
+    return getNamedModuleImportBinding(
+      binding,
+      importedModuleMatcher,
+      importedModuleSpecifierMatcher,
+      context,
+    );
   }
   if (expression.isJSXIdentifier()) {
     const binding = expression.scope.getBinding(expression.node.name);
     if (!binding) return null;
-    return getNamedModuleImportBinding(binding, packageName, umdGlobalName, importedName);
+    return getNamedModuleImportBinding(
+      binding,
+      importedModuleMatcher,
+      importedModuleSpecifierMatcher,
+      context,
+    );
   }
   if (expression.isMemberExpression()) {
     const object = expression.get('object');
     const property = expression.get('property');
     const computed = expression.node.computed;
     const propertyKey = getStaticPropertyKey(property.node, computed);
-    if (!propertyKey || !matchString(propertyKey, importedName)) return null;
+    if (!propertyKey) return null;
     const namespaceImport = getNamedPackageNamespaceImportExpression(
       object,
-      packageName,
-      umdGlobalName,
+      importedModuleMatcher,
+      propertyKey,
+      importedModuleSpecifierMatcher,
+      context,
     );
     if (!namespaceImport) return null;
-    return match(namespaceImport, {
-      CommonJs: ({ require }) =>
-        NamedImportBinding.CommonJs({
-          require,
-          accessor: NamedCommonJsImportBindingAccessor.Namespaced({
-            accessor: expression,
-            local: null,
+    return {
+      importMatcherResult: namespaceImport.importMatcherResult,
+      binding: match(namespaceImport.binding, {
+        CommonJs: ({ require }) =>
+          NamedImportBinding.CommonJs({
+            require,
+            accessor: NamedCommonJsImportBindingAccessor.Namespaced({
+              accessor: expression,
+              local: null,
+            }),
           }),
-        }),
-      Module: ({ declaration, specifier }) =>
-        NamedImportBinding.Module({
-          declaration,
-          accessor: NamedModuleImportBindingAccessor.Namespaced({
-            specifier,
-            accessor: expression,
-            local: null,
+        Module: ({ declaration, specifier }) =>
+          NamedImportBinding.Module({
+            declaration,
+            accessor: NamedModuleImportBindingAccessor.Namespaced({
+              specifier,
+              accessor: expression,
+              local: null,
+            }),
           }),
-        }),
-      UmdGlobal: ({}) =>
-        NamedImportBinding.UmdGlobal({
-          accessor: NamedUmdImportBindingAccessor.Namespaced({
-            accessor: expression,
-            local: null,
+        UmdGlobal: ({}) =>
+          NamedImportBinding.UmdGlobal({
+            accessor: NamedUmdImportBindingAccessor.Namespaced({
+              accessor: expression,
+              local: null,
+            }),
           }),
-        }),
-    });
+      }),
+    };
   }
   return null;
 }
 
 function getNamedModuleImportBinding(
   binding: Binding,
-  packageName: string | RegExp,
-  umdGlobalName: string | RegExp | null,
-  importedName: string | RegExp,
-): NamedImportBinding | null {
+  importedModuleMatcher: ImportedModuleMatcher,
+  importedModuleSpecifierMatcher: KnownExportName,
+  context: AstTransformContext<TransformContext>,
+): PackageNamespaceImport | null {
   switch (binding.kind) {
     case 'module':
-      return getNamedEsModuleImportBinding(binding, packageName, importedName);
+      return getNamedEsModuleImportBinding(
+        binding,
+        importedModuleMatcher,
+        importedModuleSpecifierMatcher,
+        context,
+      );
     case 'var':
     case 'let':
     case 'const':
-      return getNamedUmdImportBinding(binding, packageName, umdGlobalName, importedName);
+      return getNamedUmdImportBinding(
+        binding,
+        importedModuleMatcher,
+        importedModuleSpecifierMatcher,
+        context,
+      );
     case 'hoisted':
     case 'param':
     case 'local':
@@ -196,9 +400,10 @@ function getNamedModuleImportBinding(
 
 function getNamedEsModuleImportBinding(
   binding: Binding,
-  packageName: string | RegExp,
-  importedName: string | RegExp,
-): NamedImportBinding | null {
+  importedModuleMatcher: ImportedModuleMatcher,
+  importedModuleSpecifierMatcher: KnownExportName,
+  context: AstTransformContext<TransformContext>,
+): PackageNamespaceImport | null {
   const target = binding.path;
   if (!target.isImportSpecifier() || !target.parentPath.isImportDeclaration()) {
     return null;
@@ -207,22 +412,35 @@ function getNamedEsModuleImportBinding(
     parentPath: { node: importDeclaration },
     node: importSpecifier,
   } = target;
-  if (!matchModuleImportName(importDeclaration, importSpecifier, packageName, importedName))
+
+  const matchedResult = matchModuleImportName(
+    importDeclaration,
+    importSpecifier,
+    importedModuleMatcher,
+    importedModuleSpecifierMatcher,
+    context,
+  );
+
+  if (!matchedResult) {
     return null;
-  return NamedImportBinding.Module({
-    declaration: target.parentPath,
-    accessor: NamedModuleImportBindingAccessor.Named({
-      specifier: target,
+  }
+  return {
+    binding: NamedImportBinding.Module({
+      declaration: target.parentPath,
+      accessor: NamedModuleImportBindingAccessor.Named({
+        specifier: target,
+      }),
     }),
-  });
+    importMatcherResult: matchedResult.importMatcherResult,
+  };
 }
 
 function getNamedUmdImportBinding(
   binding: Binding,
-  packageName: string | RegExp,
-  umdGlobalName: string | RegExp | null,
-  importedName: string | RegExp,
-): NamedImportBinding | null {
+  importedModuleMatcher: ImportedModuleMatcher,
+  importedModuleSpecifierMatcher: KnownExportName,
+  context: AstTransformContext<TransformContext>,
+): PackageNamespaceImport | null {
   const target = binding.path;
   if (!target.isVariableDeclarator() || !target.parentPath.isVariableDeclaration()) return null;
   const initializer = getOptionalNodeFieldValue(target.get('init'));
@@ -231,149 +449,284 @@ function getNamedUmdImportBinding(
     const object = initializer.get('object');
     const key = initializer.get('property');
     const computed = initializer.node.computed;
-    const actualImportedName = getStaticPropertyKey(key.node, computed);
-    if (!actualImportedName || !matchString(actualImportedName, importedName)) return null;
+    const importedModuleSpecifier = getStaticPropertyKey(key.node, computed);
+    if (!importedModuleSpecifier) return null;
     const exportAccessor = target.get('id');
     if (!exportAccessor.isIdentifier()) return null;
-    if (isNamedCommonJsRequireExpression(object, packageName)) {
-      return NamedImportBinding.CommonJs({
-        require: object,
-        accessor: NamedCommonJsImportBindingAccessor.Namespaced({
-          accessor: initializer,
-          local: exportAccessor,
-        }),
-      });
+
+    if (isCommonJsRequireExpression(object)) {
+      const importMatcherResult = getNamedCommonJsRequireExpression(
+        object,
+        importedModuleMatcher,
+        importedModuleSpecifier,
+        importedModuleSpecifierMatcher,
+        context,
+      );
+      if (importMatcherResult) {
+        return {
+          binding: NamedImportBinding.CommonJs({
+            require: object,
+            accessor: NamedCommonJsImportBindingAccessor.Namespaced({
+              accessor: initializer,
+              local: exportAccessor,
+            }),
+          }),
+          importMatcherResult,
+        };
+      }
     }
-    if (umdGlobalName != null && isNamedUmdGlobalNamespaceExpression(object, umdGlobalName)) {
-      return NamedImportBinding.UmdGlobal({
-        accessor: NamedCommonJsImportBindingAccessor.Namespaced({
-          accessor: initializer,
-          local: exportAccessor,
-        }),
-      });
+
+    if (object.isIdentifier()) {
+      const importMatcherResult = getNamedUmdGlobalNamespaceExpression(
+        object,
+        importedModuleMatcher,
+        importedModuleSpecifier,
+        importedModuleSpecifierMatcher,
+        context,
+      );
+      if (importMatcherResult) {
+        return {
+          binding: NamedImportBinding.UmdGlobal({
+            accessor: NamedCommonJsImportBindingAccessor.Namespaced({
+              accessor: initializer,
+              local: exportAccessor,
+            }),
+          }),
+          importMatcherResult,
+        };
+      }
     }
-    return null;
   }
-  if (isNamedCommonJsRequireExpression(initializer, packageName)) {
+  if (isCommonJsRequireExpression(initializer)) {
     const exportAccessors = target.get('id');
-    if (!exportAccessors.isObjectPattern()) return null;
-    const exportAccessor = exportAccessors
-      .get('properties')
-      .filter((property): property is NodePath<ObjectProperty> => property.isObjectProperty())
-      .find((property) => {
-        const local = property.get('value');
-        return local.isIdentifier() && local.node.name === binding.identifier.name;
-      });
-    if (!exportAccessor) return null;
-    const local = exportAccessor.get('value');
-    if (!local.isIdentifier()) return null;
-    const importedKey = exportAccessor.get('key');
-    const computed = exportAccessor.node.computed;
-    const actualImportedName = getStaticPropertyKey(importedKey.node, computed);
-    if (!actualImportedName || !matchString(actualImportedName, importedName)) return null;
-    return NamedImportBinding.CommonJs({
-      require: initializer,
-      accessor: NamedCommonJsImportBindingAccessor.Destructured({
-        declaration: target.parentPath,
-        declarator: target,
-        accessors: exportAccessors,
-        local: local,
-      }),
-    });
+    const exportAccessor =
+      exportAccessors.isObjectPattern() &&
+      exportAccessors
+        .get('properties')
+        .filter((property): property is NodePath<ObjectProperty> => property.isObjectProperty())
+        .find((property) => {
+          const local = property.get('value');
+          return local.isIdentifier() && local.node.name === binding.identifier.name;
+        });
+    const local = exportAccessor && exportAccessor.get('value');
+    if (local && local.isIdentifier()) {
+      const importedKey = exportAccessor.get('key');
+      const computed = exportAccessor.node.computed;
+      const actualImportedName = getStaticPropertyKey(importedKey.node, computed);
+      if (actualImportedName) {
+        const importMatcherResult = getNamedCommonJsRequireExpression(
+          initializer,
+          importedModuleMatcher,
+          actualImportedName,
+          importedModuleSpecifierMatcher,
+          context,
+        );
+        if (importMatcherResult) {
+          return {
+            binding: NamedImportBinding.CommonJs({
+              require: initializer,
+              accessor: NamedCommonJsImportBindingAccessor.Destructured({
+                declaration: target.parentPath,
+                declarator: target,
+                accessors: exportAccessors,
+                local: local,
+              }),
+            }),
+            importMatcherResult,
+          };
+        }
+      }
+    }
   }
-  if (umdGlobalName && isNamedUmdGlobalNamespaceExpression(initializer, umdGlobalName)) {
+
+  if (initializer.isIdentifier()) {
     const exportAccessors = target.get('id');
-    if (!exportAccessors.isObjectPattern()) return null;
-    const exportAccessor = exportAccessors
-      .get('properties')
-      .filter((property): property is NodePath<ObjectProperty> => property.isObjectProperty())
-      .find((property) => {
-        const local = property.get('value');
-        return local.isIdentifier() && local.node.name === binding.identifier.name;
-      });
-    if (!exportAccessor) return null;
-    const local = exportAccessor.get('value');
-    if (!local.isIdentifier()) return null;
-    const importedKey = exportAccessor.get('key');
-    const computed = exportAccessor.node.computed;
-    const actualImportedName = getStaticPropertyKey(importedKey.node, computed);
-    if (!actualImportedName || !matchString(actualImportedName, importedName)) return null;
-    return NamedImportBinding.UmdGlobal({
-      accessor: NamedCommonJsImportBindingAccessor.Destructured({
-        declaration: target.parentPath,
-        declarator: target,
-        accessors: exportAccessors,
-        local: local,
-      }),
-    });
+    if (exportAccessors.isObjectPattern()) {
+      const exportAccessor = exportAccessors
+        .get('properties')
+        .filter((property): property is NodePath<ObjectProperty> => property.isObjectProperty())
+        .find((property) => {
+          const local = property.get('value');
+          return local.isIdentifier() && local.node.name === binding.identifier.name;
+        });
+
+      const local = exportAccessor && exportAccessor.get('value');
+      if (local && local.isIdentifier()) {
+        const importedKey = exportAccessor.get('key');
+        const computed = exportAccessor.node.computed;
+        const actualImportedName = getStaticPropertyKey(importedKey.node, computed);
+        const importMatcherResult =
+          actualImportedName &&
+          getNamedUmdGlobalNamespaceExpression(
+            initializer,
+            importedModuleMatcher,
+            actualImportedName,
+            importedModuleSpecifierMatcher,
+            context,
+          );
+
+        if (importMatcherResult) {
+          return {
+            binding: NamedImportBinding.UmdGlobal({
+              accessor: NamedCommonJsImportBindingAccessor.Destructured({
+                declaration: target.parentPath,
+                declarator: target,
+                accessors: exportAccessors,
+                local: local,
+              }),
+            }),
+            importMatcherResult,
+          };
+        }
+      }
+    }
   }
+
   return null;
+}
+
+function getNamedUmdImportBindingCommonJsSpecifier(
+  binding: Binding,
+  target: NodePath<Types.VariableDeclarator>,
+) {
+  const exportAccessors = target.get('id');
+  if (!exportAccessors.isObjectPattern()) return null;
+  const exportAccessor = exportAccessors
+    .get('properties')
+    .filter((property): property is NodePath<ObjectProperty> => property.isObjectProperty())
+    .find((property) => {
+      const local = property.get('value');
+      return local.isIdentifier() && local.node.name === binding.identifier.name;
+    });
+  if (!exportAccessor) return null;
+  const local = exportAccessor.get('value');
+  if (!local.isIdentifier()) return null;
+  const importedKey = exportAccessor.get('key');
+  const computed = exportAccessor.node.computed;
+  return getStaticPropertyKey(importedKey.node, computed);
+}
+
+export interface NamedPackageNamespaceImport {
+  binding: PackageNamespaceImportBinding;
+  importMatcherResult: ImportMatcherResult;
 }
 
 export function getNamedPackageNamespaceImportExpression(
   expression: NodePath<Expression>,
-  packageName: string | RegExp,
-  umdGlobalName: string | RegExp | null,
-): PackageNamespaceImportBinding | null {
+  importedModuleMatcher: ImportedModuleMatcher,
+  importedModuleSpecifier: string,
+  importedModuleSpecifierMatcher: KnownExportName,
+  context: AstTransformContext<TransformContext>,
+): NamedPackageNamespaceImport | null {
   if (isCommonJsRequireExpression(expression)) {
-    if (!matchString(expression.node.arguments[0].value, packageName)) return null;
-    return PackageNamespaceImportBinding.CommonJs({
-      require: expression,
-      local: null,
-    });
+    const importMatcherResult = matchImportedSpecifier(
+      'cjs',
+      expression.node.arguments[0].value,
+      importedModuleMatcher,
+      importedModuleSpecifier,
+      importedModuleSpecifierMatcher,
+      context,
+    );
+    if (importMatcherResult) {
+      return {
+        importMatcherResult: importMatcherResult,
+        binding: PackageNamespaceImportBinding.CommonJs({
+          require: expression,
+          local: null,
+        }),
+      };
+    }
   }
-  if (umdGlobalName != null && isNamedUmdGlobalNamespaceExpression(expression, umdGlobalName)) {
-    return PackageNamespaceImportBinding.UmdGlobal({
-      local: expression,
-    });
-  }
+
   if (expression.isIdentifier()) {
+    const importMatcherResult = getNamedUmdGlobalNamespaceExpression(
+      expression,
+      importedModuleMatcher,
+      importedModuleSpecifier,
+      importedModuleSpecifierMatcher,
+      context,
+    );
+    if (importMatcherResult) {
+      return {
+        binding: PackageNamespaceImportBinding.UmdGlobal({ local: expression }),
+        importMatcherResult,
+      };
+    }
+
     const binding = expression.scope.getBinding(expression.node.name);
     if (!binding) return null;
     const packageNamespaceImport = getNamedPackageNamespaceImportBinding(
       binding,
-      packageName,
-      umdGlobalName,
+      importedModuleMatcher,
+      importedModuleSpecifier,
+      importedModuleSpecifierMatcher,
+      context,
     );
     if (!packageNamespaceImport) return null;
-    return match(packageNamespaceImport, {
-      CommonJs: ({ require }) =>
-        PackageNamespaceImportBinding.CommonJs({
-          require,
-          local: expression,
-        }),
-      Module: ({ declaration, specifier }) =>
-        PackageNamespaceImportBinding.Module({
-          declaration,
-          specifier,
-          local: expression,
-        }),
-      UmdGlobal: ({}) => PackageNamespaceImportBinding.UmdGlobal({ local: expression }),
-    });
+    return {
+      binding: match(packageNamespaceImport.binding, {
+        CommonJs: ({ require }) =>
+          PackageNamespaceImportBinding.CommonJs({
+            require,
+            local: expression,
+          }),
+        Module: ({ declaration, specifier }) =>
+          PackageNamespaceImportBinding.Module({
+            declaration,
+            specifier,
+            local: expression,
+          }),
+        UmdGlobal: ({}) => PackageNamespaceImportBinding.UmdGlobal({ local: expression }),
+      }),
+      importMatcherResult: packageNamespaceImport.importMatcherResult,
+    };
   }
   return null;
 }
 
-function isNamedUmdGlobalNamespaceExpression(
-  expression: NodePath<Expression>,
-  umdGlobalName: string | RegExp,
-): expression is NodePath<Identifier> {
-  if (!expression.isIdentifier()) return false;
-  return matchString(expression.node.name, umdGlobalName);
+function getNamedUmdGlobalNamespaceExpression(
+  expression: NodePath<Identifier>,
+  importedModuleMatcher: ImportedModuleMatcher,
+  importName: string,
+  importedModuleSpecifierMatcher: KnownExportName,
+  context: AstTransformContext<TransformContext>,
+): ImportMatcherResult | null {
+  return matchImportedSpecifier(
+    'umd',
+    expression.node.name,
+    importedModuleMatcher,
+    importName,
+    importedModuleSpecifierMatcher,
+    context,
+  );
 }
 
 function getNamedPackageNamespaceImportBinding(
   binding: Binding,
-  packageName: string | RegExp,
-  umdGlobalName: string | RegExp | null,
-): PackageNamespaceImportBinding | null {
+  importedModuleMatcher: ImportedModuleMatcher,
+  importedModuleSpecifier: string,
+  importedModuleSpecifierMatcher: KnownExportName,
+  context: AstTransformContext<TransformContext>,
+): NamedPackageNamespaceImport | null {
   switch (binding.kind) {
     case 'module':
-      return getNamedEsModulePackageNamespaceImportBinding(binding, packageName);
+      return getNamedEsModulePackageNamespaceImportBinding(
+        binding,
+        importedModuleMatcher,
+        importedModuleSpecifier,
+        importedModuleSpecifierMatcher,
+        context,
+      );
     case 'var':
     case 'let':
     case 'const':
-      return getNamedUmdPackageNamespaceImportBinding(binding, packageName, umdGlobalName);
+      return getNamedUmdPackageNamespaceImportBinding(
+        binding,
+        importedModuleMatcher,
+        importedModuleSpecifier,
+        importedModuleSpecifierMatcher,
+        context,
+      );
     case 'hoisted':
     case 'param':
     case 'local':
@@ -385,8 +738,11 @@ function getNamedPackageNamespaceImportBinding(
 
 function getNamedEsModulePackageNamespaceImportBinding(
   binding: Binding,
-  packageName: string | RegExp,
-): PackageNamespaceImportBinding | null {
+  importedModuleMatcher: ImportedModuleMatcher,
+  importedModuleSpecifier: string,
+  importedModuleSpecifierMatcher: KnownExportName,
+  context: AstTransformContext<TransformContext>,
+): NamedPackageNamespaceImport | null {
   const target = binding.path;
   if (!target.isImportNamespaceSpecifier() || !target.parentPath.isImportDeclaration()) {
     return null;
@@ -394,33 +750,66 @@ function getNamedEsModulePackageNamespaceImportBinding(
   const {
     parentPath: { node: importDeclaration },
   } = target;
-  if (!matchModuleImportPackageName(importDeclaration, packageName)) return null;
-  return PackageNamespaceImportBinding.Module({
-    declaration: target.parentPath,
-    specifier: target,
-    local: target.get('local'),
-  });
+  const matchResult = matchModuleImportPackageName(
+    importDeclaration,
+    importedModuleMatcher,
+    importedModuleSpecifier,
+    importedModuleSpecifierMatcher,
+    context,
+  );
+  if (!matchResult) {
+    return null;
+  }
+  return {
+    binding: PackageNamespaceImportBinding.Module({
+      declaration: target.parentPath,
+      specifier: target,
+      local: target.get('local'),
+    }),
+    importMatcherResult: matchResult.importMatcherResult,
+  };
 }
 
 function getNamedUmdPackageNamespaceImportBinding(
   binding: Binding,
-  packageName: string | RegExp,
-  umdGlobalName: string | RegExp | null,
-): PackageNamespaceImportBinding | null {
+  importedModuleMatcher: ImportedModuleMatcher,
+  importedModuleSpecifier: string,
+  importedModuleSpecifierMatcher: KnownExportName,
+  context: AstTransformContext<TransformContext>,
+): NamedPackageNamespaceImport | null {
   const target = binding.path;
   if (!target.isVariableDeclarator() || !target.parentPath.isVariableDeclaration()) return null;
   const initializer = getOptionalNodeFieldValue(target.get('init'));
   if (!initializer) return null;
-  if (isNamedCommonJsRequireExpression(initializer, packageName)) {
-    return PackageNamespaceImportBinding.CommonJs({
-      require: initializer,
-      local: null,
-    });
+  if (isCommonJsRequireExpression(initializer)) {
+    const importMatcherResult = getNamedCommonJsRequireExpression(
+      initializer,
+      importedModuleMatcher,
+      importedModuleSpecifier,
+      importedModuleSpecifierMatcher,
+      context,
+    );
+    if (importMatcherResult) {
+      return {
+        binding: PackageNamespaceImportBinding.CommonJs({ require: initializer, local: null }),
+        importMatcherResult,
+      };
+    }
   }
-  if (umdGlobalName != null && isNamedUmdGlobalNamespaceExpression(initializer, umdGlobalName)) {
-    return PackageNamespaceImportBinding.UmdGlobal({
-      local: null,
-    });
+  if (initializer.isIdentifier()) {
+    const importMatcherResult = getNamedUmdGlobalNamespaceExpression(
+      initializer,
+      importedModuleMatcher,
+      importedModuleSpecifier,
+      importedModuleSpecifierMatcher,
+      context,
+    );
+    if (importMatcherResult) {
+      return {
+        binding: PackageNamespaceImportBinding.UmdGlobal({ local: null }),
+        importMatcherResult,
+      };
+    }
   }
   return null;
 }
@@ -428,40 +817,63 @@ function getNamedUmdPackageNamespaceImportBinding(
 export function matchModuleImportName(
   declaration: ImportDeclaration,
   specifier: ImportSpecifier,
-  packageName: string | RegExp,
-  importedName: string | RegExp,
+  importedModuleMatcher: ImportedModuleMatcher,
+  importedModuleSpecifierMatcher: KnownExportName,
+  context: AstTransformContext<TransformContext>,
 ): {
   packageName: string;
-  importedName: string;
+  importName: string;
+  importMatcherResult: ImportMatcherResult;
 } | null {
-  const actualPackageName = matchModuleImportPackageName(declaration, packageName);
-  if (!actualPackageName) return null;
   const actualImportedName = getImportSpecifierImportedName(specifier);
-  if (!matchString(actualImportedName, importedName)) return null;
-  return { packageName: actualPackageName, importedName: actualImportedName };
+  const matchedModuleImportPackage = matchModuleImportPackageName(
+    declaration,
+    importedModuleMatcher,
+    actualImportedName,
+    importedModuleSpecifierMatcher,
+    context,
+  );
+  if (!matchedModuleImportPackage) return null;
+  const { actualPackageName, importMatcherResult } = matchedModuleImportPackage;
+  return {
+    packageName: actualPackageName,
+    importName: actualImportedName,
+    importMatcherResult,
+  };
 }
 
 export function matchModuleImportPackageName(
   declaration: ImportDeclaration,
-  packageName: string | RegExp,
-): string | null {
+  importedModuleMatcher: ImportedModuleMatcher,
+  importedModuleSpecifier: string,
+  importedModuleSpecifierMatcher: KnownExportName,
+  context: AstTransformContext<TransformContext>,
+): { actualPackageName: string; importMatcherResult: ImportMatcherResult } | null {
   const actualPackageName = declaration.source.value;
-  if (!matchString(actualPackageName, packageName)) return null;
-  return actualPackageName;
+  if (!actualPackageName) return null;
+  const importMatcherResult = matchImportedSpecifier(
+    'esm',
+    actualPackageName,
+    importedModuleMatcher,
+    importedModuleSpecifier,
+    importedModuleSpecifierMatcher,
+    context,
+  );
+  if (!importMatcherResult) return null;
+  return { actualPackageName, importMatcherResult };
 }
 
 export function findNamedModuleImport(
   declaration: ImportDeclaration,
-  pattern: string | RegExp,
+  importedModuleSpecifierMatcher: string,
+  context: AstTransformContext<TransformContext>,
 ): ImportSpecifier | null {
   return (
     declaration.specifiers
       .filter((node): node is ImportSpecifier => t.isImportSpecifier(node))
-      .find((specifier) => {
-        const importedItem = getImportSpecifierImportedName(specifier);
-        if (!matchString(importedItem, pattern)) return null;
-        return true;
-      }) || null
+      .find(
+        (specifier) => getImportSpecifierImportedName(specifier) === importedModuleSpecifierMatcher,
+      ) || null
   );
 }
 
@@ -477,13 +889,22 @@ export function getImportSpecifierImportedName(specifier: ImportSpecifier): stri
   return t.isStringLiteral(specifier.imported) ? specifier.imported.value : specifier.imported.name;
 }
 
-function isNamedCommonJsRequireExpression(
-  expression: NodePath<Expression>,
-  packageName: string | RegExp,
-): expression is NodePath<CommonJsRequireExpression> {
-  if (!isCommonJsRequireExpression(expression)) return false;
+function getNamedCommonJsRequireExpression(
+  expression: NodePath<CommonJsRequireExpression>,
+  importedModuleMatcher: ImportedModuleMatcher,
+  importedModuleSpecifier: string,
+  importedModuleSpecifierMatcher: KnownExportName,
+  context: AstTransformContext<TransformContext>,
+): ImportMatcherResult | null {
   const requirePath = expression.node.arguments[0].value;
-  return matchString(requirePath, packageName);
+  return matchImportedSpecifier(
+    'cjs',
+    requirePath,
+    importedModuleMatcher,
+    importedModuleSpecifier,
+    importedModuleSpecifierMatcher,
+    context,
+  );
 }
 
 function isCommonJsRequireExpression(

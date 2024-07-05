@@ -1,15 +1,21 @@
 import codemods from '@ag-grid-devtools/codemods';
-import { composeCodemods, createCodemodTask } from '@ag-grid-devtools/codemod-task-utils';
+import {
+  composeCodemods,
+  createCodemodTask,
+  loadUserConfig,
+} from '@ag-grid-devtools/codemod-task-utils';
 import {
   Codemod,
   CodemodTaskInput,
   CodemodTaskWorkerResult,
+  TaskRunnerEnvironment,
+  UserConfig,
   type VersionManifest,
 } from '@ag-grid-devtools/types';
 import { createFsHelpers } from '@ag-grid-devtools/worker-utils';
 import { nonNull } from '@ag-grid-devtools/utils';
 import { createTwoFilesPatch } from 'diff';
-import { join } from 'node:path';
+import { join, resolve as pathResolve } from 'node:path';
 import { cpus } from 'node:os';
 import semver from 'semver';
 
@@ -22,7 +28,7 @@ import { basename, extname, resolve, relative } from '../utils/path';
 import { getCliCommand, getCliPackageVersion } from '../utils/pkg';
 import { green, indentErrorMessage, log } from '../utils/stdio';
 import { Worker, WorkerTaskQueue, type WorkerOptions } from '../utils/worker';
-import { requireDynamicModule, resolveDynamicModule } from '../utils/module';
+import { dynamicRequire } from '@ag-grid-devtools/utils';
 
 const { versions } = codemods;
 
@@ -70,6 +76,10 @@ export interface MigrateCommandArgs {
    * List of input files to operate on (defaults to all source files in the current working directory)
    */
   input: Array<string>;
+  /**
+   * The path of the user config to load
+   */
+  userConfigPath?: string;
 }
 
 function usage(env: CliEnv): string {
@@ -90,6 +100,7 @@ Options:
     --allow-dirty, -d         Allow operating on repositories with uncommitted changes in the working tree
     --num-threads             Number of worker threads to spawn (defaults to the number of system cores)
     --dry-run                 Show a diff output of the changes that would be made
+    --config=<file.cjs>       Loads a configuration file to customize the codemod behavior (advanced).
 
   Additional arguments:
     [<file>...]               List of input files to operate on (defaults to all source files in the current working directory)
@@ -111,6 +122,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     verbose: false,
     help: false,
     input: [],
+    userConfigPath: undefined,
   };
   let arg;
   while ((arg = args.shift())) {
@@ -176,6 +188,22 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         options.numThreads = numThreads;
         break;
       }
+      case '--config': {
+        let value = args.shift()?.trim();
+        if (!value) {
+          throw new CliArgsError(`Missing value for ${arg}`, usage(env));
+        }
+        if (value.startsWith('require:')) {
+          value = value.slice('require:'.length);
+          if (!value) {
+            throw new CliArgsError(`Missing value for ${arg}`, usage(env));
+          }
+          options.userConfigPath = value;
+        } else {
+          options.userConfigPath = pathResolve(env.cwd ?? process.cwd(), value);
+        }
+        break;
+      }
       case '--dry-run':
         options.dryRun = true;
         break;
@@ -194,6 +222,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         break;
     }
   }
+
   if (options.help) return options;
   if (!options.from) {
     throw new CliArgsError(`Missing --from migration starting version`, usage(env));
@@ -224,7 +253,17 @@ async function migrate(
   args: Omit<MigrateCommandArgs, 'help'>,
   options: CliOptions,
 ): Promise<Array<string>> {
-  const { from, to, allowUntracked, allowDirty, numThreads, dryRun, verbose, input } = args;
+  const {
+    from,
+    to,
+    allowUntracked,
+    allowDirty,
+    numThreads,
+    dryRun,
+    verbose,
+    userConfigPath,
+    input,
+  } = args;
   const { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
 
@@ -348,11 +387,12 @@ async function migrate(
         // Load the codemod and wrap it in a task helper
         const codemod = composeCodemods(
           codemodPaths.map((codemodPath) =>
-            requireDynamicModule<Codemod>(codemodPath, import.meta),
+            dynamicRequire.requireDefault<Codemod>(codemodPath, import.meta),
           ),
         );
         return executeCodemodSingleThreaded(codemod, inputFilePaths, {
           dryRun,
+          userConfigPath,
           onStart,
           onComplete,
         });
@@ -364,12 +404,32 @@ async function migrate(
         }
 
         // Create a worker pool to run the codemods in parallel
-        const scriptPath = resolveDynamicModule(WORKER_PATH, import.meta);
+        let scriptPath: string | URL = dynamicRequire.resolve(WORKER_PATH, import.meta);
+
+        const resolvedCodemodPaths = codemodPaths.map((codemodPath) =>
+          dynamicRequire.resolve(codemodPath, import.meta),
+        );
+
         const config: WorkerOptions = {
           // Pass the list of codemod paths to the worker via workerData
-          workerData: codemodPaths,
+          workerData: {
+            codemodPaths: resolvedCodemodPaths,
+            userConfigPath,
+          },
+          env: process.env,
+          argv: [scriptPath],
+          eval: true,
         };
-        const workers = Array.from({ length: numWorkers }, () => new Worker(scriptPath, config));
+
+        const workers = Array.from(
+          { length: numWorkers },
+          () =>
+            new Worker(
+              // Add optional typescript support by loading tsx or ts-node
+              `try { require("tsx/cjs"); } catch (_) { try { require("ts-node/register"); } catch (__) {} } require(${JSON.stringify(scriptPath)});`,
+              config,
+            ),
+        );
         const workerPool = new WorkerTaskQueue<CodemodTaskInput, CodemodTaskWorkerResult>(workers);
         return executeCodemodMultiThreaded(workerPool, inputFilePaths, {
           dryRun,
@@ -514,14 +574,19 @@ function executeCodemodSingleThreaded(
   codemod: Codemod,
   inputFilePaths: string[],
   options: {
+    userConfigPath: string | undefined;
     dryRun: boolean;
     onStart?: (inputFilePath: string) => void;
     onComplete?: (inputFilePath: string, stats: { runningTime: number }) => void;
   },
 ): Promise<CodemodExecutionResult> {
-  const { dryRun, onStart, onComplete } = options;
-  const task = createCodemodTask(codemod);
-  const runner = { fs: createFsHelpers() };
+  const { dryRun, onStart, onComplete, userConfigPath } = options;
+  const userConfig = loadUserConfig(userConfigPath);
+  const runner: TaskRunnerEnvironment = {
+    fs: createFsHelpers(),
+    userConfig,
+  };
+  const task = createCodemodTask(codemod, userConfig);
   // Run the codemod for each input file
   return Promise.all(
     inputFilePaths.map((inputFilePath) => {
