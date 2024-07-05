@@ -13,10 +13,10 @@ export interface MatchGridImportArgs {
 
   /**
    * The framework being matched (vanilla, react, angular, vue).
-   * - @ag-grid-community/angular or ag-grid-angular are 'angular'
-   * - @ag-grid-community/core or ag-grid-community are 'vanilla'
-   * - @ag-grid-community/react or ag-grid-react are 'react'
-   * - @ag-grid-community/vue or ag-grid-vue are 'vue'
+   * - "angular" for `@ag-grid-community/angular` or `ag-grid-angular`
+   * - "vanilla" for `@ag-grid-community/core` or `ag-grid-community`
+   * - "react" for `@ag-grid-community/react` or `ag-grid-react`
+   * - "vue" for `@ag-grid-community/vue` or `ag-grid-vue`
    */
   framework: Framework;
 
@@ -28,7 +28,7 @@ export interface MatchGridImportNameArgs extends MatchGridImportArgs {
   /** The match to check, for example "AgGridReact" */
   agGridExportName: AgGridExportName;
 
-  /** The imported symbol, for example 'MyGrid' */
+  /** The imported symbol, for example "MyGrid" */
   importName: string;
 }
 
@@ -44,7 +44,7 @@ export interface UserConfig {
    *
    * ```ts
    * matchGridImport({ importPath }) {
-   *   return importPath === '@my-org/my-grid';
+   *   return importPath === "@my-org/my-grid";
    * }
    * ```
    *
@@ -59,18 +59,18 @@ export interface UserConfig {
    *
    * This interceptor can be used to handle reexported grid symbols with a different name.
    *
-   * For example, if AgGridReact coming from '@ag-grid-community/react' has been reexported as 'MyGrid' from '@my-org/my-grid', this interceptor can be used to match it.
+   * For example, if AgGridReact coming from "@ag-grid-community/react" has been reexported as "MyGrid" from "@my-org/my-grid", this interceptor can be used to match it.
    *
    * ```ts
    * matchGridImport({ importPath }) {
-   *   return importPath === '@my-org/my-grid';
+   *   return importPath === "@my-org/my-grid";
    * },
    *
    * matchGridImportName: ({ agGridExportName, importName, importPath }) => {
-   *  if (importPath === '@my-org/my-grid' && agGridExportName === 'AgGridReact' && importName === 'MyGrid') {
+   *  if (importPath === "@my-org/my-grid" && agGridExportName === "AgGridReact" && importName === "MyGrid") {
    *    return true;
    *  }
-   *  return agGridExportName === importName; // Default matching, for example 'createGrid' will be matched with 'createGrid'.
+   *  return agGridExportName === importName; // Default matching, for example "createGrid" will be matched with "createGrid".
    * }
    * ```
    *
