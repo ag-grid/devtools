@@ -1,3 +1,5 @@
+import { AgGridExportedName } from './exported-name';
+
 export type FrameworkType = 'angular' | 'react' | 'vue' | 'vanilla';
 
 export type ModuleType = 'esm' | 'cjs' | 'umd';
@@ -21,7 +23,7 @@ export interface IsGridModuleExportArgs {
   module: IsGridModuleArgs;
 
   /** The match to find, for example "AgGridReact" */
-  match: string;
+  match: AgGridExportedName;
 
   /** The export name, for example 'MyGrid' */
   exported: string;

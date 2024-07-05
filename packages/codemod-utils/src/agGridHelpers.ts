@@ -1,5 +1,4 @@
 import {
-  AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME,
   AccessorKey,
   AccessorReference,
   ImportedModuleMatcher,
@@ -9,7 +8,6 @@ import {
   getNamedModuleImportExpression,
   getOptionalNodeFieldValue,
   getStaticPropertyKey,
-  pattern,
   node as t,
   type AccessorPath,
   type AstCliContext,
@@ -60,6 +58,7 @@ import {
   VueTemplateFormatter,
 } from './vueHelpers';
 import { VueComponentCliContext } from './transform';
+import { AgGridExportedName } from '@ag-grid-devtools/types';
 
 type AssignmentExpression = Types.AssignmentExpression;
 type CallExpression = Types.CallExpression;
@@ -104,7 +103,7 @@ const AG_GRID_REACT_PACKAGE_NAME_MATCHER: ImportedModuleMatcher = {
   importUmdPattern: null,
   framework: 'react',
 };
-const AG_GRID_REACT_GRID_COMPONENT_NAME = 'AgGridReact';
+const AG_GRID_REACT_GRID_COMPONENT_NAME = AgGridExportedName.AgGridReact;
 const AG_GRID_REACT_GRID_OPTIONS_PROP_NAME = 'gridOptions';
 const AG_GRID_REACT_API_ACCESSOR_NAME = 'api';
 const AG_GRID_REACT_COLUMN_API_ACCESSOR_NAME = 'columnApi';
@@ -114,7 +113,7 @@ const AG_GRID_ANGULAR_PACKAGE_NAME_MATCHER: ImportedModuleMatcher = {
   importUmdPattern: null,
   framework: 'angular',
 };
-const AG_GRID_ANGULAR_GRID_COMPONENT_NAME = 'AgGridAngular';
+const AG_GRID_ANGULAR_GRID_COMPONENT_NAME = AgGridExportedName.AgGridAngular;
 const AG_GRID_ANGULAR_ELEMENT_NAME = 'ag-grid-angular';
 const AG_GRID_ANGULAR_GRID_OPTIONS_ATTRIBUTE_NAME = 'gridOptions';
 const AG_GRID_ANGULAR_API_ACCESSOR_NAME = 'api';
@@ -126,7 +125,7 @@ const AG_GRID_VUE_PACKAGE_NAME_MATCHER: ImportedModuleMatcher = {
   importUmdPattern: null,
   framework: 'vue',
 };
-const AG_GRID_VUE_GRID_COMPONENT_NAME = 'AgGridVue';
+const AG_GRID_VUE_GRID_COMPONENT_NAME = AgGridExportedName.AgGridVue;
 const AG_GRID_VUE_GRID_OPTIONS_ATTRIBUTE_NAME = 'gridOptions';
 const AG_GRID_VUE_API_ACCESSOR_NAME = 'api';
 const AG_GRID_VUE_COLUMN_API_ACCESSOR_NAME = 'columnApi';
@@ -694,7 +693,7 @@ function matchJsGridApiInitializer(
   const gridApiImport = getNamedModuleImportExpression(
     callee,
     AG_GRID_JS_PACKAGE_NAME_MATCHER,
-    AG_GRID_JS_CONSTRUCTOR_EXPORT_NAME,
+    AgGridExportedName.createGrid,
     context,
   );
   if (!gridApiImport) return null;

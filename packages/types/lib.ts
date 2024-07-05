@@ -1,3 +1,4 @@
+export * from './src/exported-name';
 export * from './src/user-config';
 export * from './src/codemod';
 export * from './src/fs';
