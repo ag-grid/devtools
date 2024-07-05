@@ -1,82 +1,104 @@
-import { AgGridExportedName } from './exported-name';
+import { AgGridExportedName as AgGridExportName } from './exported-name';
 
-export type FrameworkType = 'angular' | 'react' | 'vue' | 'vanilla';
+export type Framework = 'angular' | 'react' | 'vue' | 'vanilla';
 
-export type ModuleType = 'esm' | 'cjs' | 'umd';
+export type ImportType = 'esm' | 'cjs' | 'umd';
 
-export interface IsGridModuleArgs {
-  /** The module path being imported, as specified in the source code. For example "@my-company/my-grid" */
-  importedModule: string;
-
-  /** The framework (vanilla, react, angular, vue) */
-  framework: FrameworkType;
+export interface MatchGridImportArgs {
+  /** The path being imported, as specified in the source code. For example `import "@my-company/my-grid"` */
+  importPath: string;
 
   /** The type of module being imported (esm, cjs, umd) */
-  moduleType: ModuleType;
+  importType: ImportType;
+
+  /**
+   * The framework being matched (vanilla, react, angular, vue).
+   * - @ag-grid-community/angular is 'angular'
+   * - @ag-grid-community/core is 'vanilla'
+   * - @ag-grid-community/react is 'react'
+   * - @ag-grid-community/vue is 'vue'
+   */
+  framework: Framework;
 
   /** The filename of the source file being processed. For example "/my-org/my-project/myfile.tsx" */
-  filename: string;
+  sourceFilePath: string;
 }
 
-export interface IsGridModuleExportArgs {
-  /** The imported module details, originally passed to isGridModule callback */
-  module: IsGridModuleArgs;
+export interface MatchGridImportNameArgs extends MatchGridImportArgs {
+  /** The match to check, for example "AgGridReact" */
+  agGridExportName: AgGridExportName;
 
-  /** The match to find, for example "AgGridReact" */
-  match: AgGridExportedName;
-
-  /** The export name, for example 'MyGrid' */
-  exported: string;
+  /** The imported symbol, for example 'MyGrid' */
+  importName: string;
 }
 
 export interface UserConfig {
   /**
-   * Custom interceptor to check if a module is a grid module.
-   * @param args - The input to check.
-   * @returns `true` if the module is a grid module to process or not.
-   * @returns true if the module is a custom grid module.
-   */
-  isGridModule?(args: IsGridModuleArgs): boolean;
-
-  /**
-   * Custom interceptor to check if a module is a grid module export.
-   * This is called only if isGridModule was specified and returned `true`.
-   * For example, AgGridReact is a grid module export from '@ag-grid-react/react'.
+   * Custom interceptor to check if an import is a grid module.
    *
-   * A default implementation would be:
+   * Return true to process the received module import path as an ag-grid module.
+   *
+   * Note that this interceptor will not be called for ag-grid* modules, they will be processed by default.
+   *
+   * @example
    *
    * ```ts
-   * isGridModuleExport: ({ match, exported }) => {
-   *  return exported === match; // Match the export name with the expected match.
+   * matchGridImport({ importPath }) {
+   *   return importPath === '@my-org/my-grid';
    * }
    * ```
    *
    * @param args - The input to check.
-   * @returns true if the export is a custom grid module export.
+   * @returns true if the received input matches one custom module to process.
    */
-  isGridModuleExport?(args: IsGridModuleExportArgs): boolean;
+  matchGridImport?(args: MatchGridImportArgs): boolean;
 
   /**
-   * Custom interceptor to provide a different name to the function to create a grid.
-   * Default is "createGrid".
+   * Custom interceptor to check if a module is a grid module export.
+   * This may be called only if matchGridImport was specified and returned `true`.
    *
-   * This is used when fixing the old style Grid constructor with the new 'createGrid' function.
+   * This interceptor can be used to handle reexported grid symbols with a different name.
+   *
+   * For example, if AgGridReact coming from '@ag-grid-community/react' has been reexported as 'MyGrid' from '@my-org/my-grid', this interceptor can be used to match it.
+   *
+   * ```ts
+   * matchGridImport({ importPath }) {
+   *   return importPath === '@my-org/my-grid';
+   * },
+   *
+   * matchGridImportName: ({ agGridExportName, importName, importPath }) => {
+   *  if (importPath === '@my-org/my-grid' && agGridExportName === 'AgGridReact' && importName === 'MyGrid') {
+   *    return true;
+   *  }
+   *  return agGridExportName === importName; // Default matching, for example 'createGrid' will be matched with 'createGrid'.
+   * }
+   * ```
+   *
+   * A default implementation would be:
+   *
+   * ```ts
+   * matchGridImportName: ({ agGridExportName, importName }) => {
+   *  return agGridExportName === importName; // Match the export name with the expected default match.
+   * }
+   * ```
+   *
+   * Note that this interceptor will not be called for ag-grid* modules, they will be processed by default.
+   *
+   * @param args - The input to check.
+   * @returns true if the export is a custom grid module export.
+   */
+  matchGridImportName?(args: MatchGridImportNameArgs): boolean;
+
+  /**
+   * In vanilla JavaScript, the Grid constructor was deprecated and replaced by the `createGrid` function.
+   * This interceptor will be called to replace "new MyGrid(...)" with "createMyGrid(...)".
    *
    * Usually, this is the usage of createGrid:
    *
-   * ```ts
-   * import { myCreateGrid } from 'my-library';
-   * const optionsApi = myCreateGrid(document.body, { ... });
-   * ```
-   *
-   * A typical implementation would be:
-   *
-   * ```ts
-   * getCreateGridName: () => 'myCreateGrid'
-   * ```
+   * Note that this interceptor will not be called for ag-grid* modules, they will be processed by default.
    *
    * @returns The name of the function to create a grid. If this function returns null, undefined or empty string, "createGrid" will be used.
    *
    */
-  getCreateGridName?(args: IsGridModuleExportArgs): string | null | undefined;
+  getCreateGridName?(args: MatchGridImportNameArgs): string | null | undefined;
 }

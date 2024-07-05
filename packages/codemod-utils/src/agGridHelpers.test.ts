@@ -1883,11 +1883,9 @@ describe(getGridApiReferences, () => {
           fs: memfs,
           userConfig: {
             getCreateGridName(args) {
-              return args.module.importedModule === 'my-custom-import/hello'
-                ? 'myCreateGrid'
-                : null;
+              return args.importPath === 'my-custom-import/hello' ? 'myCreateGrid' : null;
             },
-            isGridModule: (args) => args.importedModule === 'my-custom-import/hello',
+            matchGridImport: (args) => args.importPath === 'my-custom-import/hello',
           },
         }),
       );
@@ -1914,8 +1912,8 @@ describe(getGridApiReferences, () => {
         createTransformContext('./app.js', {
           fs: memfs,
           userConfig: {
-            isGridModule: (args) => args.importedModule === '@my-custom-import/hello',
-            isGridModuleExport: (args) => args.exported === 'myCreateGrid',
+            matchGridImport: (args) => args.importPath === '@my-custom-import/hello',
+            matchGridImportName: (args) => args.importName === 'myCreateGrid',
           },
         }),
       );
@@ -1957,9 +1955,9 @@ describe(getGridApiReferences, () => {
         createTransformContext('./app.jsx', {
           fs: memfs,
           userConfig: {
-            isGridModule: (input) => input.importedModule === 'my-custom-import/hello',
-            isGridModuleExport: (input) =>
-              input.module.framework === 'react' && input.exported === 'MyGridReact',
+            matchGridImport: (input) => input.importPath === 'my-custom-import/hello',
+            matchGridImportName: (input) =>
+              input.framework === 'react' && input.importName === 'MyGridReact',
           },
         }),
       );

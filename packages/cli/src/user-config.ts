@@ -1,19 +1,42 @@
 import type {
   UserConfig,
-  FrameworkType,
-  ModuleType,
-  IsGridModuleArgs,
-  IsGridModuleExportArgs,
+  Framework,
+  ImportType,
+  MatchGridImportArgs,
+  MatchGridImportNameArgs,
   AgGridExportedName,
 } from '@ag-grid-devtools/types';
 
 export {
   UserConfig,
-  FrameworkType,
-  ModuleType,
-  IsGridModuleArgs,
-  IsGridModuleExportArgs,
-  AgGridExportedName as KnownExportedName,
+  Framework,
+  ImportType,
+  MatchGridImportArgs,
+  MatchGridImportNameArgs,
+  AgGridExportedName,
 };
 
+/**
+ *
+ * Define a user configuration for the ag-Grid CLI migrate command.
+ *
+ * @example
+ *
+ * my-user-config.cjs
+ *
+ * ```js
+ * module.export = defineUserConfig({
+ *  matchGridImport({ importPath }) {
+ *   return importPath === '@my-org/my-grid';
+ *  }
+ * });
+ *
+ * ```sh
+ * ag-grid-cli migrate --user-config=./my-user-config.cjs
+ * ```
+ *
+ *
+ * @param config - The user configuration to define.
+ * @returns The user configuration.
+ */
 export const defineUserConfig = (config: UserConfig): UserConfig => config;

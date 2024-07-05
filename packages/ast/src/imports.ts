@@ -9,9 +9,9 @@ import {
 import { getOptionalNodeFieldValue, getStaticPropertyKey, node as t } from './node';
 import { Enum, EnumVariant, match } from '@ag-grid-devtools/utils';
 import {
-  FrameworkType,
-  IsGridModuleExportArgs,
-  ModuleType,
+  Framework,
+  MatchGridImportNameArgs,
+  ImportType,
   KnownExportedName,
   AgGridExportedName,
   isAgGridExportedName,
@@ -137,18 +137,18 @@ export interface ImportedModuleMatcher {
   importUmdPattern: RegExp | string | null;
 
   /** The framework type, passed as is to the user config isGridModule method. */
-  framework: FrameworkType;
+  framework: Framework;
 
   /** If true, the UserConfig callbacks will not be called. Default is false. */
   skipUserConfig?: boolean;
 }
 
 function matchImportedSpecifier(
-  moduleType: ModuleType,
-  importedModule: string,
+  moduleType: ImportType,
+  importPath: string,
   importedModuleMatcher: ImportedModuleMatcher,
-  importedSpecifier: string,
-  importedSpecifierMatcher: KnownExportedName,
+  importName: string,
+  agGridExportName: KnownExportedName,
   context: AstTransformContext<TransformContext>,
 ): ImportMatcherResult | null {
   const {
@@ -164,10 +164,10 @@ function matchImportedSpecifier(
 
   if (
     typeof patternToCheck === 'string'
-      ? importedModule === patternToCheck
-      : patternToCheck.test(importedModule)
+      ? importPath === patternToCheck
+      : patternToCheck.test(importPath)
   ) {
-    if (importedSpecifier == importedSpecifierMatcher) {
+    if (importName == agGridExportName) {
       return { fromUserConfig: null };
     }
     return null;
@@ -177,7 +177,7 @@ function matchImportedSpecifier(
     return null;
   }
 
-  if (!isAgGridExportedName(importedSpecifierMatcher)) {
+  if (!isAgGridExportedName(agGridExportName)) {
     return null; // This specifier is not an ag-grid export, no user config needed.
   }
 
@@ -188,9 +188,9 @@ function matchImportedSpecifier(
 
   const filename = context.filename;
 
-  if (userConfig.isGridModule) {
+  if (userConfig.matchGridImport) {
     // Store in the cache so we don't ask the same question to the UserConfig isGridModule
-    const cacheKey = importedModule + '\n' + framework + '\n' + moduleType + '\n' + filename;
+    const cacheKey = importPath + '\n' + framework + '\n' + moduleType + '\n' + filename;
     let userConfigIsGridModuleCache = context._userConfigIsGridModuleCache;
     if (!userConfigIsGridModuleCache) {
       userConfigIsGridModuleCache = new Map();
@@ -202,18 +202,23 @@ function matchImportedSpecifier(
       return null; // UserConfig has already said this is not a grid module.
     }
     if (moduleArgs === undefined) {
-      moduleArgs = { importedModule, framework, moduleType, filename };
+      moduleArgs = {
+        importPath: importPath,
+        framework,
+        importType: moduleType,
+        sourceFilePath: filename,
+      };
 
-      if (!userConfig.isGridModule(moduleArgs)) {
+      if (!userConfig.matchGridImport(moduleArgs)) {
         userConfigIsGridModuleCache.set(cacheKey, null);
         return null; // UserConfig has said this is not a grid module.
       }
       userConfigIsGridModuleCache.set(cacheKey, moduleArgs);
     }
 
-    if (userConfig.isGridModuleExport) {
+    if (userConfig.matchGridImportName) {
       // Store in the cache so we don't ask the same question to the UserConfig isGridModuleExport
-      const specifierCacheKey = cacheKey + '\n' + match + '\n' + importedSpecifier;
+      const specifierCacheKey = cacheKey + '\n' + match + '\n' + importName;
 
       let userConfigIsGridModuleExportCache = context._userConfigIsGridModuleExportCache;
 
@@ -230,23 +235,23 @@ function matchImportedSpecifier(
         return result; // UserConfig has already answered this question.
       }
 
-      const args: IsGridModuleExportArgs = {
-        module: moduleArgs,
-        match: importedSpecifierMatcher,
-        exported: importedSpecifier,
+      const fromUserConfig: MatchGridImportNameArgs = {
+        ...moduleArgs,
+        agGridExportName,
+        importName,
       };
 
-      if (userConfig.isGridModuleExport(args)) {
-        result = { fromUserConfig: args };
+      if (userConfig.matchGridImportName(fromUserConfig)) {
+        result = { fromUserConfig };
       }
 
       if (
         !result &&
         framework === 'vanilla' &&
-        importedSpecifierMatcher === AgGridExportedName.createGrid &&
+        agGridExportName === AgGridExportedName.createGrid &&
         userConfig.getCreateGridName
       ) {
-        result = { fromUserConfig: args }; // Special case for createGrid
+        result = { fromUserConfig }; // Special case for createGrid
       }
 
       if (!result) {
@@ -257,26 +262,26 @@ function matchImportedSpecifier(
       return result;
     }
 
-    if (importedSpecifier === importedSpecifierMatcher) {
+    if (importName === agGridExportName) {
       return { fromUserConfig: null };
     }
 
     if (
       framework === 'vanilla' &&
-      importedSpecifierMatcher === AgGridExportedName.createGrid &&
+      agGridExportName === AgGridExportedName.createGrid &&
       userConfig.getCreateGridName
     ) {
       return {
         fromUserConfig: {
-          module: moduleArgs,
-          match: importedSpecifierMatcher,
-          exported: importedSpecifier,
+          ...moduleArgs,
+          agGridExportName,
+          importName,
         },
       }; // Special case for the config createGridName
     }
   }
 
-  if (importedSpecifier === importedSpecifierMatcher) {
+  if (importName === agGridExportName) {
     return { fromUserConfig: null };
   }
 
@@ -682,7 +687,7 @@ export function getNamedPackageNamespaceImportExpression(
 function getNamedUmdGlobalNamespaceExpression(
   expression: NodePath<Identifier>,
   importedModuleMatcher: ImportedModuleMatcher,
-  importedSpecifier: string,
+  importName: string,
   importedModuleSpecifierMatcher: KnownExportedName,
   context: AstTransformContext<TransformContext>,
 ): ImportMatcherResult | null {
@@ -690,7 +695,7 @@ function getNamedUmdGlobalNamespaceExpression(
     'umd',
     expression.node.name,
     importedModuleMatcher,
-    importedSpecifier,
+    importName,
     importedModuleSpecifierMatcher,
     context,
   );
@@ -817,7 +822,7 @@ export function matchModuleImportName(
   context: AstTransformContext<TransformContext>,
 ): {
   packageName: string;
-  importedSpecifier: string;
+  importName: string;
   importMatcherResult: ImportMatcherResult;
 } | null {
   const actualImportedName = getImportSpecifierImportedName(specifier);
@@ -832,7 +837,7 @@ export function matchModuleImportName(
   const { actualPackageName, importMatcherResult } = matchedModuleImportPackage;
   return {
     packageName: actualPackageName,
-    importedSpecifier: actualImportedName,
+    importName: actualImportedName,
     importMatcherResult,
   };
 }

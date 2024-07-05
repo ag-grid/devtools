@@ -1,8 +1,8 @@
 import type {
   UserConfig,
   FsUtils,
-  IsGridModuleArgs,
-  IsGridModuleExportArgs,
+  MatchGridImportArgs,
+  MatchGridImportNameArgs,
 } from '@ag-grid-devtools/types';
 import type { NodePath, PluginObj, PluginPass, Visitor } from '@babel/core';
 import type * as BabelCore from '@babel/core';
@@ -18,8 +18,8 @@ export type BabelPluginWithOptions<S = PluginPass, T extends object = object> = 
 export type AstTransform<S extends object> = BabelPlugin<PluginPass & AstTransformContext<S>>;
 
 export interface ImportMatcherResult {
-  /** Contains the arguments passed to UserConfig.isGridModuleExport, if this is a customized import */
-  fromUserConfig: IsGridModuleExportArgs | null;
+  /** Contains the arguments passed to UserConfig.matchGridImportName, if this is a customized import */
+  fromUserConfig: MatchGridImportNameArgs | null;
 }
 
 export type AstTransformWithOptions<
@@ -30,7 +30,7 @@ export type AstTransformWithOptions<
 export interface AstTransformContext<S extends object = object> extends FileMetadata {
   opts: S;
 
-  _userConfigIsGridModuleCache?: Map<string, IsGridModuleArgs | null>;
+  _userConfigIsGridModuleCache?: Map<string, MatchGridImportArgs | null>;
   _userConfigIsGridModuleExportCache?: Map<string, ImportMatcherResult | null>;
 }
 

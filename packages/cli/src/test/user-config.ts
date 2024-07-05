@@ -5,11 +5,11 @@ module.exports = defineUserConfig({
     return 'myCreateGrid';
   },
 
-  isGridModule({ importedModule }) {
+  matchGridImport({ importPath: importedModule }) {
     return importedModule === '@hello/world';
   },
 
-  isGridModuleExport({ exported, match }) {
+  matchGridImportName({ importName: exported, agGridExportName: match }) {
     if (match === 'Grid') {
       return exported === 'MyGrid';
     }
