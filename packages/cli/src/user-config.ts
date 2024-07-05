@@ -32,7 +32,7 @@ export {
  * });
  *
  * ```sh
- * ag-grid-cli migrate --user-config=./my-user-config.cjs
+ * ag-grid-cli migrate --config=./my-user-config.cjs
  * ```
  *
  *

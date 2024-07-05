@@ -96,11 +96,11 @@ Options:
       DEFAULT_TARGET_VERSION,
       env,
     )})
-    --user-config=<file>      Loads a configuration file to customize the codemod behavior (advanced).
     --allow-untracked, -u     Allow operating on files outside a git repository
     --allow-dirty, -d         Allow operating on repositories with uncommitted changes in the working tree
     --num-threads             Number of worker threads to spawn (defaults to the number of system cores)
     --dry-run                 Show a diff output of the changes that would be made
+    --config=<file.cjs>       Loads a configuration file to customize the codemod behavior (advanced).
 
   Additional arguments:
     [<file>...]               List of input files to operate on (defaults to all source files in the current working directory)
@@ -188,7 +188,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         options.numThreads = numThreads;
         break;
       }
-      case '--user-config': {
+      case '--config': {
         let value = args.shift()?.trim();
         if (!value) {
           throw new CliArgsError(`Missing value for ${arg}`, usage(env));

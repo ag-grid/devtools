@@ -47,7 +47,7 @@ describe('cli e2e', () => {
         '--num-threads=0',
         '--allow-untracked',
         '--from=30.0.0',
-        '--user-config=../user-config.ts',
+        '--config=../user-config.ts',
       ],
       cliOptions,
     );
@@ -66,7 +66,7 @@ describe('cli e2e', () => {
         '--num-threads=2',
         '--allow-untracked',
         '--from=30.0.0',
-        '--user-config=../user-config.ts',
+        '--config=../user-config.ts',
       ],
       cliOptions,
     );
