@@ -16,10 +16,7 @@ if (!isStringArray(codemodPaths)) throw new Error('Invalid worker data');
 
 // Load the specified codemod modules
 const codemods = codemodPaths.map((codemodPath) => {
-  let codemod = dynamicRequire.require<Codemod | { default: Codemod }>(codemodPath, import.meta);
-  if (typeof codemod === 'object' && codemod !== null) {
-    codemod = codemod.default; // handle default exports
-  }
+  let codemod = dynamicRequire.requireDefault<Codemod>(codemodPath, import.meta);
   if (typeof codemod !== 'function') {
     throw new Error(`Invalid codemod path: ${JSON.stringify(codemodPath)}`);
   }
@@ -42,5 +39,5 @@ function isTypedArray<T>(
   value: unknown,
   predicate: (item: unknown) => item is T,
 ): value is Array<T> {
-  return Array.isArray(value) && value.every((item) => predicate(item));
+  return Array.isArray(value) && value.every(predicate);
 }

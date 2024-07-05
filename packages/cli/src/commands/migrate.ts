@@ -387,7 +387,7 @@ async function migrate(
         // Load the codemod and wrap it in a task helper
         const codemod = composeCodemods(
           codemodPaths.map((codemodPath) =>
-            dynamicRequire.require<Codemod>(codemodPath, import.meta),
+            dynamicRequire.requireDefault<Codemod>(codemodPath, import.meta),
           ),
         );
         return executeCodemodSingleThreaded(codemod, inputFilePaths, {

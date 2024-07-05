@@ -43,5 +43,5 @@ function isFsErrorCode<T extends string>(error: unknown, code: T): error is Erro
 }
 
 export function loadUserConfig(userConfigPath: string | undefined): UserConfig | undefined {
-  return userConfigPath ? dynamicRequire.require(userConfigPath, import.meta) : undefined;
+  return userConfigPath ? dynamicRequire.requireDefault(userConfigPath, import.meta) : undefined;
 }
