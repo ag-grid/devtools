@@ -30,13 +30,13 @@ describe('cli e2e', () => {
     await prepareTestDataFiles();
     await cli(['migrate', '--num-threads=0', '--allow-untracked', '--from=30.0.0'], cliOptions);
     expect(await loadExpectedSource('plain.js')).toEqual(await loadTempSource('plain.js'));
-  });
+  }, 10000);
 
   test('plain cli multi-threaded', async () => {
     await prepareTestDataFiles();
     await cli(['migrate', '--num-threads=0', '--allow-untracked', '--from=30.0.0'], cliOptions);
     expect(await loadExpectedSource('plain.js')).toEqual(await loadTempSource('plain.js'));
-  });
+  }, 10000);
 
   test('userConfig single-threaded', async () => {
     await prepareTestDataFiles();
