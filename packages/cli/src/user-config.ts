@@ -18,7 +18,7 @@ export {
 
 /**
  *
- * Define a user configuration for the ag-Grid CLI migrate command.
+ * Define a user configuration for the AG Grid CLI migrate command.
  *
  * @example
  *

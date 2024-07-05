@@ -13,10 +13,10 @@ export interface MatchGridImportArgs {
 
   /**
    * The framework being matched (vanilla, react, angular, vue).
-   * - @ag-grid-community/angular is 'angular'
-   * - @ag-grid-community/core is 'vanilla'
-   * - @ag-grid-community/react is 'react'
-   * - @ag-grid-community/vue is 'vue'
+   * - @ag-grid-community/angular or ag-grid-angular are 'angular'
+   * - @ag-grid-community/core or ag-grid-community are 'vanilla'
+   * - @ag-grid-community/react or ag-grid-react are 'react'
+   * - @ag-grid-community/vue or ag-grid-vue are 'vue'
    */
   framework: Framework;
 
@@ -36,9 +36,9 @@ export interface UserConfig {
   /**
    * Custom interceptor to check if an import is a grid module.
    *
-   * Return true to process the received module import path as an ag-grid module.
+   * Return true to process the received module import path as an AG Grid module.
    *
-   * Note that this interceptor will not be called for ag-grid* modules, they will be processed by default.
+   * Note that this interceptor will not be called for AG Grid modules, they will be processed by default.
    *
    * @example
    *
@@ -82,7 +82,7 @@ export interface UserConfig {
    * }
    * ```
    *
-   * Note that this interceptor will not be called for ag-grid* modules, they will be processed by default.
+   * Note that this interceptor will not be called for AG Grid modules, they will be processed by default.
    *
    * @param args - The input to check.
    * @returns true if the export is a custom grid module export.
@@ -95,7 +95,7 @@ export interface UserConfig {
    *
    * Usually, this is the usage of createGrid:
    *
-   * Note that this interceptor will not be called for ag-grid* modules, they will be processed by default.
+   * Note that this interceptor will not be called for AG Grid modules, they will be processed by default.
    *
    * @returns The name of the function to create a grid. If this function returns null, undefined or empty string, "createGrid" will be used.
    *
