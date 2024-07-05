@@ -82,7 +82,7 @@ const ANGULAR_PACKAGE_NAME = '@angular/core';
 const ANGULAR_PACKAGE_NAME_MATCHER: ImportedModuleMatcher = {
   importModulePattern: ANGULAR_PACKAGE_NAME,
   importUmdPattern: null,
-  framework: 'vanilla',
+  framework: 'angular',
   skipUserConfig: true,
 };
 
