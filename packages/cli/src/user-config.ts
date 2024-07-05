@@ -4,7 +4,7 @@ import type {
   ImportType,
   MatchGridImportArgs,
   MatchGridImportNameArgs,
-  AgGridExportedName,
+  AgGridExportName,
 } from '@ag-grid-devtools/types';
 
 export {
@@ -13,7 +13,7 @@ export {
   ImportType,
   MatchGridImportArgs,
   MatchGridImportNameArgs,
-  AgGridExportedName,
+  AgGridExportName,
 };
 
 /**

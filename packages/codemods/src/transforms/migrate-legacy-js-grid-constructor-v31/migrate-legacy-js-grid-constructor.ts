@@ -17,7 +17,7 @@ import {
   NodePath,
 } from '@ag-grid-devtools/ast';
 import { AG_GRID_JS_PACKAGE_NAME_MATCHER } from '@ag-grid-devtools/codemod-utils';
-import { AgGridExportedName } from '@ag-grid-devtools/types';
+import { AgGridExportName } from '@ag-grid-devtools/types';
 import { match, nonNull } from '@ag-grid-devtools/utils';
 
 type Expression = Types.Expression;
@@ -25,7 +25,7 @@ type Identifier = Types.Identifier;
 type ObjectPattern = Types.ObjectPattern;
 type ObjectProperty = Types.ObjectProperty;
 
-const LEGACY_GRID_API_EXPORT_NAME = AgGridExportedName.Grid;
+const LEGACY_GRID_API_EXPORT_NAME = AgGridExportName.Grid;
 const GRID_API_ACCESSOR_NAME = 'api';
 const COLUMN_API_ACCESSOR_NAME = 'columnApi';
 
@@ -87,7 +87,7 @@ const transform: AstTransform<AstCliContext> = function migrateLegacyJsGridConst
         const fromUserConfig = legacyGridApiImport.importMatcherResult.fromUserConfig;
         const updatedConstructorExportName =
           (fromUserConfig && state.opts.userConfig?.getCreateGridName?.(fromUserConfig)) ||
-          AgGridExportedName.createGrid;
+          AgGridExportName.createGrid;
 
         // Rewrite the legacy Grid import to the new-style createGrid import
         const updatedConstructorClass = match(legacyGridApiImport.binding, {

@@ -12,9 +12,9 @@ import {
   Framework,
   MatchGridImportNameArgs,
   ImportType,
-  KnownExportedName,
-  AgGridExportedName,
-  isAgGridExportedName,
+  KnownExportName,
+  AgGridExportName,
+  isAgGridExportName,
 } from '@ag-grid-devtools/types';
 
 type CallExpression = Types.CallExpression;
@@ -148,7 +148,7 @@ function matchImportedSpecifier(
   importPath: string,
   importedModuleMatcher: ImportedModuleMatcher,
   importName: string,
-  agGridExportName: KnownExportedName,
+  agGridExportName: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): ImportMatcherResult | null {
   const {
@@ -177,7 +177,7 @@ function matchImportedSpecifier(
     return null;
   }
 
-  if (!isAgGridExportedName(agGridExportName)) {
+  if (!isAgGridExportName(agGridExportName)) {
     return null; // This specifier is not an ag-grid export, no user config needed.
   }
 
@@ -248,7 +248,7 @@ function matchImportedSpecifier(
       if (
         !result &&
         framework === 'vanilla' &&
-        agGridExportName === AgGridExportedName.createGrid &&
+        agGridExportName === AgGridExportName.createGrid &&
         userConfig.getCreateGridName
       ) {
         result = { fromUserConfig }; // Special case for createGrid
@@ -268,7 +268,7 @@ function matchImportedSpecifier(
 
     if (
       framework === 'vanilla' &&
-      agGridExportName === AgGridExportedName.createGrid &&
+      agGridExportName === AgGridExportName.createGrid &&
       userConfig.getCreateGridName
     ) {
       return {
@@ -296,7 +296,7 @@ export interface PackageNamespaceImport {
 export function getNamedModuleImportExpression(
   expression: NodePath<Expression | JSXIdentifier>,
   importedModuleMatcher: ImportedModuleMatcher,
-  importedModuleSpecifierMatcher: KnownExportedName,
+  importedModuleSpecifierMatcher: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): PackageNamespaceImport | null {
   if (expression.isIdentifier()) {
@@ -369,7 +369,7 @@ export function getNamedModuleImportExpression(
 function getNamedModuleImportBinding(
   binding: Binding,
   importedModuleMatcher: ImportedModuleMatcher,
-  importedModuleSpecifierMatcher: KnownExportedName,
+  importedModuleSpecifierMatcher: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): PackageNamespaceImport | null {
   switch (binding.kind) {
@@ -401,7 +401,7 @@ function getNamedModuleImportBinding(
 function getNamedEsModuleImportBinding(
   binding: Binding,
   importedModuleMatcher: ImportedModuleMatcher,
-  importedModuleSpecifierMatcher: KnownExportedName,
+  importedModuleSpecifierMatcher: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): PackageNamespaceImport | null {
   const target = binding.path;
@@ -438,7 +438,7 @@ function getNamedEsModuleImportBinding(
 function getNamedUmdImportBinding(
   binding: Binding,
   importedModuleMatcher: ImportedModuleMatcher,
-  importedModuleSpecifierMatcher: KnownExportedName,
+  importedModuleSpecifierMatcher: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): PackageNamespaceImport | null {
   const target = binding.path;
@@ -615,7 +615,7 @@ export function getNamedPackageNamespaceImportExpression(
   expression: NodePath<Expression>,
   importedModuleMatcher: ImportedModuleMatcher,
   importedModuleSpecifier: string,
-  importedModuleSpecifierMatcher: KnownExportedName,
+  importedModuleSpecifierMatcher: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): NamedPackageNamespaceImport | null {
   if (isCommonJsRequireExpression(expression)) {
@@ -688,7 +688,7 @@ function getNamedUmdGlobalNamespaceExpression(
   expression: NodePath<Identifier>,
   importedModuleMatcher: ImportedModuleMatcher,
   importName: string,
-  importedModuleSpecifierMatcher: KnownExportedName,
+  importedModuleSpecifierMatcher: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): ImportMatcherResult | null {
   return matchImportedSpecifier(
@@ -705,7 +705,7 @@ function getNamedPackageNamespaceImportBinding(
   binding: Binding,
   importedModuleMatcher: ImportedModuleMatcher,
   importedModuleSpecifier: string,
-  importedModuleSpecifierMatcher: KnownExportedName,
+  importedModuleSpecifierMatcher: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): NamedPackageNamespaceImport | null {
   switch (binding.kind) {
@@ -740,7 +740,7 @@ function getNamedEsModulePackageNamespaceImportBinding(
   binding: Binding,
   importedModuleMatcher: ImportedModuleMatcher,
   importedModuleSpecifier: string,
-  importedModuleSpecifierMatcher: KnownExportedName,
+  importedModuleSpecifierMatcher: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): NamedPackageNamespaceImport | null {
   const target = binding.path;
@@ -774,7 +774,7 @@ function getNamedUmdPackageNamespaceImportBinding(
   binding: Binding,
   importedModuleMatcher: ImportedModuleMatcher,
   importedModuleSpecifier: string,
-  importedModuleSpecifierMatcher: KnownExportedName,
+  importedModuleSpecifierMatcher: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): NamedPackageNamespaceImport | null {
   const target = binding.path;
@@ -818,7 +818,7 @@ export function matchModuleImportName(
   declaration: ImportDeclaration,
   specifier: ImportSpecifier,
   importedModuleMatcher: ImportedModuleMatcher,
-  importedModuleSpecifierMatcher: KnownExportedName,
+  importedModuleSpecifierMatcher: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): {
   packageName: string;
@@ -846,7 +846,7 @@ export function matchModuleImportPackageName(
   declaration: ImportDeclaration,
   importedModuleMatcher: ImportedModuleMatcher,
   importedModuleSpecifier: string,
-  importedModuleSpecifierMatcher: KnownExportedName,
+  importedModuleSpecifierMatcher: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): { actualPackageName: string; importMatcherResult: ImportMatcherResult } | null {
   const actualPackageName = declaration.source.value;
@@ -893,7 +893,7 @@ function getNamedCommonJsRequireExpression(
   expression: NodePath<CommonJsRequireExpression>,
   importedModuleMatcher: ImportedModuleMatcher,
   importedModuleSpecifier: string,
-  importedModuleSpecifierMatcher: KnownExportedName,
+  importedModuleSpecifierMatcher: KnownExportName,
   context: AstTransformContext<TransformContext>,
 ): ImportMatcherResult | null {
   const requirePath = expression.node.arguments[0].value;
