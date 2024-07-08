@@ -24,7 +24,7 @@ export const dynamicRequire = {
       typeof required === 'object' &&
       required !== null &&
       'default' in required &&
-      '__esModule' in required
+      ('__esModule' in required || required[Symbol.toStringTag] === 'Module')
     ) {
       // this is a default export from an esm module transpiled to cjs, return the default export
       return required.default;

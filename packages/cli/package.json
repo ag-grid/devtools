@@ -35,11 +35,13 @@
     "main": "./index.cjs",
     "bin": "./index.cjs"
   },
+  "types": "./index.d.ts",
   "bundleDependencies": [
     "@ag-grid-devtools/codemods"
   ],
   "dependencies": {
-    "@ag-grid-devtools/codemods": "workspace:*"
+    "@ag-grid-devtools/codemods": "workspace:*",
+    "tsx": "4.16.2"
   },
   "devDependencies": {
     "@ag-grid-devtools/build-config": "workspace:*",
@@ -47,13 +49,14 @@
     "@ag-grid-devtools/types": "workspace:*",
     "@ag-grid-devtools/utils": "workspace:*",
     "@ag-grid-devtools/worker-utils": "workspace:*",
-    "@types/diff": "5.0.8",
+    "@types/diff": "5.2.1",
     "@types/graceful-fs": "4.1.9",
-    "@types/node": "20.11.29",
-    "@types/semver": "7.5.6",
-    "diff": "5.1.0",
+    "@types/node": "20.14.10",
+    "@types/semver": "7.5.8",
+    "diff": "5.2.0",
     "graceful-fs": "4.2.11",
-    "semver": "7.5.4"
+    "semver": "7.6.2",
+    "vite-plugin-dts": "3.9.1"
   },
   "peerDependencies": {
     "eslint": "^8",

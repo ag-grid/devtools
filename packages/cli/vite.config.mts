@@ -1,5 +1,6 @@
 import { resolve } from 'path';
 import { defineConfig, mergeConfig } from 'vite';
+import dts from 'vite-plugin-dts';
 
 import base from '../build-config/templates/vite/cli.vite.config';
 
@@ -10,15 +11,24 @@ export default mergeConfig(
   defineConfig({
     build: {
       lib: {
-        entry: resolve(__dirname, pkg.main),
+        entry: {
+          index: resolve(__dirname, pkg.main),
+          'user-config': resolve(__dirname, 'user-config.ts'),
+        },
         name: pkg.name,
         formats: ['cjs'],
-        fileName: 'index',
       },
       sourcemap: false,
       rollupOptions: {
         external: ['@ag-grid-devtools/codemods'],
       },
     },
+    plugins: [
+      dts({
+        rollupTypes: true,
+        bundledPackages: ['@ag-grid-devtools/types'],
+        exclude: ['node_modules/**', '*.config.mts', '**/*.test.ts', 'package.json', 'index.ts'],
+      }),
+    ],
   }),
 );

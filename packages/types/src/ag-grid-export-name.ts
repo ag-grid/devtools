@@ -1,46 +1,46 @@
-const agGridKnownExportNames = {
+enum agGridKnownExportNames {
   // Add here more members here if you add more codemods based on new exports
 
   /** Old Grid constructor */
-  Grid: 0,
+  Grid,
 
   /** New createGrid factory function */
-  createGrid: 0,
+  createGrid,
 
   /** ag-grid React component */
-  AgGridReact: 0,
+  AgGridReact,
 
   /** ag-grid Angular component */
-  AgGridAngular: 0,
+  AgGridAngular,
 
   /** ag-grid Vue component */
-  AgGridVue: 0,
-};
+  AgGridVue,
+}
 
-const knownExportNames = {
+enum knownOtherExportNames {
   /** From angular component */
-  Component: 0,
+  Component,
 
   /** From angular core */
-  ViewChild: 0,
-
-  ...agGridKnownExportNames,
-};
+  ViewChild,
+}
 
 /**
  * The list of all known names exported by ag-grid used in various codemods.
  */
 export type AgGridExportName = keyof typeof agGridKnownExportNames;
 
-export type KnownExportName = keyof typeof knownExportNames;
+export type KnownExportName = AgGridExportName | keyof typeof knownOtherExportNames;
 
-export const AgGridExportName: Readonly<Record<AgGridExportName, AgGridExportName>> = Object.keys(
-  knownExportNames,
+export const AgGridExportNames: Record<AgGridExportName, AgGridExportName> = Object.keys(
+  agGridKnownExportNames,
 ).reduce((acc, key) => {
-  acc[key as AgGridExportName] = key as AgGridExportName;
+  if (isNaN(Number(key))) {
+    acc[key] = key as AgGridExportName;
+  }
   return acc;
 }, Object.create(null));
 
-export const isAgGridExportName = (name: string): name is AgGridExportName => {
-  return name in agGridKnownExportNames;
+export const isAgGridExportName = (name: unknown): name is AgGridExportName => {
+  return typeof name === 'string' && name in AgGridExportNames;
 };
