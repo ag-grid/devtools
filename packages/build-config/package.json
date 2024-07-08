@@ -32,7 +32,7 @@
     "rollup-plugin-preserve-shebang": "1.0.1",
     "typescript": "5.5.3",
     "vite": "^5.3.3",
-    "vite-plugin-dts": "3.7.3",
+    "vite-plugin-dts": "3.9.1",
     "vite-plugin-node-polyfills": "0.22.0",
     "vite-plugin-static-copy": "1.0.6",
     "vitest": "1.6.0"
