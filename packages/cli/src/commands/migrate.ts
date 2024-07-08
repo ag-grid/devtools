@@ -86,6 +86,7 @@ function usage(env: CliEnv): string {
   return `Usage: ${getCliCommand()} migrate [options] [<file>...]
 
 Upgrade project source files to ensure compatibility with a specific AG Grid version
+See https://ag-grid.com/javascript-data-grid/codemods for more information
 
 Options:
   Required arguments:
@@ -100,7 +101,8 @@ Options:
     --allow-dirty, -d         Allow operating on repositories with uncommitted changes in the working tree
     --num-threads             Number of worker threads to spawn (defaults to the number of system cores)
     --dry-run                 Show a diff output of the changes that would be made
-    --config=<file.cjs>       Loads a configuration file to customize the codemod behavior (advanced).
+    --config=<file.cjs>       Loads a .cjs or .cts configuration file to customize the codemod behavior.
+                              See https://ag-grid.com/javascript-data-grid/codemods/#configuration-file
 
   Additional arguments:
     [<file>...]               List of input files to operate on (defaults to all source files in the current working directory)

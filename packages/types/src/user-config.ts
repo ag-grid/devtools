@@ -1,4 +1,4 @@
-import { AgGridExportName as AgGridExportName } from './ag-grid-export-name';
+import type { AgGridExportName } from './ag-grid-export-name';
 
 export type Framework = 'angular' | 'react' | 'vue' | 'vanilla';
 

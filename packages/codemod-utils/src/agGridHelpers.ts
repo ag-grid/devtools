@@ -58,7 +58,7 @@ import {
   VueTemplateFormatter,
 } from './vueHelpers';
 import { VueComponentCliContext } from './transform';
-import { AgGridExportName } from '@ag-grid-devtools/types';
+import { AgGridExportNames } from '@ag-grid-devtools/types';
 
 type AssignmentExpression = Types.AssignmentExpression;
 type CallExpression = Types.CallExpression;
@@ -103,7 +103,7 @@ const AG_GRID_REACT_PACKAGE_NAME_MATCHER: ImportedModuleMatcher = {
   importUmdPattern: null,
   framework: 'react',
 };
-const AG_GRID_REACT_GRID_COMPONENT_NAME = AgGridExportName.AgGridReact;
+const AG_GRID_REACT_GRID_COMPONENT_NAME = AgGridExportNames.AgGridReact;
 const AG_GRID_REACT_GRID_OPTIONS_PROP_NAME = 'gridOptions';
 const AG_GRID_REACT_API_ACCESSOR_NAME = 'api';
 const AG_GRID_REACT_COLUMN_API_ACCESSOR_NAME = 'columnApi';
@@ -113,7 +113,7 @@ const AG_GRID_ANGULAR_PACKAGE_NAME_MATCHER: ImportedModuleMatcher = {
   importUmdPattern: null,
   framework: 'angular',
 };
-const AG_GRID_ANGULAR_GRID_COMPONENT_NAME = AgGridExportName.AgGridAngular;
+const AG_GRID_ANGULAR_GRID_COMPONENT_NAME = AgGridExportNames.AgGridAngular;
 const AG_GRID_ANGULAR_ELEMENT_NAME = 'ag-grid-angular';
 const AG_GRID_ANGULAR_GRID_OPTIONS_ATTRIBUTE_NAME = 'gridOptions';
 const AG_GRID_ANGULAR_API_ACCESSOR_NAME = 'api';
@@ -125,7 +125,7 @@ const AG_GRID_VUE_PACKAGE_NAME_MATCHER: ImportedModuleMatcher = {
   importUmdPattern: null,
   framework: 'vue',
 };
-const AG_GRID_VUE_GRID_COMPONENT_NAME = AgGridExportName.AgGridVue;
+const AG_GRID_VUE_GRID_COMPONENT_NAME = AgGridExportNames.AgGridVue;
 const AG_GRID_VUE_GRID_OPTIONS_ATTRIBUTE_NAME = 'gridOptions';
 const AG_GRID_VUE_API_ACCESSOR_NAME = 'api';
 const AG_GRID_VUE_COLUMN_API_ACCESSOR_NAME = 'columnApi';
@@ -693,7 +693,7 @@ function matchJsGridApiInitializer(
   const gridApiImport = getNamedModuleImportExpression(
     callee,
     AG_GRID_JS_PACKAGE_NAME_MATCHER,
-    AgGridExportName.createGrid,
+    AgGridExportNames.createGrid,
     context,
   );
   if (!gridApiImport) return null;

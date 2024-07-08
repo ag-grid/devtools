@@ -13,7 +13,7 @@ import {
   MatchGridImportNameArgs,
   ImportType,
   KnownExportName,
-  AgGridExportName,
+  AgGridExportNames,
   isAgGridExportName,
 } from '@ag-grid-devtools/types';
 
@@ -248,7 +248,7 @@ function matchImportedSpecifier(
       if (
         !result &&
         framework === 'vanilla' &&
-        agGridExportName === AgGridExportName.createGrid &&
+        agGridExportName === AgGridExportNames.createGrid &&
         userConfig.getCreateGridName
       ) {
         result = { fromUserConfig }; // Special case for createGrid
@@ -268,7 +268,7 @@ function matchImportedSpecifier(
 
     if (
       framework === 'vanilla' &&
-      agGridExportName === AgGridExportName.createGrid &&
+      agGridExportName === AgGridExportNames.createGrid &&
       userConfig.getCreateGridName
     ) {
       return {
