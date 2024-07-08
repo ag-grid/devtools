@@ -71,13 +71,11 @@ export async function cli(args: Array<string>, cli: CliOptions): Promise<void> {
     throw null;
   }
 
-  // Add optional typescript support by loading tsx or ts-node
+  // Add typescript support by loading tsx
   try {
     dynamicRequire.require('tsx/cjs', import.meta);
   } catch {
-    try {
-      dynamicRequire.require('ts-node/register', import.meta);
-    } catch {}
+    // ignore error if tsx could not be loaded
   }
 
   const task = match(options.command, {

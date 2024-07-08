@@ -427,8 +427,8 @@ async function migrate(
           { length: numWorkers },
           () =>
             new Worker(
-              // Add optional typescript support by loading tsx or ts-node
-              `try { require("tsx/cjs"); } catch (_) { try { require("ts-node/register"); } catch (__) {} } require(${JSON.stringify(scriptPath)});`,
+              // Try to add typescript support by loading tsx and load the worker script
+              `try { require("tsx/cjs"); } catch (_) {} require(${JSON.stringify(scriptPath)});`,
               config,
             ),
         );
