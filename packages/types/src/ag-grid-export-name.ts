@@ -17,7 +17,7 @@ enum agGridKnownExportNames {
   AgGridVue,
 }
 
-enum knownExportNames {
+enum knownOtherExportNames {
   /** From angular component */
   Component,
 
@@ -30,7 +30,7 @@ enum knownExportNames {
  */
 export type AgGridExportName = keyof typeof agGridKnownExportNames;
 
-export type KnownExportName = AgGridExportName | keyof typeof agGridKnownExportNames;
+export type KnownExportName = AgGridExportName | keyof typeof knownOtherExportNames;
 
 export const AgGridExportNames: Record<AgGridExportName, AgGridExportName> = Object.keys(
   agGridKnownExportNames,
