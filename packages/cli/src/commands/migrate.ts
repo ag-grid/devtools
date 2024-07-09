@@ -266,12 +266,12 @@ async function migrate(
     userConfigPath,
     input,
   } = args;
-  let { cwd, env, stdio, topmostGitRoot } = options;
+  let { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
 
   cwd = resolve(cwd);
 
-  const gitRoot = await findGitRoot(cwd, topmostGitRoot);
+  const gitRoot = await findGitRoot(cwd);
 
   if (!allowUntracked && !gitRoot) {
     throw new CliError(

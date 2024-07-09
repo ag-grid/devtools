@@ -10,9 +10,6 @@ import {
   prepareTestDataFiles,
 } from './test-utils';
 import { CliOptions } from '../types/cli';
-import { fileURLToPath } from 'node:url';
-import { resolve } from 'node:path';
-import { findGitRoot } from '../utils/fs';
 
 describe(
   'cli e2e',
@@ -22,7 +19,6 @@ describe(
     });
 
     const cliOptions: CliOptions = {
-      topmostGitRoot: TEMP_FOLDER,
       cwd: TEMP_FOLDER,
       env: {
         cwd: TEMP_FOLDER,
@@ -33,13 +29,6 @@ describe(
         stderr: process.stderr,
       },
     };
-
-    test('findGitRoot', async () => {
-      expect(await findGitRoot(TEMP_FOLDER, undefined)).toEqual(
-        resolve(TEMP_FOLDER, '../../../../../'),
-      );
-      expect(await findGitRoot(resolve(TEMP_FOLDER, 'xxx/yyy'), TEMP_FOLDER)).toEqual(TEMP_FOLDER);
-    });
 
     test('plain cli single threaded', async () => {
       await prepareTestDataFiles();

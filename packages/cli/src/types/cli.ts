@@ -4,7 +4,6 @@ export interface CliOptions {
   cwd: string;
   env: CliEnv;
   stdio: CliStdio;
-  topmostGitRoot?: string;
 }
 
 export interface CliEnv extends Record<string, string | undefined> {}

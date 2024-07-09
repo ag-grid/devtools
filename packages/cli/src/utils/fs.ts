@@ -13,28 +13,21 @@ export function isFsErrorCode<T extends string>(
   return error instanceof Error && (error as Error & { code?: string }).code === code;
 }
 
-export async function findGitRoot(
-  path: string,
-  topmostGitRoot: string | undefined,
-): Promise<string | undefined> {
-  let result: string | undefined;
-  for (let current = path; ; ) {
+export async function findGitRoot(path: string): Promise<string | undefined> {
+  let current = path;
+  for (;;) {
     try {
       const gitPath = join(current, '.git');
       if (existsSync(gitPath) && (await stat(gitPath)).isDirectory()) {
-        result = current;
+        return current;
       }
     } catch {}
     const parent = dirname(current);
     if (parent === current) {
-      break;
-    }
-    if (topmostGitRoot && relative(topmostGitRoot, parent).startsWith(DOT_DOT_SLASH)) {
-      break;
+      return undefined;
     }
     current = parent;
   }
-  return result;
 }
 
 export async function findSourceFiles(
