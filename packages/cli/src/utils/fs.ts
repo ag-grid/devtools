@@ -11,6 +11,7 @@ export function isFsErrorCode<T extends string>(
 
 export interface GitRootAndGitIgnoreFiles {
   gitRoot: string;
+  hasGitRoot: boolean;
   gitIgnoreFiles: string[];
 }
 
@@ -19,6 +20,7 @@ export async function loadGitRootAndGitIgnoreFiles(
 ): Promise<GitRootAndGitIgnoreFiles> {
   const gitIgnoreFiles: string[] = [];
   let gitRoot: string = path;
+  let hasGitRoot = false;
 
   const loadParentGitIgnoreFiles = async (current: string): Promise<void> => {
     current = resolve(current);
@@ -34,6 +36,7 @@ export async function loadGitRootAndGitIgnoreFiles(
 
     try {
       await stat(join(current, '.git'));
+      hasGitRoot = true;
     } catch {
       // .git directory does not exist, we can continue
       gitRoot = resolve(current, '..');
@@ -45,7 +48,7 @@ export async function loadGitRootAndGitIgnoreFiles(
 
   await loadParentGitIgnoreFiles(resolve(path));
 
-  return { gitRoot, gitIgnoreFiles };
+  return { gitRoot, hasGitRoot, gitIgnoreFiles };
 }
 
 export async function findSourceFiles(

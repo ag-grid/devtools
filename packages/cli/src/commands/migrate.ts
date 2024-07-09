@@ -270,9 +270,9 @@ async function migrate(
 
   cwd = resolve(cwd);
 
-  const { gitRoot, gitIgnoreFiles } = await loadGitRootAndGitIgnoreFiles(cwd);
+  const { hasGitRoot, gitRoot, gitIgnoreFiles } = await loadGitRootAndGitIgnoreFiles(cwd);
 
-  if (!allowUntracked && !gitRoot) {
+  if (!allowUntracked && !hasGitRoot) {
     throw new CliError(
       'No git repository found',
       'To run this command outside a git repository, use the --allow-untracked option',
