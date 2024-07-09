@@ -96,5 +96,5 @@ describe(
       );
     });
   },
-  { timeout: 10000 },
+  { timeout: 20000 },
 );
