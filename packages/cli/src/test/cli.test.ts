@@ -1,5 +1,6 @@
 import { beforeAll, expect, describe, test } from 'vitest';
 import { cli } from '../cli';
+
 import {
   TEMP_FOLDER,
   loadExpectedSource,
@@ -9,6 +10,9 @@ import {
   prepareTestDataFiles,
 } from './test-utils';
 import { CliOptions } from '../types/cli';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import { findGitRoot } from '../utils/fs';
 
 describe(
   'cli e2e',
@@ -18,6 +22,7 @@ describe(
     });
 
     const cliOptions: CliOptions = {
+      topmostGitRoot: TEMP_FOLDER,
       cwd: TEMP_FOLDER,
       env: {
         cwd: TEMP_FOLDER,
@@ -29,6 +34,13 @@ describe(
       },
     };
 
+    test('findGitRoot', async () => {
+      expect(await findGitRoot(TEMP_FOLDER, undefined)).toEqual(
+        resolve(TEMP_FOLDER, '../../../../../'),
+      );
+      expect(await findGitRoot(resolve(TEMP_FOLDER, 'xxx/yyy'), TEMP_FOLDER)).toEqual(TEMP_FOLDER);
+    });
+
     test('plain cli single threaded', async () => {
       await prepareTestDataFiles();
       await cli(['migrate', '--num-threads=0', '--allow-untracked', '--from=30.0.0'], cliOptions);
@@ -36,6 +48,9 @@ describe(
 
       // Test .gitignore support
       expect(await loadInputSource('gitignored.js')).toEqual(await loadTempSource('gitignored.js'));
+      expect(await loadInputSource('gitignored-folder/file.js')).toEqual(
+        await loadTempSource('gitignored-folder/file.js'),
+      );
     });
 
     test('plain cli multi-threaded', async () => {
@@ -45,6 +60,9 @@ describe(
 
       // Test .gitignore support
       expect(await loadInputSource('gitignored.js')).toEqual(await loadTempSource('gitignored.js'));
+      expect(await loadInputSource('gitignored-folder/file.js')).toEqual(
+        await loadTempSource('gitignored-folder/file.js'),
+      );
     });
 
     test('userConfig single-threaded', async () => {
@@ -82,17 +100,6 @@ describe(
 
       expect(await loadExpectedSource('custom-imports.js')).toEqual(
         await loadTempSource('custom-imports.js'),
-      );
-    });
-
-    test('.gitignore support without --allow-untracked', async () => {
-      await prepareTestDataFiles();
-      await cli(['migrate', '--from=30.0.0'], cliOptions);
-
-      expect(await loadInputSource('gitignored.js')).toEqual(await loadTempSource('gitignored.js'));
-
-      expect(await loadInputSource('gitignored-folder/file.js')).toEqual(
-        await loadTempSource('gitignored-folder/file.js'),
       );
     });
   },

@@ -1,6 +1,10 @@
-import { resolve, join } from 'node:path';
-import { globby } from 'globby';
+import { resolve, join, relative, dirname, sep as pathSeparator } from 'node:path';
 import { stat } from 'fs/promises';
+import { existsSync, readFileSync } from 'fs';
+import { glob } from 'glob';
+import createIgnore, { Ignore } from 'ignore';
+
+const DOT_DOT_SLASH = '..' + pathSeparator;
 
 export function isFsErrorCode<T extends string>(
   error: unknown,
@@ -9,65 +13,105 @@ export function isFsErrorCode<T extends string>(
   return error instanceof Error && (error as Error & { code?: string }).code === code;
 }
 
-export interface GitRootAndGitIgnoreFiles {
-  gitRoot: string;
-  hasGitRoot: boolean;
-  gitIgnoreFiles: string[];
-}
-
-export async function loadGitRootAndGitIgnoreFiles(
+export async function findGitRoot(
   path: string,
-): Promise<GitRootAndGitIgnoreFiles> {
-  const gitIgnoreFiles: string[] = [];
-  let gitRoot: string = path;
-  let hasGitRoot = false;
-
-  const loadParentGitIgnoreFiles = async (current: string): Promise<void> => {
-    current = resolve(current);
-    gitRoot = current;
+  topmostGitRoot: string | undefined,
+): Promise<string | undefined> {
+  let result: string | undefined;
+  for (let current = path; ; ) {
     try {
-      const currentGitIgnore = join(current, '.gitignore');
-      const gitignoreFile = await stat(currentGitIgnore);
-      if (gitignoreFile.isFile()) {
-        // We found a valid parent .gitignore to process
-        gitIgnoreFiles.unshift(currentGitIgnore);
+      const gitPath = join(current, '.git');
+      if (existsSync(gitPath) && (await stat(gitPath)).isDirectory()) {
+        result = current;
       }
     } catch {}
-
-    try {
-      await stat(join(current, '.git'));
-      hasGitRoot = true;
-    } catch {
-      // .git directory does not exist, we can continue
-      gitRoot = resolve(current, '..');
-      if (gitRoot !== current) {
-        loadParentGitIgnoreFiles(gitRoot);
-      }
+    const parent = dirname(current);
+    if (parent === current) {
+      break;
     }
-  };
-
-  await loadParentGitIgnoreFiles(resolve(path));
-
-  return { gitRoot, hasGitRoot, gitIgnoreFiles };
+    if (topmostGitRoot && relative(topmostGitRoot, parent).startsWith(DOT_DOT_SLASH)) {
+      break;
+    }
+    current = parent;
+  }
+  return result;
 }
 
 export async function findSourceFiles(
   path: string,
   extensions: string[],
-  gitIgnoreFiles: string[],
+  gitRoot: string | undefined,
 ): Promise<Array<string>> {
   path = resolve(path);
 
-  return globby(
-    extensions.map((ext) => `*${ext}`),
+  let files = await glob(
+    extensions.map((ext) => `**/*${ext}`),
     {
-      onlyFiles: true,
-      absolute: true,
-      suppressErrors: true,
+      dot: true,
       cwd: path,
-      gitignore: true,
-      ignoreFiles: [...gitIgnoreFiles, '.gitignore'],
+      nodir: true,
+      absolute: true,
       ignore: ['**/node_modules/**', '**/.git/**'],
     },
   );
+
+  files.sort((a, b) => a.localeCompare(b));
+
+  interface DirGitignore {
+    directory: string;
+    ignore: Ignore;
+    parent: DirGitignore | null | undefined;
+  }
+
+  const ignoreMap = new Map<string, DirGitignore | null>();
+
+  function getParentIgnorer(directory: string): DirGitignore | null {
+    const parent = dirname(directory);
+    return parent !== directory ? getIgnorer(parent) : null;
+  }
+
+  function getIgnorer(directory: string): DirGitignore | null {
+    let result = ignoreMap.get(directory);
+    if (result !== undefined) {
+      return result;
+    }
+
+    result = null;
+
+    if (!gitRoot || !relative(gitRoot, directory).startsWith(DOT_DOT_SLASH)) {
+      let content: string | undefined;
+      const gitignorePath = join(directory, '.gitignore');
+      try {
+        content = readFileSync(gitignorePath, 'utf-8');
+      } catch {}
+
+      result = content
+        ? { directory, ignore: createIgnore().add(content), parent: undefined }
+        : getParentIgnorer(directory);
+    }
+
+    ignoreMap.set(directory, result);
+    return result;
+  }
+
+  function isIgnored(path: string, ignorer: DirGitignore | null) {
+    if (!ignorer) {
+      return false;
+    }
+    const testResult = ignorer.ignore.test(relative(ignorer.directory, path));
+    if (testResult.ignored) {
+      return true;
+    }
+    if (testResult.unignored) {
+      return false;
+    }
+    if (ignorer.parent === undefined) {
+      ignorer.parent = getParentIgnorer(ignorer.directory);
+    }
+    return isIgnored(path, ignorer.parent);
+  }
+
+  files = files.filter((file) => !isIgnored(file, getIgnorer(dirname(file))));
+
+  return files;
 }

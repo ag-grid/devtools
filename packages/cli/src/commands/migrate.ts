@@ -21,9 +21,9 @@ import semver from 'semver';
 import { type CliEnv, type CliOptions } from '../types/cli';
 import { type WritableStream } from '../types/io';
 import { CliArgsError, CliError } from '../utils/cli';
-import { findSourceFiles, loadGitRootAndGitIgnoreFiles } from '../utils/fs';
+import { findSourceFiles, findGitRoot } from '../utils/fs';
 import { findInGitRepository, getUncommittedGitFiles } from '../utils/git';
-import { normalize, sep as pathSeparator, resolve, relative } from 'node:path';
+import { resolve, relative } from 'node:path';
 import { getCliCommand, getCliPackageVersion } from '../utils/pkg';
 import { green, indentErrorMessage, log } from '../utils/stdio';
 import { Worker, WorkerTaskQueue, type WorkerOptions } from '../utils/worker';
@@ -266,14 +266,14 @@ async function migrate(
     userConfigPath,
     input,
   } = args;
-  let { cwd, env, stdio } = options;
+  let { cwd, env, stdio, topmostGitRoot } = options;
   const { stdout, stderr } = stdio;
 
   cwd = resolve(cwd);
 
-  const { hasGitRoot, gitRoot, gitIgnoreFiles } = await loadGitRootAndGitIgnoreFiles(cwd);
+  const gitRoot = await findGitRoot(cwd, topmostGitRoot);
 
-  if (!allowUntracked && !hasGitRoot) {
+  if (!allowUntracked && !gitRoot) {
     throw new CliError(
       'No git repository found',
       'To run this command outside a git repository, use the --allow-untracked option',
@@ -284,31 +284,19 @@ async function migrate(
     ? (await getGitSourceFiles(gitRoot)).map((path) => resolve(gitRoot, path))
     : null;
 
-  const hasCustomFileList = input.length > 0;
+  let inputFilePaths: string[];
 
-  const inputFilePaths = hasCustomFileList
-    ? input.map((path) => resolve(cwd, path))
-    : await findSourceFiles(cwd, SOURCE_FILE_EXTENSIONS, gitIgnoreFiles);
+  if (input.length > 0) {
+    inputFilePaths = input.map((path) => resolve(cwd, path));
+  } else {
+    inputFilePaths = await findSourceFiles(cwd, SOURCE_FILE_EXTENSIONS, gitRoot);
+  }
 
   if (!allowUntracked) {
     const trackedFilePaths = gitSourceFilePaths ? new Set(gitSourceFilePaths) : null;
     let untrackedInputFiles = trackedFilePaths
       ? inputFilePaths.filter((path) => !trackedFilePaths.has(path))
       : inputFilePaths;
-
-    if (!hasCustomFileList) {
-      untrackedInputFiles = untrackedInputFiles.filter((path) => {
-        // check if path is in the gitRoot
-        const relativePath = normalize(relative(gitRoot ?? '', path));
-        if (relativePath.startsWith('..')) {
-          return false; // path is not in our gitRoot
-        }
-        if (!relativePath.includes(pathSeparator)) {
-          return false; // file is in gitRoot
-        }
-        return true;
-      });
-    }
 
     if (untrackedInputFiles.length > 0)
       throw new CliError(
@@ -321,7 +309,7 @@ async function migrate(
       );
   }
 
-  if (hasGitRoot && !allowDirty) {
+  if (gitRoot && !allowDirty) {
     const inputFileSet = new Set(inputFilePaths);
     const uncommittedInputFiles = (await getUncommittedGitFiles(gitRoot))
       .map((path) => resolve(gitRoot, path))

@@ -1,8 +1,7 @@
-import { readFile, cp, mkdir, rmdir } from 'fs/promises';
+import { readFile, cp, mkdir, rm } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { dynamicRequire } from '@ag-grid-devtools/utils';
-import { cli } from '../cli';
 import prettier from 'prettier';
 
 export const ROOT_FOLDER = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
@@ -27,12 +26,12 @@ export async function loadTempSource(name: string) {
 
 export async function prepareTestDataFiles() {
   try {
-    await rmdir(TEMP_FOLDER, { recursive: true });
+    await rm(TEMP_FOLDER, { recursive: true });
   } catch {
     // already deleted
   }
 
-  // create a .git directory to simulate a git repository root
+  // create a .git directory to simulate a git repository
   await mkdir(path.join(TEMP_FOLDER, '.git'), { recursive: true });
 
   const inputPath = path.resolve(ROOT_FOLDER, INPUT_FOLDER);
