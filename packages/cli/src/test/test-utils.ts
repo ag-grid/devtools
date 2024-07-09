@@ -5,10 +5,15 @@ import { dynamicRequire } from '@ag-grid-devtools/utils';
 import { cli } from '../cli';
 import prettier from 'prettier';
 
-export const ROOT_FOLDER = path.dirname(fileURLToPath(import.meta.url));
+export const ROOT_FOLDER = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
 export const TEMP_FOLDER = path.resolve(ROOT_FOLDER, '_temp');
 export const INPUT_FOLDER = path.resolve(ROOT_FOLDER, 'input-files');
 export const EXPECTED_FOLDER = path.resolve(ROOT_FOLDER, 'expected');
+
+export async function loadInputSource(name: string) {
+  const filepath = path.resolve(INPUT_FOLDER, name);
+  return prettier.format(await readFile(filepath, 'utf-8'), { filepath });
+}
 
 export async function loadExpectedSource(name: string) {
   const filepath = path.resolve(EXPECTED_FOLDER, name);
@@ -27,13 +32,25 @@ export async function prepareTestDataFiles() {
     // already deleted
   }
 
-  await mkdir(TEMP_FOLDER, { recursive: true });
+  // create a .git directory to simulate a git repository root
+  await mkdir(path.join(TEMP_FOLDER, '.git'), { recursive: true });
 
-  await cp(path.resolve(ROOT_FOLDER, INPUT_FOLDER), TEMP_FOLDER, {
-    recursive: true,
-    force: true,
-    filter: (src) => !src.includes('README.md'),
-  });
+  const inputPath = path.resolve(ROOT_FOLDER, INPUT_FOLDER);
+
+  await Promise.all([
+    // copy all files from the input folder to the temp folder
+    cp(inputPath, TEMP_FOLDER, {
+      recursive: true,
+      force: true,
+      filter: (src) => {
+        const filename = path.basename(src);
+        return filename !== '_.gitignore' && filename !== 'README.md';
+      },
+    }),
+
+    // copy the _.gitignore file renamed as .gitignore
+    cp(path.resolve(inputPath, '_.gitignore'), path.resolve(TEMP_FOLDER, '.gitignore')),
+  ]);
 }
 
 export function patchDynamicRequire() {

@@ -54,6 +54,7 @@
     "@types/node": "20.14.10",
     "@types/semver": "7.5.8",
     "diff": "5.2.0",
+    "globby": "14.0.2",
     "graceful-fs": "4.2.11",
     "semver": "7.6.2",
     "vite-plugin-dts": "3.9.1"

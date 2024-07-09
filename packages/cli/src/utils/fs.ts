@@ -1,11 +1,6 @@
-import gracefulFs, { type Stats } from 'graceful-fs';
-import { join, parse } from 'node:path';
-import { promisify } from 'node:util';
-
-export const readdir = promisify(gracefulFs.readdir);
-export const readFile = promisify(gracefulFs.readFile);
-export const writeFile = promisify(gracefulFs.writeFile);
-export const stat = promisify(gracefulFs.stat);
+import { resolve, join } from 'node:path';
+import { globby } from 'globby';
+import { stat } from 'fs/promises';
 
 export function isFsErrorCode<T extends string>(
   error: unknown,
@@ -14,46 +9,62 @@ export function isFsErrorCode<T extends string>(
   return error instanceof Error && (error as Error & { code?: string }).code === code;
 }
 
-export async function findInDirectory(
-  path: string,
-  predicate: (path: string, stats: Stats) => boolean,
-): Promise<Array<string>> {
-  const filenames = await readdir(path);
-  return Promise.all(
-    filenames.map((filename) =>
-      stat(join(path, filename)).then((stats) => {
-        const filePath = join(path, filename);
-        if (!predicate(filePath, stats)) return [];
-        if (!stats.isDirectory()) return [filename];
-        return findInDirectory(filePath, predicate).then((children) =>
-          children.map((childFilename) => join(filename, childFilename)),
-        );
-      }),
-    ),
-  ).then((results) => results.flat());
+export interface GitRootAndGitIgnoreFiles {
+  gitRoot: string;
+  gitIgnoreFiles: string[];
 }
 
-export async function findAncestorDirectoryContaining(
-  cwd: string,
-  filename: string,
-  predicate: (path: string, stats: Stats) => boolean,
-): Promise<string | null> {
-  const filePath = join(cwd, filename);
-  const stats = await (async () => {
+export async function loadGitRootAndGitIgnoreFiles(
+  path: string,
+): Promise<GitRootAndGitIgnoreFiles> {
+  const gitIgnoreFiles: string[] = [];
+  let gitRoot: string = path;
+
+  const loadParentGitIgnoreFiles = async (current: string): Promise<void> => {
+    current = resolve(current);
+    gitRoot = current;
     try {
-      return await stat(filePath);
-    } catch (error) {
-      if (isFsErrorCode(error, 'ENOENT')) {
-        return null;
+      const currentGitIgnore = join(current, '.gitignore');
+      const gitignoreFile = await stat(currentGitIgnore);
+      if (gitignoreFile.isFile()) {
+        // We found a valid parent .gitignore to process
+        gitIgnoreFiles.unshift(currentGitIgnore);
       }
-      throw error;
+    } catch {}
+
+    try {
+      await stat(join(current, '.git'));
+    } catch {
+      // .git directory does not exist, we can continue
+      gitRoot = resolve(current, '..');
+      if (gitRoot !== current) {
+        loadParentGitIgnoreFiles(gitRoot);
+      }
     }
-  })();
-  if (stats) {
-    if (!predicate || predicate(filePath, stats)) return cwd;
-    return null;
-  }
-  const { dir: dirname, root } = parse(cwd);
-  if (cwd === root) return null;
-  return findAncestorDirectoryContaining(dirname, filename, predicate);
+  };
+
+  await loadParentGitIgnoreFiles(resolve(path));
+
+  return { gitRoot, gitIgnoreFiles };
+}
+
+export async function findSourceFiles(
+  path: string,
+  extensions: string[],
+  gitIgnoreFiles: string[],
+): Promise<Array<string>> {
+  path = resolve(path);
+
+  return globby(
+    extensions.map((ext) => `*${ext}`),
+    {
+      onlyFiles: true,
+      absolute: true,
+      suppressErrors: true,
+      cwd: path,
+      gitignore: true,
+      ignoreFiles: [...gitIgnoreFiles, '.gitignore'],
+      ignore: ['**/node_modules/**', '**/.git/**'],
+    },
+  );
 }

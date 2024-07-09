@@ -1,1 +1,1 @@
-export { basename, extname, resolve, relative } from 'node:path';
+export { dirname, basename, extname, resolve, relative } from 'node:path';
