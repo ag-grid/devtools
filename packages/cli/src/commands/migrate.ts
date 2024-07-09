@@ -23,7 +23,7 @@ import { type WritableStream } from '../types/io';
 import { CliArgsError, CliError } from '../utils/cli';
 import { findSourceFiles, loadGitRootAndGitIgnoreFiles } from '../utils/fs';
 import { findInGitRepository, getUncommittedGitFiles } from '../utils/git';
-import { dirname, resolve, relative } from '../utils/path';
+import { normalize, sep as pathSeparator, resolve, relative } from 'node:path';
 import { getCliCommand, getCliPackageVersion } from '../utils/pkg';
 import { green, indentErrorMessage, log } from '../utils/stdio';
 import { Worker, WorkerTaskQueue, type WorkerOptions } from '../utils/worker';
@@ -296,11 +296,16 @@ async function migrate(
       : inputFilePaths;
 
     if (!hasCustomFileList) {
-      // We want to filter the untrackedInputFiles in the cwd directory,
-      // as we assume, as globby does, that the cwd files have to be included also if the cwd is ignored
       untrackedInputFiles = untrackedInputFiles.filter((path) => {
-        console.log(dirname(path), cwd);
-        return resolve(dirname(path)) !== cwd;
+        // check if path is in the gitRoot
+        const relativePath = normalize(relative(gitRoot ?? '', path));
+        if (relativePath.startsWith('..')) {
+          return false; // path is not in our gitRoot
+        }
+        if (!relativePath.includes(pathSeparator)) {
+          return false; // file is in gitRoot
+        }
+        return true;
       });
     }
 
