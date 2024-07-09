@@ -48,8 +48,6 @@ export async function findSourceFiles(
     },
   );
 
-  files.sort((a, b) => a.localeCompare(b));
-
   interface DirGitignore {
     directory: string;
     ignore: Ignore;
@@ -105,6 +103,8 @@ export async function findSourceFiles(
   }
 
   files = files.filter((file) => !isIgnored(file, getIgnorer(dirname(file))));
+
+  files.sort((a, b) => a.localeCompare(b));
 
   return files;
 }
