@@ -104,7 +104,8 @@ Options:
                               See https://ag-grid.com/javascript-data-grid/codemods/#configuration-file
 
   Additional arguments:
-    [<file>...]               List of input files to operate on (defaults to all source files in the current working directory)
+    [<file>...]               List of input files to operate on.
+                              Defaults to all source files in the current working directory excluding patterns in .gitignore
 
   Other options:
     --verbose, -v             Show additional log output
