@@ -320,7 +320,7 @@ async function migrate(
       );
   }
 
-  if (gitRoot && !allowDirty) {
+  if (hasGitRoot && !allowDirty) {
     const inputFileSet = new Set(inputFilePaths);
     const uncommittedInputFiles = (await getUncommittedGitFiles(gitRoot))
       .map((path) => resolve(gitRoot, path))
