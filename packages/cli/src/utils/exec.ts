@@ -22,7 +22,13 @@ export function execCommand(
           stderr: Buffer.concat(stderrChunks).toString('utf8'),
         });
       } else {
-        reject(new Error(`Command "${command} ${args.join(' ')}" exited with code ${exitCode}`));
+        const error = new Error(
+          `Command "${command} ${args.join(' ')}" exited with code ${exitCode}`,
+        );
+        try {
+          (error as any).stderr = Buffer.concat(stderrChunks).toString('utf8');
+        } catch {}
+        reject(error);
       }
     });
   });
