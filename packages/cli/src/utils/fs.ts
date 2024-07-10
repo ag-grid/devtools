@@ -33,6 +33,7 @@ export async function findGitRoot(path: string): Promise<string | undefined> {
 export async function findSourceFiles(
   path: string,
   extensions: string[],
+  skipFiles: string[],
   gitRoot: string | undefined,
 ): Promise<Array<string>> {
   path = resolve(path);
@@ -47,6 +48,11 @@ export async function findSourceFiles(
       ignore: ['**/node_modules/**', '**/.git/**'],
     },
   );
+
+  if (skipFiles.length > 0) {
+    const skipFilesSet = new Set(skipFiles);
+    files = files.filter((file) => !skipFilesSet.has(file));
+  }
 
   interface DirGitignore {
     directory: string;

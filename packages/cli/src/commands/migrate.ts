@@ -134,11 +134,43 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
       arg = firstArg;
     }
     switch (arg) {
+      case '--allow-untracked':
+      case '-u':
+        options.allowUntracked = true;
+        break;
+      case '--no-allow-untracked':
+        options.allowUntracked = false;
+        break;
+
+      case '--allow-dirty':
+      case '-d':
+        options.allowDirty = true;
+        break;
+      case '--no-allow-dirty':
+        options.allowDirty = false;
+        break;
+
+      case '--dry-run':
+        options.dryRun = true;
+        break;
+      case '--no-dry-run':
+        options.dryRun = false;
+        break;
+
+      case '--verbose':
+        options.verbose = true;
+        break;
+      case '--no-verbose':
+        options.verbose = false;
+        break;
+
       case '--from': {
-        const value = args.shift();
+        let value = args.shift();
         if (!value || value.startsWith('-')) {
           throw new CliArgsError(`Missing value for ${arg}`, usage(env));
         }
+        value = semverCoerce(value);
+        console.log(value);
         if (!semver.valid(value)) {
           throw new CliArgsError(
             `Invalid ${arg} migration starting version`,
@@ -170,14 +202,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         options.to = value;
         break;
       }
-      case '--allow-untracked':
-      case '-u':
-        options.allowUntracked = true;
-        break;
-      case '--allow-dirty':
-      case '-d':
-        options.allowDirty = true;
-        break;
+
       case '--num-threads': {
         const value = args.shift();
         if (!value || value.startsWith('-')) {
@@ -206,12 +231,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         }
         break;
       }
-      case '--dry-run':
-        options.dryRun = true;
-        break;
-      case '--verbose':
-        options.verbose = true;
-        break;
+
       case '--help':
       case '-h':
         options.help = true;
@@ -249,6 +269,10 @@ export async function cli(args: MigrateCommandArgs, options: CliOptions): Promis
 
 function printUsage(output: WritableStream, env: CliEnv): Promise<void> {
   return log(output, usage(env));
+}
+
+function semverCoerce(version: string): string {
+  return semver.coerce(version)?.version ?? version;
 }
 
 async function migrate(
@@ -289,7 +313,11 @@ async function migrate(
   if (input.length > 0) {
     inputFilePaths = input.map((path) => resolve(cwd, path));
   } else {
-    inputFilePaths = await findSourceFiles(cwd, SOURCE_FILE_EXTENSIONS, gitRoot);
+    const skipFiles: string[] = [];
+    if (userConfigPath) {
+      skipFiles.push(userConfigPath);
+    }
+    inputFilePaths = await findSourceFiles(cwd, SOURCE_FILE_EXTENSIONS, skipFiles, gitRoot);
   }
 
   if (!allowUntracked) {
