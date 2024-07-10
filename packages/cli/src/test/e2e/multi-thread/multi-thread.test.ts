@@ -5,7 +5,7 @@ import { CliE2ETestEnv } from '../e2e-test-utils';
 const env = new CliE2ETestEnv(import.meta.url);
 
 test(
-  'cli e2e - single thread',
+  'cli e2e - multi thread',
   async () => {
     await env.init();
     await cli(['migrate', '--num-threads=3', '--allow-untracked', '--from=30.0.0'], env.cliOptions);

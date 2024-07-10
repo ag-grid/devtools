@@ -5,7 +5,7 @@ import { CliE2ETestEnv } from '../e2e-test-utils';
 const env = new CliE2ETestEnv(import.meta.url);
 
 test(
-  'cli e2e - gitignore simple',
+  'cli e2e - gitignore no allow untracked',
   async () => {
     try {
       await env.init({ gitInit: true });
@@ -27,6 +27,7 @@ test(
     // unchanged files
 
     expect(await env.loadInputSrc('gitignored.js')).toEqual(await env.loadTempSrc('gitignored.js'));
+
     expect(await env.loadInputSrc('gitignored/file.js')).toEqual(
       await env.loadTempSrc('gitignored/file.js'),
     );

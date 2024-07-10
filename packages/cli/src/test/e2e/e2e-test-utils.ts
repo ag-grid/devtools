@@ -1,4 +1,4 @@
-import { readFile, cp, mkdir, rm } from 'fs/promises';
+import { readFile, cp, mkdir, rm, writeFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { dynamicRequire } from '@ag-grid-devtools/utils';
@@ -121,6 +121,15 @@ export class CliE2ETestEnv {
 
   public async loadTempSrc(name: string) {
     return loadSourceFile(path.resolve(this.tempFolder, name));
+  }
+
+  public async writeTempSrc(filename: string, content: string) {
+    await mkdir(path.dirname(path.resolve(this.tempFolder, filename)), { recursive: true });
+    await writeFile(path.resolve(this.tempFolder, filename), content);
+  }
+
+  public async addGitFile(filename: string) {
+    await execCommand('git', ['add', filename], { cwd: this.tempFolder });
   }
 }
 
