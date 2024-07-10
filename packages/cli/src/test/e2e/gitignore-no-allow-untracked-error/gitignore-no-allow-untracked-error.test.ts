@@ -11,7 +11,7 @@ test(
     try {
       await env.init({ gitInit: true });
 
-      await env.writeTempSrc('untracked.js', 'console.log("untracked")');
+      await env.writeTempSrc('untracked.js', '// untracked');
 
       await cli(['migrate', '--from=30.0.0'], env.cliOptions);
     } catch (e) {

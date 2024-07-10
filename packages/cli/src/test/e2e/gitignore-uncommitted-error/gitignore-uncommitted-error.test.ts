@@ -11,7 +11,7 @@ test(
     try {
       await env.init({ gitInit: true });
 
-      await env.writeTempSrc('uncommitted.js', 'console.log("uncommitted")');
+      await env.writeTempSrc('uncommitted.js', `// uncommitted`);
       await env.addGitFile('uncommitted.js');
 
       await cli(['migrate', '--from=30.0.0'], env.cliOptions);
