@@ -56,6 +56,15 @@ export class CliE2ETestEnv {
     }
   }
 
+  public async execCommand(command: string, args: string[], options?: { cwd?: string }) {
+    try {
+      return await execCommand(command, args, { cwd: this.tempFolder, ...options });
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+
   public async init({ gitInit = false }: { gitInit?: boolean } = {}) {
     patchDynamicRequire();
 
@@ -64,7 +73,7 @@ export class CliE2ETestEnv {
     if (gitInit) {
       await mkdir(this.tempFolder, { recursive: true });
 
-      await execCommand('git', ['init'], { cwd: this.tempFolder });
+      await this.execCommand('git', ['init']);
     } else {
       // create a .git directory to simulate a git repository
       await mkdir(path.join(this.tempFolder, '.git'), { recursive: true });
@@ -104,8 +113,8 @@ export class CliE2ETestEnv {
     await Promise.all(promises);
 
     if (gitInit) {
-      await execCommand('git', ['add', '.'], { cwd: this.tempFolder });
-      await execCommand('git', ['commit', '-m', 'Initial commit'], { cwd: this.tempFolder });
+      await this.execCommand('git', ['add', '.']);
+      await this.execCommand('git', ['commit', '-m', 'Initial commit']);
     }
 
     return this;
@@ -129,7 +138,7 @@ export class CliE2ETestEnv {
   }
 
   public async addGitFile(filename: string) {
-    await execCommand('git', ['add', filename], { cwd: this.tempFolder });
+    await this.execCommand('git', ['add', filename]);
   }
 }
 
