@@ -181,9 +181,14 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         break;
       }
       case '--to': {
-        const value = args.shift();
+        let value = args.shift();
         if (!value || value.startsWith('-')) {
           throw new CliArgsError(`Missing value for ${arg}`, usage(env));
+        }
+        if (value === 'latest') {
+          value = LATEST_VERSION;
+        } else {
+          value = semverCoerce(value);
         }
         if (!versions.some(({ version }) => version === value)) {
           throw new CliArgsError(
