@@ -9,7 +9,6 @@ import {
   CodemodTaskInput,
   CodemodTaskWorkerResult,
   TaskRunnerEnvironment,
-  UserConfig,
   type VersionManifest,
 } from '@ag-grid-devtools/types';
 import { createFsHelpers } from '@ag-grid-devtools/worker-utils';
@@ -22,9 +21,9 @@ import semver from 'semver';
 import { type CliEnv, type CliOptions } from '../types/cli';
 import { type WritableStream } from '../types/io';
 import { CliArgsError, CliError } from '../utils/cli';
-import { findInDirectory } from '../utils/fs';
-import { findInGitRepository, getGitProjectRoot, getUncommittedGitFiles } from '../utils/git';
-import { basename, extname, resolve, relative } from '../utils/path';
+import { findSourceFiles, findGitRoot } from '../utils/fs';
+import { findInGitRepository, getUncommittedGitFiles } from '../utils/git';
+import { resolve, relative } from 'node:path';
 import { getCliCommand, getCliPackageVersion } from '../utils/pkg';
 import { green, indentErrorMessage, log } from '../utils/stdio';
 import { Worker, WorkerTaskQueue, type WorkerOptions } from '../utils/worker';
@@ -105,7 +104,8 @@ Options:
                               See https://ag-grid.com/javascript-data-grid/codemods/#configuration-file
 
   Additional arguments:
-    [<file>...]               List of input files to operate on (defaults to all source files in the current working directory)
+    [<file>...]               List of input files to operate on.
+                              Defaults to all source files in the current working directory excluding patterns in .gitignore
 
   Other options:
     --verbose, -v             Show additional log output
@@ -266,32 +266,38 @@ async function migrate(
     userConfigPath,
     input,
   } = args;
-  const { cwd, env, stdio } = options;
+  let { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
 
-  const gitProjectRoot = await getGitProjectRoot(cwd);
+  cwd = resolve(cwd);
 
-  if (!allowUntracked && !gitProjectRoot) {
+  const gitRoot = await findGitRoot(cwd);
+
+  if (!allowUntracked && !gitRoot) {
     throw new CliError(
       'No git repository found',
       'To run this command outside a git repository, use the --allow-untracked option',
     );
   }
 
-  const gitSourceFilePaths = gitProjectRoot
-    ? (await getGitSourceFiles(gitProjectRoot)).map((path) => resolve(gitProjectRoot, path))
+  const gitSourceFilePaths = gitRoot
+    ? (await getGitSourceFiles(gitRoot)).map((path) => resolve(gitRoot, path))
     : null;
 
-  const inputFilePaths =
-    input.length > 0
-      ? input.map((path) => resolve(cwd, path))
-      : (await getProjectSourceFiles(cwd)).map((path) => resolve(cwd, path));
+  let inputFilePaths: string[];
+
+  if (input.length > 0) {
+    inputFilePaths = input.map((path) => resolve(cwd, path));
+  } else {
+    inputFilePaths = await findSourceFiles(cwd, SOURCE_FILE_EXTENSIONS, gitRoot);
+  }
 
   if (!allowUntracked) {
     const trackedFilePaths = gitSourceFilePaths ? new Set(gitSourceFilePaths) : null;
-    const untrackedInputFiles = trackedFilePaths
+    let untrackedInputFiles = trackedFilePaths
       ? inputFilePaths.filter((path) => !trackedFilePaths.has(path))
       : inputFilePaths;
+
     if (untrackedInputFiles.length > 0)
       throw new CliError(
         'Untracked input files',
@@ -303,10 +309,10 @@ async function migrate(
       );
   }
 
-  if (gitProjectRoot && !allowDirty) {
+  if (gitRoot && !allowDirty) {
     const inputFileSet = new Set(inputFilePaths);
-    const uncommittedInputFiles = (await getUncommittedGitFiles(gitProjectRoot))
-      .map((path) => resolve(gitProjectRoot, path))
+    const uncommittedInputFiles = (await getUncommittedGitFiles(gitRoot))
+      .map((path) => resolve(gitRoot, path))
       .filter((path) => inputFileSet.has(path));
     if (uncommittedInputFiles.length > 0) {
       throw new CliError(
@@ -628,15 +634,6 @@ function formatFileErrors(warningResults: Array<{ path: string; errors: Error[] 
     .join('\n');
 }
 
-function getProjectSourceFiles(projectRoot: string): Promise<Array<string>> {
-  return findInDirectory(
-    projectRoot,
-    (filePath, stats) =>
-      (stats.isDirectory() && basename(filePath) !== 'node_modules') ||
-      (stats.isFile() && isSourceFile(filePath)),
-  );
-}
-
 function getGitSourceFiles(projectRoot: string): Promise<Array<string>> {
   return findInGitRepository(
     SOURCE_FILE_EXTENSIONS.map((extension) => `*${extension}`),
@@ -644,10 +641,6 @@ function getGitSourceFiles(projectRoot: string): Promise<Array<string>> {
       gitRepository: projectRoot,
     },
   );
-}
-
-function isSourceFile(filePath: string): boolean {
-  return SOURCE_FILE_EXTENSIONS.includes(extname(filePath));
 }
 
 function getMinorSemverVersion(version: string): string | null {

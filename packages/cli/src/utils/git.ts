@@ -1,12 +1,7 @@
 import { nonNull } from '@ag-grid-devtools/utils';
 import { execCommand } from './exec';
-import { findAncestorDirectoryContaining } from './fs';
 
 const GIT_STATUS_LINE_REGEX = /^\s*([^ ]+)\s*(.*)$/;
-
-export async function getGitProjectRoot(cwd: string): Promise<string | null> {
-  return findAncestorDirectoryContaining(cwd, '.git', (path, stats) => stats.isDirectory());
-}
 
 export async function findInGitRepository(
   filenamePatterns: Array<string>,

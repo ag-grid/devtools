@@ -1,11 +1,10 @@
-import gracefulFs, { type Stats } from 'graceful-fs';
-import { join, parse } from 'node:path';
-import { promisify } from 'node:util';
+import { resolve, join, relative, dirname, sep as pathSeparator } from 'node:path';
+import { stat } from 'fs/promises';
+import { existsSync, readFileSync } from 'fs';
+import { glob } from 'glob';
+import createIgnore, { Ignore } from 'ignore';
 
-export const readdir = promisify(gracefulFs.readdir);
-export const readFile = promisify(gracefulFs.readFile);
-export const writeFile = promisify(gracefulFs.writeFile);
-export const stat = promisify(gracefulFs.stat);
+const DOT_DOT_SLASH = '..' + pathSeparator;
 
 export function isFsErrorCode<T extends string>(
   error: unknown,
@@ -14,46 +13,96 @@ export function isFsErrorCode<T extends string>(
   return error instanceof Error && (error as Error & { code?: string }).code === code;
 }
 
-export async function findInDirectory(
-  path: string,
-  predicate: (path: string, stats: Stats) => boolean,
-): Promise<Array<string>> {
-  const filenames = await readdir(path);
-  return Promise.all(
-    filenames.map((filename) =>
-      stat(join(path, filename)).then((stats) => {
-        const filePath = join(path, filename);
-        if (!predicate(filePath, stats)) return [];
-        if (!stats.isDirectory()) return [filename];
-        return findInDirectory(filePath, predicate).then((children) =>
-          children.map((childFilename) => join(filename, childFilename)),
-        );
-      }),
-    ),
-  ).then((results) => results.flat());
+export async function findGitRoot(path: string): Promise<string | undefined> {
+  let current = path;
+  for (;;) {
+    try {
+      const gitPath = join(current, '.git');
+      if (existsSync(gitPath) && (await stat(gitPath)).isDirectory()) {
+        return current;
+      }
+    } catch {}
+    const parent = dirname(current);
+    if (parent === current) {
+      return undefined;
+    }
+    current = parent;
+  }
 }
 
-export async function findAncestorDirectoryContaining(
-  cwd: string,
-  filename: string,
-  predicate: (path: string, stats: Stats) => boolean,
-): Promise<string | null> {
-  const filePath = join(cwd, filename);
-  const stats = await (async () => {
-    try {
-      return await stat(filePath);
-    } catch (error) {
-      if (isFsErrorCode(error, 'ENOENT')) {
-        return null;
-      }
-      throw error;
-    }
-  })();
-  if (stats) {
-    if (!predicate || predicate(filePath, stats)) return cwd;
-    return null;
+export async function findSourceFiles(
+  path: string,
+  extensions: string[],
+  gitRoot: string | undefined,
+): Promise<Array<string>> {
+  path = resolve(path);
+
+  let files = await glob(
+    extensions.map((ext) => `**/*${ext}`),
+    {
+      dot: true,
+      cwd: path,
+      nodir: true,
+      absolute: true,
+      ignore: ['**/node_modules/**', '**/.git/**'],
+    },
+  );
+
+  interface DirGitignore {
+    directory: string;
+    ignore: Ignore;
+    parent: DirGitignore | null | undefined;
   }
-  const { dir: dirname, root } = parse(cwd);
-  if (cwd === root) return null;
-  return findAncestorDirectoryContaining(dirname, filename, predicate);
+
+  const ignoreCache = new Map<string, DirGitignore | null>();
+
+  function getParentIgnorer(directory: string): DirGitignore | null {
+    const parent = dirname(directory);
+    return parent !== directory ? getIgnorer(parent) : null;
+  }
+
+  function getIgnorer(directory: string): DirGitignore | null {
+    let result = ignoreCache.get(directory);
+    if (result !== undefined) {
+      return result;
+    }
+
+    result = null;
+
+    if (!gitRoot || !relative(gitRoot, directory).startsWith(DOT_DOT_SLASH)) {
+      let content: string | undefined;
+      const gitignorePath = join(directory, '.gitignore');
+      try {
+        content = readFileSync(gitignorePath, 'utf-8');
+      } catch {}
+
+      result = content
+        ? { directory, ignore: createIgnore().add(content), parent: undefined }
+        : getParentIgnorer(directory);
+    }
+
+    ignoreCache.set(directory, result);
+    return result;
+  }
+
+  function isIgnored(path: string, ignorer: DirGitignore | null) {
+    if (!ignorer) {
+      return false;
+    }
+    const testResult = ignorer.ignore.test(relative(ignorer.directory, path));
+    if (testResult.ignored) {
+      return true;
+    }
+    if (testResult.unignored) {
+      return false;
+    }
+    if (ignorer.parent === undefined) {
+      ignorer.parent = getParentIgnorer(ignorer.directory);
+    }
+    return isIgnored(path, ignorer.parent);
+  }
+
+  files = files.filter((file) => !isIgnored(file, getIgnorer(dirname(file))));
+
+  return files;
 }
