@@ -54,7 +54,7 @@ export async function findSourceFiles(
     parent: DirGitignore | null | undefined;
   }
 
-  const ignoreMap = new Map<string, DirGitignore | null>();
+  const ignoreCache = new Map<string, DirGitignore | null>();
 
   function getParentIgnorer(directory: string): DirGitignore | null {
     const parent = dirname(directory);
@@ -62,7 +62,7 @@ export async function findSourceFiles(
   }
 
   function getIgnorer(directory: string): DirGitignore | null {
-    let result = ignoreMap.get(directory);
+    let result = ignoreCache.get(directory);
     if (result !== undefined) {
       return result;
     }
@@ -81,7 +81,7 @@ export async function findSourceFiles(
         : getParentIgnorer(directory);
     }
 
-    ignoreMap.set(directory, result);
+    ignoreCache.set(directory, result);
     return result;
   }
 
@@ -103,8 +103,6 @@ export async function findSourceFiles(
   }
 
   files = files.filter((file) => !isIgnored(file, getIgnorer(dirname(file))));
-
-  files.sort((a, b) => a.localeCompare(b));
 
   return files;
 }
