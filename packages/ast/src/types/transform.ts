@@ -1,4 +1,9 @@
-import { type FsUtils } from '@ag-grid-devtools/types';
+import type {
+  UserConfig,
+  FsUtils,
+  MatchGridImportArgs,
+  MatchGridImportNameArgs,
+} from '@ag-grid-devtools/types';
 import type { NodePath, PluginObj, PluginPass, Visitor } from '@babel/core';
 import type * as BabelCore from '@babel/core';
 
@@ -12,6 +17,11 @@ export type BabelPluginWithOptions<S = PluginPass, T extends object = object> = 
 
 export type AstTransform<S extends object> = BabelPlugin<PluginPass & AstTransformContext<S>>;
 
+export interface ImportMatcherResult {
+  /** Contains the arguments passed to UserConfig.matchGridImportName, if this is a customized import */
+  fromUserConfig: MatchGridImportNameArgs | null;
+}
+
 export type AstTransformWithOptions<
   S extends object = object,
   T extends object = object,
@@ -19,19 +29,26 @@ export type AstTransformWithOptions<
 
 export interface AstTransformContext<S extends object = object> extends FileMetadata {
   opts: S;
+
+  _userConfigIsGridModuleCache?: Map<string, MatchGridImportArgs | null>;
+  _userConfigIsGridModuleExportCache?: Map<string, ImportMatcherResult | null>;
 }
 
 export interface FileMetadata {
   filename: string;
 }
 
+export interface TransformContext {
+  userConfig?: UserConfig;
+}
+
+export interface FsContext extends TransformContext {
+  fs: FsUtils;
+}
+
 export interface AstCliContext extends FsContext {
   warn(node: NodePath<AstNode> | null, message: string): void;
   fail(node: NodePath<AstNode> | null, message: string): void;
-}
-
-export interface FsContext {
-  fs: FsUtils;
 }
 
 export type AstTransformResult = {

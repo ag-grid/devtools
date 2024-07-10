@@ -23,6 +23,7 @@ import {
 } from './agGridHelpers';
 import { getAngularTemplateRootElements } from './angularHelpers';
 import { AST, VueTemplateNode } from './vueHelpers';
+import { UserConfig } from '@ag-grid-devtools/types';
 
 type Class = Types.Class;
 type ClassMethod = Types.ClassMethod;
@@ -1865,6 +1866,120 @@ describe(getGridApiReferences, () => {
       });
     });
   });
+
+  describe('userConfig', () => {
+    test('custom createGrid, vanilla js', () => {
+      const input = ast.module`
+      import { myCreateGrid } from 'my-custom-import/hello';
+      myCreateGrid(document.body, {});
+    `;
+      const program = getModuleRoot(input);
+      const statements = program.get('body');
+      const finalStatement = statements[statements.length - 1];
+      const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.js', {
+          fs: memfs,
+          userConfig: {
+            getCreateGridName(args) {
+              return args.importPath === 'my-custom-import/hello' ? 'myCreateGrid' : null;
+            },
+            matchGridImport: (args) => args.importPath === 'my-custom-import/hello',
+          },
+        }),
+      );
+      const actual =
+        gridApis &&
+        gridApis.map((gridApi) =>
+          GridApiDefinition.Js.is(gridApi) ? generate(gridApi.initializer.node) : null,
+        );
+      const expected = ['myCreateGrid(document.body, {})'];
+      expect(actual).toEqual(expected);
+    });
+
+    test('custom imports specifiers, vanilla js', () => {
+      const input = ast.module`
+      import { myCreateGrid } from '@my-custom-import/hello';
+      myCreateGrid(document.body, {});
+    `;
+      const program = getModuleRoot(input);
+      const statements = program.get('body');
+      const finalStatement = statements[statements.length - 1];
+      const reference = (finalStatement as NodePath<ExpressionStatement>).get('expression');
+      const gridApis = getGridApiReferences(
+        reference,
+        createTransformContext('./app.js', {
+          fs: memfs,
+          userConfig: {
+            matchGridImport: (args) => args.importPath === '@my-custom-import/hello',
+            matchGridImportName: (args) => args.importName === 'myCreateGrid',
+          },
+        }),
+      );
+      const actual =
+        gridApis &&
+        gridApis.map((gridApi) =>
+          GridApiDefinition.Js.is(gridApi) ? generate(gridApi.initializer.node) : null,
+        );
+      const expected = ['myCreateGrid(document.body, {})'];
+      expect(actual).toEqual(expected);
+    });
+
+    test('should allow custom imports, react', () => {
+      const input = ast.module`
+        import { MyGridReact } from 'my-custom-import/hello';
+        import { useRef } from 'react';
+
+        function MyComponent(props) {
+          const gridRef = useRef(null);
+          const resetState = useCallback(() => {
+            gridRef.current.api.resetColumnState();
+          }, []);
+          return (
+            <>
+              <MyGridReact ref={gridRef} />
+              <button onClick={resetState}>Reset State</button>
+            </>
+          );
+        }
+      `;
+      const program = getModuleRoot(input);
+      const {
+        refs: { gridApi },
+      } = matchNode(({ gridApi }) => ast.expression`${gridApi}.resetColumnState()`, {
+        gridApi: p.expression(),
+      }).find(program)!;
+      const gridApis = getGridApiReferences(
+        gridApi,
+        createTransformContext('./app.jsx', {
+          fs: memfs,
+          userConfig: {
+            matchGridImport: (input) => input.importPath === 'my-custom-import/hello',
+            matchGridImportName: (input) =>
+              input.framework === 'react' && input.importName === 'MyGridReact',
+          },
+        }),
+      );
+      const actual =
+        gridApis &&
+        gridApis.map((gridApi) =>
+          GridApiDefinition.React.is(gridApi)
+            ? {
+                element: generate(gridApi.element.node),
+                refAccessor: formatAccessorPath(gridApi.refAccessor),
+              }
+            : null,
+        );
+      const expected = [
+        {
+          element: '<MyGridReact ref={gridRef} />',
+          refAccessor: 'useRef(null).current.api',
+        },
+      ];
+      expect(actual).toEqual(expected);
+    });
+  });
 });
 
 function formatAccessorPath(accessor: AccessorPath): string {
@@ -1977,13 +2092,15 @@ function createTransformContext(
   filename: string,
   options: {
     fs: typeof memfs;
+    userConfig?: UserConfig;
   },
 ): AstTransformContext<FsContext> {
-  const { fs } = options;
+  const { fs, userConfig } = options;
   return {
     filename,
     opts: {
       fs: createMockFsHelpers(fs),
+      userConfig,
     },
   };
 }

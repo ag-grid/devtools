@@ -1,2 +1,3 @@
 /dist/
 /vitest.config.mts.timestamp-*.mjs
+_temp

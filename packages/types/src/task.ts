@@ -1,4 +1,5 @@
 import { type FsUtils } from './fs';
+import { UserConfig } from './user-config';
 
 export interface Task<I, O> {
   run(input: I, runner: TaskRunnerEnvironment): Promise<O>;
@@ -14,4 +15,5 @@ export interface WorkerTaskConfig<T> {
 
 export interface TaskRunnerEnvironment {
   fs: FsUtils;
+  userConfig: UserConfig | undefined;
 }

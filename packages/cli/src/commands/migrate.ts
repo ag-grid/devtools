@@ -1,28 +1,33 @@
 import codemods from '@ag-grid-devtools/codemods';
-import { composeCodemods, createCodemodTask } from '@ag-grid-devtools/codemod-task-utils';
+import {
+  composeCodemods,
+  createCodemodTask,
+  loadUserConfig,
+} from '@ag-grid-devtools/codemod-task-utils';
 import {
   Codemod,
   CodemodTaskInput,
   CodemodTaskWorkerResult,
+  TaskRunnerEnvironment,
   type VersionManifest,
 } from '@ag-grid-devtools/types';
 import { createFsHelpers } from '@ag-grid-devtools/worker-utils';
 import { nonNull } from '@ag-grid-devtools/utils';
 import { createTwoFilesPatch } from 'diff';
-import { join } from 'node:path';
+import { join, resolve as pathResolve } from 'node:path';
 import { cpus } from 'node:os';
 import semver from 'semver';
 
 import { type CliEnv, type CliOptions } from '../types/cli';
 import { type WritableStream } from '../types/io';
 import { CliArgsError, CliError } from '../utils/cli';
-import { findInDirectory } from '../utils/fs';
-import { findInGitRepository, getGitProjectRoot, getUncommittedGitFiles } from '../utils/git';
-import { basename, extname, resolve, relative } from '../utils/path';
+import { findSourceFiles, findGitRoot } from '../utils/fs';
+import { findInGitRepository, getUncommittedGitFiles } from '../utils/git';
+import { resolve, relative } from 'node:path';
 import { getCliCommand, getCliPackageVersion } from '../utils/pkg';
 import { green, indentErrorMessage, log } from '../utils/stdio';
 import { Worker, WorkerTaskQueue, type WorkerOptions } from '../utils/worker';
-import { requireDynamicModule, resolveDynamicModule } from '../utils/module';
+import { dynamicRequire } from '@ag-grid-devtools/utils';
 
 const { versions } = codemods;
 
@@ -70,12 +75,17 @@ export interface MigrateCommandArgs {
    * List of input files to operate on (defaults to all source files in the current working directory)
    */
   input: Array<string>;
+  /**
+   * The path of the user config to load
+   */
+  userConfigPath?: string;
 }
 
 function usage(env: CliEnv): string {
   return `Usage: ${getCliCommand()} migrate [options] [<file>...]
 
 Upgrade project source files to ensure compatibility with a specific AG Grid version
+See https://ag-grid.com/javascript-data-grid/codemods for more information
 
 Options:
   Required arguments:
@@ -90,9 +100,12 @@ Options:
     --allow-dirty, -d         Allow operating on repositories with uncommitted changes in the working tree
     --num-threads             Number of worker threads to spawn (defaults to the number of system cores)
     --dry-run                 Show a diff output of the changes that would be made
+    --config=<file.cjs>       Loads a .cjs or .cts configuration file to customize the codemod behavior.
+                              See https://ag-grid.com/javascript-data-grid/codemods/#configuration-file
 
   Additional arguments:
-    [<file>...]               List of input files to operate on (defaults to all source files in the current working directory)
+    [<file>...]               List of input files to operate on.
+                              Defaults to all source files in the current working directory excluding patterns in .gitignore
 
   Other options:
     --verbose, -v             Show additional log output
@@ -111,6 +124,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     verbose: false,
     help: false,
     input: [],
+    userConfigPath: undefined,
   };
   let arg;
   while ((arg = args.shift())) {
@@ -120,11 +134,42 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
       arg = firstArg;
     }
     switch (arg) {
+      case '--allow-untracked':
+      case '-u':
+        options.allowUntracked = true;
+        break;
+      case '--no-allow-untracked':
+        options.allowUntracked = false;
+        break;
+
+      case '--allow-dirty':
+      case '-d':
+        options.allowDirty = true;
+        break;
+      case '--no-allow-dirty':
+        options.allowDirty = false;
+        break;
+
+      case '--dry-run':
+        options.dryRun = true;
+        break;
+      case '--no-dry-run':
+        options.dryRun = false;
+        break;
+
+      case '--verbose':
+        options.verbose = true;
+        break;
+      case '--no-verbose':
+        options.verbose = false;
+        break;
+
       case '--from': {
-        const value = args.shift();
+        let value = args.shift();
         if (!value || value.startsWith('-')) {
           throw new CliArgsError(`Missing value for ${arg}`, usage(env));
         }
+        value = semverCoerce(value);
         if (!semver.valid(value)) {
           throw new CliArgsError(
             `Invalid ${arg} migration starting version`,
@@ -135,9 +180,14 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         break;
       }
       case '--to': {
-        const value = args.shift();
+        let value = args.shift();
         if (!value || value.startsWith('-')) {
           throw new CliArgsError(`Missing value for ${arg}`, usage(env));
+        }
+        if (value === 'latest') {
+          value = LATEST_VERSION;
+        } else {
+          value = semverCoerce(value);
         }
         if (!versions.some(({ version }) => version === value)) {
           throw new CliArgsError(
@@ -156,14 +206,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         options.to = value;
         break;
       }
-      case '--allow-untracked':
-      case '-u':
-        options.allowUntracked = true;
-        break;
-      case '--allow-dirty':
-      case '-d':
-        options.allowDirty = true;
-        break;
+
       case '--num-threads': {
         const value = args.shift();
         if (!value || value.startsWith('-')) {
@@ -176,12 +219,23 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         options.numThreads = numThreads;
         break;
       }
-      case '--dry-run':
-        options.dryRun = true;
+      case '--config': {
+        let value = args.shift()?.trim();
+        if (!value) {
+          throw new CliArgsError(`Missing value for ${arg}`, usage(env));
+        }
+        if (value.startsWith('require:')) {
+          value = value.slice('require:'.length);
+          if (!value) {
+            throw new CliArgsError(`Missing value for ${arg}`, usage(env));
+          }
+          options.userConfigPath = value;
+        } else {
+          options.userConfigPath = pathResolve(env.cwd ?? process.cwd(), value);
+        }
         break;
-      case '--verbose':
-        options.verbose = true;
-        break;
+      }
+
       case '--help':
       case '-h':
         options.help = true;
@@ -194,6 +248,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         break;
     }
   }
+
   if (options.help) return options;
   if (!options.from) {
     throw new CliArgsError(`Missing --from migration starting version`, usage(env));
@@ -220,37 +275,61 @@ function printUsage(output: WritableStream, env: CliEnv): Promise<void> {
   return log(output, usage(env));
 }
 
+function semverCoerce(version: string): string {
+  return semver.coerce(version)?.version ?? version;
+}
+
 async function migrate(
   args: Omit<MigrateCommandArgs, 'help'>,
   options: CliOptions,
 ): Promise<Array<string>> {
-  const { from, to, allowUntracked, allowDirty, numThreads, dryRun, verbose, input } = args;
-  const { cwd, env, stdio } = options;
+  const {
+    from,
+    to,
+    allowUntracked,
+    allowDirty,
+    numThreads,
+    dryRun,
+    verbose,
+    userConfigPath,
+    input,
+  } = args;
+  let { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
 
-  const gitProjectRoot = await getGitProjectRoot(cwd);
+  cwd = resolve(cwd);
 
-  if (!allowUntracked && !gitProjectRoot) {
+  const gitRoot = await findGitRoot(cwd);
+
+  if (!allowUntracked && !gitRoot) {
     throw new CliError(
       'No git repository found',
       'To run this command outside a git repository, use the --allow-untracked option',
     );
   }
 
-  const gitSourceFilePaths = gitProjectRoot
-    ? (await getGitSourceFiles(gitProjectRoot)).map((path) => resolve(gitProjectRoot, path))
+  const gitSourceFilePaths = gitRoot
+    ? (await getGitSourceFiles(gitRoot)).map((path) => resolve(gitRoot, path))
     : null;
 
-  const inputFilePaths =
-    input.length > 0
-      ? input.map((path) => resolve(cwd, path))
-      : (await getProjectSourceFiles(cwd)).map((path) => resolve(cwd, path));
+  let inputFilePaths: string[];
+
+  if (input.length > 0) {
+    inputFilePaths = input.map((path) => resolve(cwd, path));
+  } else {
+    const skipFiles: string[] = [];
+    if (userConfigPath) {
+      skipFiles.push(userConfigPath);
+    }
+    inputFilePaths = await findSourceFiles(cwd, SOURCE_FILE_EXTENSIONS, skipFiles, gitRoot);
+  }
 
   if (!allowUntracked) {
     const trackedFilePaths = gitSourceFilePaths ? new Set(gitSourceFilePaths) : null;
-    const untrackedInputFiles = trackedFilePaths
+    let untrackedInputFiles = trackedFilePaths
       ? inputFilePaths.filter((path) => !trackedFilePaths.has(path))
       : inputFilePaths;
+
     if (untrackedInputFiles.length > 0)
       throw new CliError(
         'Untracked input files',
@@ -262,10 +341,10 @@ async function migrate(
       );
   }
 
-  if (gitProjectRoot && !allowDirty) {
+  if (gitRoot && !allowDirty) {
     const inputFileSet = new Set(inputFilePaths);
-    const uncommittedInputFiles = (await getUncommittedGitFiles(gitProjectRoot))
-      .map((path) => resolve(gitProjectRoot, path))
+    const uncommittedInputFiles = (await getUncommittedGitFiles(gitRoot))
+      .map((path) => resolve(gitRoot, path))
       .filter((path) => inputFileSet.has(path));
     if (uncommittedInputFiles.length > 0) {
       throw new CliError(
@@ -348,11 +427,12 @@ async function migrate(
         // Load the codemod and wrap it in a task helper
         const codemod = composeCodemods(
           codemodPaths.map((codemodPath) =>
-            requireDynamicModule<Codemod>(codemodPath, import.meta),
+            dynamicRequire.requireDefault<Codemod>(codemodPath, import.meta),
           ),
         );
         return executeCodemodSingleThreaded(codemod, inputFilePaths, {
           dryRun,
+          userConfigPath,
           onStart,
           onComplete,
         });
@@ -364,12 +444,32 @@ async function migrate(
         }
 
         // Create a worker pool to run the codemods in parallel
-        const scriptPath = resolveDynamicModule(WORKER_PATH, import.meta);
+        let scriptPath: string | URL = dynamicRequire.resolve(WORKER_PATH, import.meta);
+
+        const resolvedCodemodPaths = codemodPaths.map((codemodPath) =>
+          dynamicRequire.resolve(codemodPath, import.meta),
+        );
+
         const config: WorkerOptions = {
           // Pass the list of codemod paths to the worker via workerData
-          workerData: codemodPaths,
+          workerData: {
+            codemodPaths: resolvedCodemodPaths,
+            userConfigPath,
+          },
+          env: process.env,
+          argv: [scriptPath],
+          eval: true,
         };
-        const workers = Array.from({ length: numWorkers }, () => new Worker(scriptPath, config));
+
+        const workers = Array.from(
+          { length: numWorkers },
+          () =>
+            new Worker(
+              // Try to add typescript support by loading tsx and load the worker script
+              `try { require("tsx/cjs"); } catch (_) {} require(${JSON.stringify(scriptPath)});`,
+              config,
+            ),
+        );
         const workerPool = new WorkerTaskQueue<CodemodTaskInput, CodemodTaskWorkerResult>(workers);
         return executeCodemodMultiThreaded(workerPool, inputFilePaths, {
           dryRun,
@@ -514,14 +614,19 @@ function executeCodemodSingleThreaded(
   codemod: Codemod,
   inputFilePaths: string[],
   options: {
+    userConfigPath: string | undefined;
     dryRun: boolean;
     onStart?: (inputFilePath: string) => void;
     onComplete?: (inputFilePath: string, stats: { runningTime: number }) => void;
   },
 ): Promise<CodemodExecutionResult> {
-  const { dryRun, onStart, onComplete } = options;
-  const task = createCodemodTask(codemod);
-  const runner = { fs: createFsHelpers() };
+  const { dryRun, onStart, onComplete, userConfigPath } = options;
+  const userConfig = loadUserConfig(userConfigPath);
+  const runner: TaskRunnerEnvironment = {
+    fs: createFsHelpers(),
+    userConfig,
+  };
+  const task = createCodemodTask(codemod, userConfig);
   // Run the codemod for each input file
   return Promise.all(
     inputFilePaths.map((inputFilePath) => {
@@ -561,15 +666,6 @@ function formatFileErrors(warningResults: Array<{ path: string; errors: Error[] 
     .join('\n');
 }
 
-function getProjectSourceFiles(projectRoot: string): Promise<Array<string>> {
-  return findInDirectory(
-    projectRoot,
-    (filePath, stats) =>
-      (stats.isDirectory() && basename(filePath) !== 'node_modules') ||
-      (stats.isFile() && isSourceFile(filePath)),
-  );
-}
-
 function getGitSourceFiles(projectRoot: string): Promise<Array<string>> {
   return findInGitRepository(
     SOURCE_FILE_EXTENSIONS.map((extension) => `*${extension}`),
@@ -577,10 +673,6 @@ function getGitSourceFiles(projectRoot: string): Promise<Array<string>> {
       gitRepository: projectRoot,
     },
   );
-}
-
-function isSourceFile(filePath: string): boolean {
-  return SOURCE_FILE_EXTENSIONS.includes(extname(filePath));
 }
 
 function getMinorSemverVersion(version: string): string | null {

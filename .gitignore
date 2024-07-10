@@ -1,5 +1,7 @@
+.DS_Store
 /node_modules/
 /packages/*/node_modules/
 /packages/*/vitest.config.mts.timestamp-*.mjs
 /coverage/
 /docs/
+**/_temp/**/*

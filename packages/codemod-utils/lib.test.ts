@@ -5,6 +5,7 @@ import * as lib from './lib';
 test('module exports', () => {
   expect({ ...lib }).toEqual({
     AG_GRID_JS_PACKAGE_NAME_PATTERN: lib.AG_GRID_JS_PACKAGE_NAME_PATTERN,
+    AG_GRID_JS_PACKAGE_NAME_MATCHER: lib.AG_GRID_JS_PACKAGE_NAME_MATCHER,
     AG_GRID_JS_UMD_GLOBAL_NAME: lib.AG_GRID_JS_UMD_GLOBAL_NAME,
     Angular: lib.Angular,
     AngularComponentTemplateDefinition: lib.AngularComponentTemplateDefinition,

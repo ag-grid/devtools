@@ -11,9 +11,9 @@ test('module exports', () => {
     instantiateEnum: lib.instantiateEnum,
     isEnumVariant: lib.isEnumVariant,
     match: lib.match,
-    matchString: lib.matchString,
     nonNull: lib.nonNull,
     partition: lib.partition,
     unreachable: lib.unreachable,
+    dynamicRequire: lib.dynamicRequire,
   });
 });

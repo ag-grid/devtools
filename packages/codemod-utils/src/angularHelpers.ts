@@ -7,6 +7,8 @@ import {
   type FileMetadata,
   type NodePath,
   type Types,
+  type TransformContext,
+  type ImportedModuleMatcher,
 } from '@ag-grid-devtools/ast';
 import { Enum, match } from '@ag-grid-devtools/utils';
 import {
@@ -29,7 +31,6 @@ import {
   getTemplateNodeChild,
   mergeSourceChunks,
   printTemplate,
-  SourceChunk,
   type TemplateEngine,
   type TemplateFormatter,
   type TemplateMutation,
@@ -77,6 +78,14 @@ type Property = Types.Property;
 type TemplateLiteral = Types.TemplateLiteral;
 
 const ANGULAR_PACKAGE_NAME = '@angular/core';
+
+const ANGULAR_PACKAGE_NAME_MATCHER: ImportedModuleMatcher = {
+  importModulePattern: ANGULAR_PACKAGE_NAME,
+  importUmdPattern: null,
+  framework: 'angular',
+  skipUserConfig: true,
+};
+
 const ANGULAR_COMPONENT_DECORATOR_IMPORT_NAME = 'Component';
 const ANGULAR_COMPONENT_METADATA_TEMPLATE_FIELD_NAME = 'template';
 const ANGULAR_COMPONENT_METADATA_TEMPLATE_URL_FIELD_NAME = 'templateUrl';
@@ -113,7 +122,7 @@ export function parseAngularComponentTemplate(
   template: AngularTemplateNode<TmplAST>;
 } | null {
   const { filename: filePath = './component.html' } = context;
-  const componentMetadata = getAngularComponentMetadata(component);
+  const componentMetadata = getAngularComponentMetadata(component, context);
   if (!componentMetadata) return null;
   const templateDefinition = getAngularComponentTemplateDefinition(componentMetadata, context);
   if (!templateDefinition) return null;
@@ -732,11 +741,12 @@ function getAngularComponentMetadataNamedFieldValue(
 
 export function getAngularComponentMetadata(
   component: NodePath<Class>,
+  context: AstTransformContext<TransformContext>,
 ): NodePath<ObjectExpression> | null {
   const decorators = component.get('decorators');
   if (!decorators || !Array.isArray(decorators)) return null;
   const componentDecorators = decorators
-    .map((decorator) => getAngularComponentDecoratorOptions(decorator))
+    .map((decorator) => getAngularComponentDecoratorOptions(decorator, context))
     .filter(Boolean);
   if (componentDecorators.length === 0) return null;
   const [componentDecorator] = componentDecorators;
@@ -745,6 +755,7 @@ export function getAngularComponentMetadata(
 
 export function getAngularComponentDecoratorOptions(
   decorator: NodePath<Decorator>,
+  context: AstTransformContext<TransformContext>,
 ): NodePath<ObjectExpression> | null {
   const expression = decorator.get('expression');
   if (!expression.isCallExpression()) return null;
@@ -752,9 +763,9 @@ export function getAngularComponentDecoratorOptions(
   if (!callee.isExpression()) return null;
   const componentDecoratorImport = getNamedModuleImportExpression(
     callee,
-    ANGULAR_PACKAGE_NAME,
-    null,
+    ANGULAR_PACKAGE_NAME_MATCHER,
     ANGULAR_COMPONENT_DECORATOR_IMPORT_NAME,
+    context,
   );
   if (!componentDecoratorImport) return null;
   const decoratorArguments = expression.get('arguments');
@@ -766,11 +777,12 @@ export function getAngularComponentDecoratorOptions(
 
 export function getAngularViewChildMetadata(
   property: NodePath<ClassProperty>,
+  context: AstTransformContext<TransformContext>,
 ): NodePath<Expression> | null {
   const decorators = property.get('decorators');
   if (!decorators || !Array.isArray(decorators)) return null;
   const viewChildDecorators = decorators
-    .map((decorator) => getAngularViewChildDecoratorOptions(decorator))
+    .map((decorator) => getAngularViewChildDecoratorOptions(decorator, context))
     .filter(Boolean);
   if (viewChildDecorators.length === 0) return null;
   const [componentDecorator] = viewChildDecorators;
@@ -779,6 +791,7 @@ export function getAngularViewChildMetadata(
 
 function getAngularViewChildDecoratorOptions(
   decorator: NodePath<Decorator>,
+  context: AstTransformContext<TransformContext>,
 ): NodePath<Expression> | null {
   const expression = decorator.get('expression');
   if (!expression.isCallExpression()) return null;
@@ -786,9 +799,9 @@ function getAngularViewChildDecoratorOptions(
   if (!callee.isExpression()) return null;
   const viewChildDecoratorImport = getNamedModuleImportExpression(
     callee,
-    ANGULAR_PACKAGE_NAME,
-    null,
+    ANGULAR_PACKAGE_NAME_MATCHER,
     ANGULAR_VIEW_CHILD_DECORATOR_IMPORT_NAME,
+    context,
   );
   if (!viewChildDecoratorImport) return null;
   const viewChildArguments = expression.get('arguments');

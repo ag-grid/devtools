@@ -7,5 +7,6 @@ test('module exports', () => {
     composeCodemods: lib.composeCodemods,
     createCodemodTask: lib.createCodemodTask,
     initCodemodTaskWorker: lib.initCodemodTaskWorker,
+    loadUserConfig: lib.loadUserConfig,
   });
 });
