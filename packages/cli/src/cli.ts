@@ -71,7 +71,16 @@ export async function cli(args: Array<string>, cli: CliOptions): Promise<void> {
     throw null;
   }
 
+<<<<<<< HEAD
   dynamicRequire.initialize();
+=======
+  // Add typescript support by loading tsx
+  try {
+    dynamicRequire.require('tsx/cjs', import.meta);
+  } catch {
+    // ignore error if tsx could not be loaded
+  }
+>>>>>>> a3ea8da (Publish 32.0.2 (#61))
 
   const task = match(options.command, {
     Migrate: ({ args }) => migrate(args, cli),
