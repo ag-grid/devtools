@@ -2,6 +2,8 @@
 
 This repository contains a selection of developer tools related to [AG Grid](https://github.com/ag-grid/ag-grid) development.
 
+See also [codemods](https://www.ag-grid.com/react-data-grid/codemods/) in AG Grid documentation.
+
 ## Repository layout
 
 This repository is organised as a monorepo containing various packages.
