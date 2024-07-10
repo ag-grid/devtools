@@ -114,6 +114,10 @@ export class CliE2ETestEnv {
 
     if (gitInit) {
       await this.execCommand('git', ['add', '.']);
+
+      await this.execCommand('git', ['config', 'user.email', 'cli-e2e@ag-grid.com']);
+      await this.execCommand('git', ['config', 'user.name', 'cli-e2e']);
+
       await this.execCommand('git', ['commit', '-m', 'Initial commit']);
     }
 
