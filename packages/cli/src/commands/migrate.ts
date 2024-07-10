@@ -170,7 +170,6 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
           throw new CliArgsError(`Missing value for ${arg}`, usage(env));
         }
         value = semverCoerce(value);
-        console.log(value);
         if (!semver.valid(value)) {
           throw new CliArgsError(
             `Invalid ${arg} migration starting version`,
