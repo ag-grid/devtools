@@ -55,7 +55,8 @@
       },
       "./user-config.js": "./user-config.mjs",
       "./user-config.mjs": "./user-config.mjs",
-      "./user-config.cjs": "./user-config.cjs"
+      "./user-config.cjs": "./user-config.cjs",
+      "./package.json": "./package.json"
     }
   },
   "types": "./index.d.ts",
