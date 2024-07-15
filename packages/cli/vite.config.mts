@@ -1,6 +1,7 @@
 import { resolve } from 'path';
 import { defineConfig, mergeConfig } from 'vite';
 import dts from 'vite-plugin-dts';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 import base from '../build-config/templates/vite/cli.vite.config';
 
@@ -28,6 +29,12 @@ export default mergeConfig(
         rollupTypes: true,
         bundledPackages: ['@ag-grid-devtools/types'],
         exclude: ['node_modules/**', '*.config.mts', '**/*.test.ts', 'package.json', 'index.ts'],
+      }),
+      viteStaticCopy({
+        targets: [
+          { src: 'index.mjs', dest: '.' },
+          { src: 'user-config.mjs', dest: '.' },
+        ],
       }),
     ],
   }),
