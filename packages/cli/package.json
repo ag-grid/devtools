@@ -1,7 +1,11 @@
 {
   "private": true,
   "name": "@ag-grid-devtools/cli",
+<<<<<<< HEAD
   "version": "32.0.3",
+=======
+  "version": "32.0.2",
+>>>>>>> a3ea8da (Publish 32.0.2 (#61))
   "license": "MIT",
   "description": "AG Grid developer toolkit",
   "author": "AG Grid <info@ag-grid.com>",
