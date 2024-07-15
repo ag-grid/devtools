@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { fileURLToPath } from 'node:url';
 import { createRequire, Module } from 'node:module';
 import { existsSync } from 'node:fs';
@@ -64,25 +63,6 @@ export const dynamicRequire = {
   require<T = unknown>(path: string, meta: ImportMeta): T {
     dynamicRequire.initialize();
     return createRequire(meta.url || pathResolve(thisDir, 'index.js'))(path);
-=======
-import { createRequire } from 'node:module';
-
-export const dynamicRequire = {
-  resolve(path: string, meta: ImportMeta): string {
-    if (meta.url === undefined && typeof require !== undefined) {
-      // import.meta not available, maybe running a ts file with tsx? use default cjs require
-      return require.resolve(path);
-    }
-    return createRequire(meta.url).resolve(path);
-  },
-
-  require<T = unknown>(path: string, meta: ImportMeta): T {
-    if (meta.url === undefined && typeof require !== undefined) {
-      // import.meta not available, maybe running a ts file with tsx? use default cjs require
-      return require(path);
-    }
-    return createRequire(meta.url)(path);
->>>>>>> a3ea8da (Publish 32.0.2 (#61))
   },
 
   /** Like require, but supports modules with a default export transpiled to cjs */
@@ -100,7 +80,6 @@ export const dynamicRequire = {
     return required;
   },
 };
-<<<<<<< HEAD
 
 function tryAddNodeModulePath(nodeModulesPath: string) {
   try {
@@ -111,5 +90,3 @@ function tryAddNodeModulePath(nodeModulesPath: string) {
     // ignore error
   }
 }
-=======
->>>>>>> a3ea8da (Publish 32.0.2 (#61))

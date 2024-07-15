@@ -81,12 +81,8 @@
     "graceful-fs": "4.2.11",
     "ignore": "5.3.1",
     "semver": "7.6.2",
-<<<<<<< HEAD
     "vite-plugin-dts": "3.9.1",
     "vite-plugin-static-copy": "1.0.6"
-=======
-    "vite-plugin-dts": "3.9.1"
->>>>>>> a3ea8da (Publish 32.0.2 (#61))
   },
   "peerDependencies": {
     "eslint": "^8",
