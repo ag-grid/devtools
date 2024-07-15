@@ -43,7 +43,9 @@
     "@ag-grid-devtools/types": "workspace:*"
   },
   "devDependencies": {
-    "@ag-grid-devtools/build-config": "workspace:*"
+    "@ag-grid-devtools/build-config": "workspace:*",
+    "@types/app-module-path": "^2.2.2",
+    "app-module-path": "2.2.0"
   },
   "peerDependencies": {
     "eslint": "^8",
