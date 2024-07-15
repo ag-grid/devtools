@@ -446,29 +446,29 @@ async function migrate(
         // Create a worker pool to run the codemods in parallel
         let scriptPath: string | URL = dynamicRequire.resolve(WORKER_PATH, import.meta);
 
-        const resolvedCodemodPaths = codemodPaths.map((codemodPath) =>
-          dynamicRequire.resolve(codemodPath, import.meta),
-        );
+        // This will be true if we are trying to run from the codemod repo source code using tsx or vitest
+        const isTsSourceCodeWorker = scriptPath.endsWith('.ts');
 
         const config: WorkerOptions = {
           // Pass the list of codemod paths to the worker via workerData
           workerData: {
-            codemodPaths: resolvedCodemodPaths,
+            codemodPaths: isTsSourceCodeWorker
+              ? codemodPaths.map((codemodPath) => dynamicRequire.resolve(codemodPath, import.meta))
+              : codemodPaths,
             userConfigPath,
           },
           env: process.env,
           argv: [scriptPath],
-          eval: true,
+          eval: isTsSourceCodeWorker,
         };
+
+        const workerCodeOrPath = isTsSourceCodeWorker
+          ? `try { require("tsx/cjs"); } catch (_) {} require(${JSON.stringify(scriptPath)});`
+          : scriptPath;
 
         const workers = Array.from(
           { length: numWorkers },
-          () =>
-            new Worker(
-              // Try to add typescript support by loading tsx and load the worker script
-              `try { require("tsx/cjs"); } catch (_) {} require(${JSON.stringify(scriptPath)});`,
-              config,
-            ),
+          () => new Worker(workerCodeOrPath, config),
         );
         const workerPool = new WorkerTaskQueue<CodemodTaskInput, CodemodTaskWorkerResult>(workers);
         return executeCodemodMultiThreaded(workerPool, inputFilePaths, {
