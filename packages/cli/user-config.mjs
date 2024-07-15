@@ -1,1 +1,1 @@
-export * from './user-config.cjs'
+export * from './user-config.cjs';
