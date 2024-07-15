@@ -31,7 +31,10 @@ export default mergeConfig(
         exclude: ['node_modules/**', '*.config.mts', '**/*.test.ts', 'package.json', 'index.ts'],
       }),
       viteStaticCopy({
-        targets: [{ src: '*.mjs', dest: '.' }],
+        targets: [
+          { src: 'index.mjs', dest: '.' },
+          { src: 'user-config.mjs', dest: '.' },
+        ],
       }),
     ],
   }),
