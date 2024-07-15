@@ -33,7 +33,30 @@
   },
   "pkg": {
     "main": "./index.cjs",
-    "bin": "./index.cjs"
+    "bin": "./index.cjs",
+    "exports": {
+      ".": {
+        "import": "./index.mjs",
+        "require": "./index.cjs",
+        "default": "./index.mjs"
+      },
+      "./index": {
+        "import": "./index.mjs",
+        "require": "./index.cjs",
+        "default": "./index.mjs"
+      },
+      "./index.js": "./index.mjs",
+      "./index.mjs": "./index.mjs",
+      "./index.cjs": "./index.cjs",
+      "./user-config": {
+        "import": "./user-config.mjs",
+        "require": "./user-config.cjs",
+        "default": "./user-config.mjs"
+      },
+      "./user-config.js": "./user-config.mjs",
+      "./user-config.mjs": "./user-config.mjs",
+      "./user-config.cjs": "./user-config.cjs"
+    }
   },
   "types": "./index.d.ts",
   "bundleDependencies": [
@@ -58,7 +81,8 @@
     "graceful-fs": "4.2.11",
     "ignore": "5.3.1",
     "semver": "7.6.2",
-    "vite-plugin-dts": "3.9.1"
+    "vite-plugin-dts": "3.9.1",
+    "vite-plugin-static-copy": "1.0.6"
   },
   "peerDependencies": {
     "eslint": "^8",
