@@ -86,7 +86,7 @@
     "vite-plugin-static-copy": "1.0.6"
   },
   "peerDependencies": {
-    "eslint": "^8",
+    "eslint": "8.57.0",
     "typedoc": "^0.26",
     "typescript": "^5",
     "vite": "^5",
