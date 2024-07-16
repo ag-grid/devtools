@@ -21,7 +21,7 @@ export default mergeConfig(
       },
       sourcemap: false,
       rollupOptions: {
-        external: ['@ag-grid-devtools/codemods'],
+        external: ['@ag-grid-devtools/codemods', '@typescript-eslint/parser'],
       },
     },
     plugins: [

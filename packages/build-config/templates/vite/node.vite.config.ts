@@ -30,7 +30,7 @@ export default mergeConfig(
   defineConfig({
     build: {
       rollupOptions: {
-        external: [...NODE_MODULES, /^node:/],
+        external: [...NODE_MODULES, /^node:/, '@typescript-eslint/parser'],
       },
     },
   }),
