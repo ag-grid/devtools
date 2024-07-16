@@ -10,7 +10,7 @@ import {
   type NodePath,
   type Types,
 } from '@ag-grid-devtools/ast';
-import { nonNull } from '@ag-grid-devtools/utils';
+import { dynamicRequire, nonNull } from '@ag-grid-devtools/utils';
 import { parse } from 'vue-eslint-parser';
 import { AST } from 'vue-eslint-parser';
 import {
@@ -397,13 +397,29 @@ export function matchVueComponentMethod(method: NodePath): {
   return { component, methodName, method };
 }
 
+let _tsParser: any;
+
+function getTsParser(): any {
+  if (_tsParser === undefined) {
+    _tsParser = null;
+    try {
+      _tsParser = dynamicRequire.requireDefault('@typescript-eslint/parser', import.meta);
+    } catch {}
+  }
+  return _tsParser;
+}
+
 export function parseVueSfcComponent(source: string): AST.ESLintProgram {
-  return parse(source, {
+  const options: any = {
     sourceType: 'module',
-    parser: {
-      ts: '@typescript-eslint/parser',
-    },
-  });
+  };
+
+  const ts = getTsParser();
+  if (ts) {
+    options.parser = { ts };
+  }
+
+  return parse(source, options);
 }
 
 export function parseVueComponentTemplateSource(source: string): VueTemplateNode<VElement> {
