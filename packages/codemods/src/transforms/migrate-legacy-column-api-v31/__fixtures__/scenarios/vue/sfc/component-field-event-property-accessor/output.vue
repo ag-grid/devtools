@@ -9,8 +9,10 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { AgGridVue } from '@ag-grid-community/vue';
+
+export interface MyInterfaceToTestTsParser {}
 
 export default {
   components: {
