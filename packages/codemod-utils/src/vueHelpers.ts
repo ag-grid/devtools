@@ -400,6 +400,9 @@ export function matchVueComponentMethod(method: NodePath): {
 export function parseVueSfcComponent(source: string): AST.ESLintProgram {
   return parse(source, {
     sourceType: 'module',
+    parser: {
+      ts: '@typescript-eslint/parser',
+    },
   });
 }
 

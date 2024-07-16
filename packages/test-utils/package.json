@@ -45,7 +45,7 @@
     "@ag-grid-devtools/utils": "workspace:*",
     "@angular-eslint/template-parser": "17.5.2",
     "@angular/compiler": "17.0.1",
-    "@typescript-eslint/types": "7.14.1",
+    "@typescript-eslint/types": "7.16.1",
     "memfs": "4.6.0"
   },
   "devDependencies": {
@@ -54,9 +54,9 @@
   "peerDependencies": {
     "@vitest/expect": "^1",
     "@vitest/runner": "^1",
-    "eslint": "^8",
+    "eslint": "8.57.0",
     "typedoc": "^0.26",
-    "typescript": "^5",
+    "typescript": "5.5.3",
     "vite": "^5",
     "vitest": "^1"
   }
