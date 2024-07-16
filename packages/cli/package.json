@@ -65,6 +65,8 @@
   ],
   "dependencies": {
     "@ag-grid-devtools/codemods": "workspace:*",
+    "@typescript-eslint/parser": "7.16.1",
+    "eslint": "8.57.0",
     "tsx": "4.16.2"
   },
   "devDependencies": {
@@ -88,7 +90,7 @@
   "peerDependencies": {
     "eslint": "8.57.0",
     "typedoc": "^0.26",
-    "typescript": "^5",
+    "typescript": "5.5.3",
     "vite": "^5",
     "vitest": "^1"
   }
