@@ -45,10 +45,10 @@
     "@ag-grid-devtools/types": "workspace:*",
     "@ag-grid-devtools/utils": "workspace:*",
     "@angular-eslint/template-parser": "17.5.2",
-    "@angular/compiler": "17.0.1",
-    "@typescript-eslint/types": "7.16.1",
+    "@angular/compiler": "17.0.9",
+    "@typescript-eslint/types": "7.18.0",
     "prettier": "3.3.3",
-    "recast": "0.23.4",
+    "recast": "0.23.9",
     "vue-eslint-parser": "9.3.2"
   },
   "devDependencies": {
@@ -56,11 +56,11 @@
     "@ag-grid-devtools/test-utils": "workspace:*"
   },
   "peerDependencies": {
-    "@typescript-eslint/parser": "7.16.1",
+    "@typescript-eslint/parser": "7.18.0",
     "eslint": "8.57.0",
-    "typedoc": "^0.26",
-    "typescript": "5.5.3",
-    "vite": "^5",
-    "vitest": "^1"
+    "typedoc": "^0.26.6",
+    "typescript": "5.5.4",
+    "vite": "^5.4.1",
+    "vitest": "^1.6.0"
   }
 }
