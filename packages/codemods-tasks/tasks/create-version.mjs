@@ -22,7 +22,6 @@ const __dirname = dirname(new URL(import.meta.url).pathname);
 
 const TEMPLATE_DIR = join(__dirname, '../templates/create-version');
 const CODEMOD_TEMPLATE_DIR = join(TEMPLATE_DIR, 'codemod');
-const EXPORTS_TEMPLATE_DIR = join(TEMPLATE_DIR, 'exports');
 
 const PROJECT_VERSIONS_DIR = './versions';
 const MANIFEST_FILENAME = 'manifest.ts';
@@ -111,7 +110,6 @@ export default async function task(...args) {
     versionIdentifier,
   } = variables;
   await copyTemplateDirectory(CODEMOD_TEMPLATE_DIR, outputPath, variables);
-  await copyTemplateDirectory(EXPORTS_TEMPLATE_DIR, exportsDir, variables);
   await addReleaseToVersionsManifest({
     versionsPath: versionsManifestPath,
     versionManifestPath: stripFileExtension(versionManifestPath),

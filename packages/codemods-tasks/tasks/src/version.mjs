@@ -1,36 +1,38 @@
+import { format as applyPrettierFormat, resolveConfig as loadPrettierConfig } from 'prettier';
 import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFile, writeFile } from 'node:fs/promises';
+import { dirname, join, relative } from 'node:path';
+import template from '@babel/template';
+import { parse as parseAst } from '@babel/parser';
+import { transformFromAstSync } from '@babel/core';
+import { parse, print } from 'recast';
 
 const TEMPLATE_OPTIONS = {
   plugins: ['jsx', 'typescript', 'decorators-legacy'],
 };
 
-function addModuleImports(imports) {
-  return function addModuleImports(babel) {
-    return {
-      visitor: {
-        Program(path) {
-          const finalExistingImport = path
-            .get('body')
-            .slice()
-            .reverse()
-            .find((path) => path.isImportDeclaration());
-          if (finalExistingImport) {
-            finalExistingImport.insertAfter(imports);
-          } else {
-            path.unshiftContainer('body', imports);
-          }
-        },
-      },
-    };
-  };
-}
+const JS_PARSER_PLUGINS = ['typescript', 'decorators-legacy'];
+const JSX_PARSER_PLUGINS = ['jsx', ...JS_PARSER_PLUGINS];
 
 const ast = {
   statement(literals, ...interpolations) {
     return template.statement(TEMPLATE_OPTIONS).ast(literals, ...interpolations);
   },
 };
+
+function transformAst(node, plugins, context, metadata) {
+  const { filename } = context;
+  const source = metadata && metadata.source;
+  const result = transformFromAstSync(node, source || undefined, {
+    code: false,
+    ast: true,
+    cloneInputAst: false, // See https://github.com/benjamn/recast#using-a-different-parser
+    filename,
+    plugins,
+  });
+  if (!result) return null;
+  return result.ast || null;
+}
 
 export function isValidReleaseVersion(value) {
   return parseReleaseVersion(value) !== null;
@@ -94,8 +96,8 @@ export async function addTransformToVersion({ versionPath, transformPath, transf
         addModuleImports(
           ast.statement`
             import ${transformIdentifier} from '${getModuleImportPath(transformPath, {
-            currentPath: transformsPath,
-          })}';
+              currentPath: transformsPath,
+            })}';
           `,
         ),
         addTransformToCodemod(transformIdentifier),
@@ -107,8 +109,8 @@ export async function addTransformToVersion({ versionPath, transformPath, transf
         addModuleImports(
           ast.statement`
             import ${transformIdentifier} from '${getModuleImportPath(transformManifestPath, {
-            currentPath: transformsPath,
-          })}';
+              currentPath: transformsPath,
+            })}';
           `,
         ),
         addTransformManifestToCodemodManifest(transformIdentifier),
@@ -277,4 +279,111 @@ export async function addReleaseToVersionsManifestTests({ manifestTestPath, vers
       };
     };
   }
+}
+
+function transformFile(
+  filename,
+  { plugins, format = 'js', transformSource = null, prettier = false },
+) {
+  return readFile(filename, 'utf-8')
+    .then((source) => transformSource?.(source) ?? source)
+    .then((source) => (format === 'json' ? addParentheses(source) : source))
+    .then((source) => {
+      const transformedSource = applyBabelTransform(source, plugins, {
+        filename,
+        jsx: format === 'jsx',
+        sourceType: format === 'json' ? 'script' : 'module',
+        print: {
+          quote: format === 'json' ? 'double' : 'single',
+        },
+      });
+      return transformedSource ?? null;
+    })
+    .then((source) => (format === 'json' ? removeParentheses(source) : source))
+    .then((source) =>
+      prettier
+        ? loadPrettierConfig(filename).then((config) =>
+            applyPrettierFormat(source, {
+              filepath: filename,
+              ...config,
+            }),
+          )
+        : source,
+    )
+    .then((source) => writeFile(filename, source).then(() => source))
+    .catch((error) => {
+      if (error instanceof Error) {
+        error.message = `Unable to transform ${filename}\n\n${error.message}`;
+      }
+      throw error;
+    });
+}
+
+function getModuleImportPath(importedPath, { currentPath }) {
+  return ensureLocalImportPath(relative(dirname(currentPath), importedPath));
+}
+
+function ensureLocalImportPath(path) {
+  return path.startsWith('.') || path.startsWith('/') ? path : `./${path}`;
+}
+
+function parseBabelAst(source, context) {
+  const { filename, jsx, sourceType, js: parserOptions = {} } = context;
+  const defaultPlugins = jsx ? JSX_PARSER_PLUGINS : JS_PARSER_PLUGINS;
+  return parse(source, {
+    parser: {
+      sourceFilename: filename,
+      parse(source) {
+        const { plugins } = parserOptions;
+        return parseAst(source, {
+          ...parserOptions,
+          sourceType,
+          sourceFilename: filename,
+          plugins: plugins ? [...defaultPlugins, ...plugins] : defaultPlugins,
+          tokens: true,
+        });
+      },
+    },
+  });
+}
+
+function applyBabelTransform(source, plugins, context) {
+  const { print: printOptions = {}, ...parserContext } = context;
+  // Attempt to determine input file line endings, defaulting to the operating system default
+  const crlfLineEndings = source.includes('\r\n');
+  const lfLineEndings = !crlfLineEndings && source.includes('\n');
+  const lineTerminator = crlfLineEndings ? '\r\n' : lfLineEndings ? '\n' : undefined;
+  // Parse the source AST
+  const ast = parseBabelAst(source, parserContext);
+  // Transform the AST
+  const transformedAst = transformAst(ast, plugins, parserContext, { source });
+  // Print the transformed AST
+  const transformedSource = transformedAst
+    ? print(transformedAst, {
+        lineTerminator,
+        ...printOptions,
+      }).code
+    : null;
+  return transformedSource;
+}
+
+function addModuleImports(imports) {
+  return function addModuleImports(babel) {
+    return {
+      visitor: {
+        Program(path) {
+          const finalExistingImport = path
+            .get('body')
+            .slice()
+            .reverse()
+            .find((path) => path.isImportDeclaration());
+          if (finalExistingImport) {
+            finalExistingImport.insertAfter(imports);
+          } else {
+            path.unshiftContainer('body', imports);
+          }
+        },
+      },
+    };
+  };
 }
