@@ -25,38 +25,10 @@
     "lint": "pnpm run '/^lint:.*/'",
     "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
     "lint:typescript": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest watch",
     "task:create-version": "pnpm run --filter build-tools task $PWD/tasks/create-version.mjs",
     "task:create-transform": "pnpm run --filter build-tools task $PWD/tasks/create-transform.mjs",
     "task:include-transform": "pnpm run --filter build-tools task $PWD/tasks/include-transform.mjs",
     "task:create-test": "pnpm run --filter build-tools task $PWD/tasks/create-test.mjs"
-  },
-  "pkg": {
-    "main": "./lib/lib.cjs",
-    "exports": {
-      ".": {
-        "require": "./lib/lib.cjs"
-      },
-      "./worker": {
-        "require": "./worker.cjs"
-      },
-      "./version/31.0.0": {
-        "require": "./version/31.0.0.cjs"
-      },
-      "./version/31.1.0": {
-        "require": "./version/31.1.0.cjs"
-      },
-      "./version/31.2.0": {
-        "require": "./version/31.2.0.cjs"
-      },
-      "./version/31.3.0": {
-        "require": "./version/31.3.0.cjs"
-      },
-      "./version/32.0.0": {
-        "require": "./version/32.0.0.cjs"
-      }
-    }
   },
   "devDependencies": {
     "@ag-grid-devtools/ast": "workspace:*",

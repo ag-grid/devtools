@@ -6,7 +6,7 @@ const transforms: Array<TransformManifest> = [transformGridOptionsV31_2];
 
 const manifest: VersionManifest = {
   version: '31.2.0',
-  codemodPath: 'version/31.2.0',
+  codemodPath: 'versions/31.2.0',
   transforms,
 };
 

@@ -1,4 +1,4 @@
-import { join, dirname, basename, extname } from 'node:path';
+import { join, resolve, dirname, basename, extname } from 'node:path';
 import { stdin, stderr } from 'node:process';
 import {
   copyTemplateDirectory,
@@ -37,7 +37,7 @@ const VARIABLES = [
     name: 'projectRoot',
     label: 'Project root directory',
     options: () => ({
-      value: dirname(getPackageJsonPath(__dirname)),
+      value: resolve(dirname(getPackageJsonPath(__dirname)), '../cli/src/codemods'),
       validate: validateDirectory,
     }),
   },

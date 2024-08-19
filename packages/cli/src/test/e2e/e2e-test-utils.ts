@@ -153,30 +153,25 @@ async function loadSourceFile(filepath: string): Promise<string> {
 let _dynamicRequirePatched = false;
 
 export function patchDynamicRequire() {
-  if (_dynamicRequirePatched) {
-    return;
-  }
-  _dynamicRequirePatched = true;
-
-  /** Fixes the path of an import for typescript, as we are using those with worker threads */
-  const fixPath = (p: string): string => {
-    if (p === '@ag-grid-devtools/codemods/worker') {
-      return '@ag-grid-devtools/codemods/src/worker.ts';
-    }
-
-    if (p.startsWith('@ag-grid-devtools/codemods/version/')) {
-      p =
-        '@ag-grid-devtools/codemods/src/versions/' +
-        p.slice('@ag-grid-devtools/codemods/version/'.length) +
-        '/codemod.ts';
-    }
-
-    return p;
-  };
-
-  const oldRequire = dynamicRequire.require;
-  dynamicRequire.require = (path: string, meta: ImportMeta) => oldRequire(fixPath(path), meta);
-
-  const oldResolve = dynamicRequire.resolve;
-  dynamicRequire.resolve = (path: string, meta: ImportMeta) => oldResolve(fixPath(path), meta);
+  // if (_dynamicRequirePatched) {
+  //   return;
+  // }
+  // _dynamicRequirePatched = true;
+  // /** Fixes the path of an import for typescript, as we are using those with worker threads */
+  // const fixPath = (p: string): string => {
+  //   if (p === '@ag-grid-devtools/codemods/worker') {
+  //     return '@ag-grid-devtools/codemods/src/worker.ts';
+  //   }
+  //   if (p.startsWith('@ag-grid-devtools/codemods/version/')) {
+  //     p =
+  //       '@ag-grid-devtools/codemods/src/versions/' +
+  //       p.slice('@ag-grid-devtools/codemods/version/'.length) +
+  //       '/codemod.ts';
+  //   }
+  //   return p;
+  // };
+  // const oldRequire = dynamicRequire.require;
+  // dynamicRequire.require = (path: string, meta: ImportMeta) => oldRequire(fixPath(path), meta);
+  // const oldResolve = dynamicRequire.resolve;
+  // dynamicRequire.resolve = (path: string, meta: ImportMeta) => oldResolve(fixPath(path), meta);
 }

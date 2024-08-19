@@ -202,15 +202,27 @@ importers:
         specifier: ^1.6.0
         version: 1.6.0(@types/node@22.4.1)
     devDependencies:
+      '@ag-grid-devtools/ast':
+        specifier: workspace:*
+        version: link:../ast
       '@ag-grid-devtools/build-config':
         specifier: workspace:*
         version: link:../build-config
+      '@ag-grid-devtools/build-tools':
+        specifier: workspace:*
+        version: link:../build-tools
       '@ag-grid-devtools/codemod-task-utils':
         specifier: workspace:*
         version: link:../codemod-task-utils
+      '@ag-grid-devtools/codemod-utils':
+        specifier: workspace:*
+        version: link:../codemod-utils
       '@ag-grid-devtools/codemods':
         specifier: workspace:*
         version: link:../codemods
+      '@ag-grid-devtools/test-utils':
+        specifier: workspace:*
+        version: link:../test-utils
       '@ag-grid-devtools/types':
         specifier: workspace:*
         version: link:../types

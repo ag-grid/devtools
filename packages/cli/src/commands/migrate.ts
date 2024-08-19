@@ -1,4 +1,4 @@
-import codemods from '@ag-grid-devtools/codemods';
+import codemods from '../codemods/lib';
 import {
   composeCodemods,
   createCodemodTask,
@@ -14,7 +14,7 @@ import {
 import { createFsHelpers } from '@ag-grid-devtools/worker-utils';
 import { nonNull } from '@ag-grid-devtools/utils';
 import { createTwoFilesPatch } from 'diff';
-import { join, resolve as pathResolve } from 'node:path';
+import { dirname, join, resolve as pathResolve } from 'node:path';
 import { cpus } from 'node:os';
 import semver from 'semver';
 
@@ -28,6 +28,7 @@ import { getCliCommand, getCliPackageVersion } from '../utils/pkg';
 import { green, indentErrorMessage, log } from '../utils/stdio';
 import { Worker, WorkerTaskQueue, type WorkerOptions } from '../utils/worker';
 import { dynamicRequire } from '@ag-grid-devtools/utils';
+import { fileURLToPath } from 'node:url';
 
 const { versions } = codemods;
 
@@ -35,8 +36,18 @@ const SOURCE_FILE_EXTENSIONS = ['.cjs', '.js', '.mjs', '.jsx', '.ts', '.tsx', '.
 const LATEST_VERSION = versions[versions.length - 1].version;
 const DEFAULT_TARGET_VERSION = getMinorSemverVersion(getCliPackageVersion()) ?? LATEST_VERSION;
 
-const CODEMODS_PACKAGE = '@ag-grid-devtools/codemods';
-const WORKER_PATH = `${CODEMODS_PACKAGE}/worker`;
+const thisFolder = pathResolve(
+  (typeof __dirname !== 'undefined' ? __dirname : '.')
+    ? import.meta.url && dirname(fileURLToPath(import.meta.url))
+    : './',
+);
+const CODEMODS_FOLDER = dirname(
+  dynamicRequire.tryResolveOneOf(
+    [pathResolve(thisFolder, 'codemods/lib'), pathResolve(thisFolder, '../codemods/lib')],
+    import.meta,
+  ),
+);
+const WORKER_PATH = `${CODEMODS_FOLDER}/worker`;
 
 export interface MigrateCommandArgs {
   /**
@@ -416,7 +427,7 @@ async function migrate(
   const isSingleThreaded = numThreads === 0;
 
   const codemodPaths = codemodVersions.map(({ codemodPath }) =>
-    join(CODEMODS_PACKAGE, codemodPath),
+    join(CODEMODS_FOLDER, codemodPath, 'codemod'),
   );
 
   const results = await (isSingleThreaded

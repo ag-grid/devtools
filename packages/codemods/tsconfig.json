@@ -1,5 +1,5 @@
 {
   "extends": "../build-config/templates/tsc/tsconfig.json",
-  "include": ["src", "tasks", "lib.ts", "lib.test.ts", "*.config.mts", "package.json"],
+  "include": ["src", "tasks", "lib.test.ts", "*.config.mts", "package.json"],
   "exclude": ["templates"]
 }
