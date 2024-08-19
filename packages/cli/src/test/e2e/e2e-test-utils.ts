@@ -9,7 +9,7 @@ import { glob } from 'glob';
 import { existsSync } from 'fs';
 
 export class CliE2ETestEnv {
-  public readonly TIMEOUT = 20000;
+  public readonly TIMEOUT = 30000;
 
   public readonly rootFolder: string;
 

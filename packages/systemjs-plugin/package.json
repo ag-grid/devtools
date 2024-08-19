@@ -39,13 +39,13 @@
     "@babel/plugin-transform-react-jsx": "^7.23.4",
     "@babel/plugin-transform-typescript": "^7.23.6",
     "@types/babel__core": "^7.20.5",
-    "@typescript-eslint/eslint-plugin": "7.16.1",
-    "@typescript-eslint/parser": "7.16.1"
+    "@typescript-eslint/eslint-plugin": "7.18.0",
+    "@typescript-eslint/parser": "7.18.0"
   },
   "peerDependencies": {
     "eslint": "8.57.0",
-    "typescript": "^5.5.3",
-    "vite": "^5",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.1",
     "vite-plugin-node-polyfills": "^0.22"
   }
 }

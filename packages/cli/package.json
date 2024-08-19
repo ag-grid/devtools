@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@ag-grid-devtools/cli",
-  "version": "32.0.5",
+  "version": "32.0.6",
   "license": "MIT",
   "description": "AG Grid developer toolkit",
   "author": "AG Grid <info@ag-grid.com>",
@@ -64,12 +64,12 @@
     "@ag-grid-devtools/codemods"
   ],
   "dependencies": {
-    "@ag-grid-devtools/codemods": "workspace:*",
-    "@typescript-eslint/parser": "7.16.1",
+    "@typescript-eslint/parser": "7.18.0",
     "eslint": "8.57.0",
-    "tsx": "4.16.2"
+    "tsx": "4.17.0"
   },
   "devDependencies": {
+    "@ag-grid-devtools/codemods": "workspace:*",
     "@ag-grid-devtools/build-config": "workspace:*",
     "@ag-grid-devtools/codemod-task-utils": "workspace:*",
     "@ag-grid-devtools/types": "workspace:*",
@@ -77,21 +77,21 @@
     "@ag-grid-devtools/worker-utils": "workspace:*",
     "@types/diff": "5.2.1",
     "@types/graceful-fs": "4.1.9",
-    "@types/node": "20.14.10",
+    "@types/node": "22.4.1",
     "@types/semver": "7.5.8",
     "diff": "5.2.0",
     "glob": "11.0.0",
     "graceful-fs": "4.2.11",
-    "ignore": "5.3.1",
-    "semver": "7.6.2",
-    "vite-plugin-dts": "3.9.1",
+    "ignore": "5.3.2",
+    "semver": "7.6.3",
+    "vite-plugin-dts": "4.0.3",
     "vite-plugin-static-copy": "1.0.6"
   },
   "peerDependencies": {
     "eslint": "8.57.0",
-    "typedoc": "^0.26",
-    "typescript": "5.5.3",
-    "vite": "^5",
-    "vitest": "^1"
+    "typedoc": "^0.26.6",
+    "typescript": "5.5.4",
+    "vite": "^5.4.1",
+    "vitest": "^1.6.0"
   }
 }

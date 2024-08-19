@@ -42,25 +42,25 @@
   "dependencies": {
     "@ag-grid-devtools/types": "workspace:*",
     "@ag-grid-devtools/utils": "workspace:*",
-    "@babel/core": "7.23.2",
-    "@babel/generator": "7.23.0",
-    "@babel/parser": "7.23.0",
+    "@babel/core": "7.23.9",
+    "@babel/generator": "7.23.6",
+    "@babel/parser": "7.23.9",
     "@babel/template": "7.22.15",
-    "@babel/traverse": "7.23.2",
-    "@babel/types": "7.23.0",
-    "@types/babel__core": "7.20.3",
-    "@types/babel__generator": "7.6.6",
-    "@types/babel__template": "7.4.3",
-    "@types/babel__traverse": "7.20.3"
+    "@babel/traverse": "7.23.9",
+    "@babel/types": "7.23.9",
+    "@types/babel__core": "7.20.5",
+    "@types/babel__generator": "7.6.8",
+    "@types/babel__template": "7.4.4",
+    "@types/babel__traverse": "7.20.6"
   },
   "devDependencies": {
     "@ag-grid-devtools/build-config": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "8.57.0",
-    "typedoc": "^0.26",
-    "typescript": "5.5.3",
-    "vite": "^5",
-    "vitest": "^1"
+    "typedoc": "^0.26.6",
+    "typescript": "5.5.4",
+    "vite": "^5.4.1",
+    "vitest": "^1.6.0"
   }
 }
