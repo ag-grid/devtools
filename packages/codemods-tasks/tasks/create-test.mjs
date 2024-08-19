@@ -1,5 +1,5 @@
 import { readdirSync, statSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { resolve, join, dirname } from 'node:path';
 import { stdin, stderr } from 'node:process';
 import {
   copyTemplateDirectory,
@@ -62,7 +62,7 @@ const VARIABLES = [
     name: 'projectRoot',
     label: 'Project root directory',
     options: () => ({
-      value: dirname(getPackageJsonPath(__dirname)),
+      value: resolve(dirname(getPackageJsonPath(__dirname)), '../cli/src/codemods'),
       validate: validateDirectory,
     }),
   },
