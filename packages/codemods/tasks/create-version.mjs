@@ -11,7 +11,6 @@ import {
 } from '@ag-grid-devtools/build-tools';
 
 import {
-  addReleaseToPackageJsonExports,
   addReleaseToVersionsManifest,
   addReleaseToVersionsManifestTests,
   getNextReleaseVersion,
@@ -130,10 +129,6 @@ export default async function task(...args) {
     versionIdentifier: `v${versionIdentifier}`,
   });
   await addReleaseToVersionsManifestTests({ manifestTestPath: versionsManifestTestPath, version });
-  await addReleaseToPackageJsonExports(join(projectRoot, 'package.json'), {
-    version,
-    templatePath: PACKAGE_JSON_TEMPLATE_PATH,
-  });
   process.stderr.write(`\nCreated codemod version ${green(version)} in ${outputPath}\n`);
 }
 

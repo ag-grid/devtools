@@ -1,18 +1,5 @@
 # Developer Guide
 
-## Package scripts
-
-This package contains the following npm scripts:
-
-- `build`: Build this package (outputs the compiled package into the `./dist` directory)
-- `lint`: Lint the source code
-- `test`: Run tests (or use `test:watch` to enable watch mode)
-- `build:tasks`: Build dependencies for the task runner scripts (see below)
-
-## Common tasks
-
-> These tasks assume the task runner script dependencies have already been built. This can be done by navigating to the `packages/codemods` directory within the repository and running `pnpm run build:tasks`
-
 ### Adding new transformation rules to an existing codemod
 
 Codemods typically comprise a set of source transformations.
@@ -21,7 +8,7 @@ See the README instructions for the relevant [source transformation](./src/trans
 
 ### Creating a new codemod
 
-All codemods are tied to a specific release version. To create a new codemod release, navigate to the `packages/codemods` directory within the repository and run the following command:
+All codemods are tied to a specific release version. To create a new codemod release, in the root workspace directory, run the following command:
 
 ```
 pnpm run task:create-version
@@ -81,7 +68,7 @@ This will prompt for the name of the codemod or transform that you want to test 
 
 Generated test cases are detected via filesystem naming convention, whereby each test scenario is a directory within the relevant `__fixtures__/scenarios` directory that contains a file named `scenario.json` that is used to describe the test scenario.
 
-Test scenario directories can be nested within the filesystem to 
+Test scenario directories can be nested within the filesystem to
 
 A `scenario.json` file can contain the following fields:
 

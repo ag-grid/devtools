@@ -25,7 +25,11 @@
     "coverage:report": "vitest run --coverage --config ./report.vitest.config.mts",
     "clean": "rm -rf docs coverages packages/*/dist",
     "version": "pnpm --filter @ag-grid-devtools/cli exec -- pnpm run --silent version",
-    "publish": "pnpm run --filter @ag-grid-devtools/cli publish"
+    "publish": "pnpm run --filter @ag-grid-devtools/cli publish",
+    "task:create-version": "pnpm run --filter build-tools task $PWD/tasks/create-version.mjs",
+    "task:create-transform": "pnpm run --filter build-tools task $PWD/tasks/create-transform.mjs",
+    "task:include-transform": "pnpm run --filter build-tools task $PWD/tasks/include-transform.mjs",
+    "task:create-test": "pnpm run --filter build-tools task $PWD/tasks/create-test.mjs"
   },
   "devDependencies": {
     "@babel/core": "7.23.2",
