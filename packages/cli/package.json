@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@ag-grid-devtools/cli",
-  "version": "32.0.6",
+  "version": "32.0.7",
   "license": "MIT",
   "description": "AG Grid developer toolkit",
   "author": "AG Grid <info@ag-grid.com>",
@@ -16,24 +16,21 @@
   "type": "module",
   "main": "./index.ts",
   "scripts": {
-    "build": "pnpm run build:lib && pnpm run build:codemods && pnpm run build:readme && pnpm run build:pkg",
+    "build": "pnpm run build:lib && pnpm run build:readme && pnpm run build:pkg",
     "build:lib": "vite build",
     "build:readme": "cp README.md dist/README.md",
     "build:pkg": "PKG_WORKSPACE_VERSIONS=@ag-grid-devtools/codemods:\"$(pnpm run --silent version)\" pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
-    "build:codemods": "pnpm run build:codemods:lib && pnpm run build:codemods:pkg",
-    "build:codemods:lib": "vite build --config codemods.vite.config.mts",
-    "build:codemods:pkg": "pnpm run --filter build-tools pkg $PWD/../codemods $PWD/dist/node_modules/@ag-grid-devtools/codemods/package.json $(pnpm run --silent version)",
     "lint": "pnpm run '/^lint:.*/'",
     "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
     "lint:typescript": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest watch",
     "version": "node -p -e \"require('./package.json').version\"",
     "publish": "npm publish ./dist --access public"
   },
   "pkg": {
     "main": "./index.cjs",
-    "bin": "./index.cjs",
+    "bin": {
+      "ag-grid-devtools-cli": "./ag-grid-devtools-cli.cjs"
+    },
     "exports": {
       ".": {
         "import": "./index.mjs",
@@ -45,7 +42,11 @@
         "require": "./index.cjs",
         "default": "./index.mjs"
       },
-      "./index.js": "./index.mjs",
+      "./index.js": {
+        "import": "./index.mjs",
+        "require": "./index.cjs",
+        "default": "./index.mjs"
+      },
       "./index.mjs": "./index.mjs",
       "./index.cjs": "./index.cjs",
       "./user-config": {
@@ -53,23 +54,39 @@
         "require": "./user-config.cjs",
         "default": "./user-config.mjs"
       },
-      "./user-config.js": "./user-config.mjs",
+      "./user-config.js": {
+        "import": "./user-config.mjs",
+        "require": "./user-config.cjs",
+        "default": "./user-config.mjs"
+      },
       "./user-config.mjs": "./user-config.mjs",
       "./user-config.cjs": "./user-config.cjs",
+      "./ag-grid-devtools-cli": {
+        "import": "./ag-grid-devtools-cli.mjs",
+        "require": "./ag-grid-devtools-cli.cjs",
+        "default": "./ag-grid-devtools-cli.mjs"
+      },
+      "./ag-grid-devtools-cli.js": {
+        "import": "./ag-grid-devtools-cli.mjs",
+        "require": "./ag-grid-devtools-cli.cjs",
+        "default": "./ag-grid-devtools-cli.mjs"
+      },
+      "./ag-grid-devtools-cli.cjs": "./ag-grid-devtools-cli.cjs",
+      "./ag-grid-devtools-cli.mjs": "./ag-grid-devtools-cli.mjs",
       "./package.json": "./package.json"
     }
   },
   "types": "./index.d.ts",
-  "bundleDependencies": [
-    "@ag-grid-devtools/codemods"
-  ],
   "dependencies": {
     "@typescript-eslint/parser": "7.18.0",
     "eslint": "8.57.0",
     "tsx": "4.17.0"
   },
   "devDependencies": {
-    "@ag-grid-devtools/codemods": "workspace:*",
+    "@ag-grid-devtools/ast": "workspace:*",
+    "@ag-grid-devtools/build-tools": "workspace:*",
+    "@ag-grid-devtools/codemod-utils": "workspace:*",
+    "@ag-grid-devtools/test-utils": "workspace:*",
     "@ag-grid-devtools/build-config": "workspace:*",
     "@ag-grid-devtools/codemod-task-utils": "workspace:*",
     "@ag-grid-devtools/types": "workspace:*",
@@ -83,6 +100,7 @@
     "glob": "11.0.0",
     "graceful-fs": "4.2.11",
     "ignore": "5.3.2",
+    "prettier": "3.3.3",
     "semver": "7.6.3",
     "vite-plugin-dts": "4.0.3",
     "vite-plugin-static-copy": "1.0.6"

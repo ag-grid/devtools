@@ -55,6 +55,18 @@ export const dynamicRequire = {
     }
   },
 
+  tryResolveOneOf(paths: string[], meta: ImportMeta): string {
+    let error: unknown;
+    for (const path of paths) {
+      try {
+        return dynamicRequire.resolve(path, meta);
+      } catch (e) {
+        error = error || e;
+      }
+    }
+    throw error;
+  },
+
   resolve(path: string, meta: ImportMeta): string {
     dynamicRequire.initialize();
     return createRequire(meta.url || pathResolve(thisDir, 'index.js')).resolve(path);

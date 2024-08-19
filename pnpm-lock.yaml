@@ -202,15 +202,24 @@ importers:
         specifier: ^1.6.0
         version: 1.6.0(@types/node@22.4.1)
     devDependencies:
+      '@ag-grid-devtools/ast':
+        specifier: workspace:*
+        version: link:../ast
       '@ag-grid-devtools/build-config':
         specifier: workspace:*
         version: link:../build-config
+      '@ag-grid-devtools/build-tools':
+        specifier: workspace:*
+        version: link:../build-tools
       '@ag-grid-devtools/codemod-task-utils':
         specifier: workspace:*
         version: link:../codemod-task-utils
-      '@ag-grid-devtools/codemods':
+      '@ag-grid-devtools/codemod-utils':
         specifier: workspace:*
-        version: link:../codemods
+        version: link:../codemod-utils
+      '@ag-grid-devtools/test-utils':
+        specifier: workspace:*
+        version: link:../test-utils
       '@ag-grid-devtools/types':
         specifier: workspace:*
         version: link:../types
@@ -244,6 +253,9 @@ importers:
       ignore:
         specifier: 5.3.2
         version: 5.3.2
+      prettier:
+        specifier: 3.3.3
+        version: 3.3.3
       semver:
         specifier: 7.6.3
         version: 7.6.3
@@ -340,7 +352,7 @@ importers:
         specifier: workspace:*
         version: link:../test-utils
 
-  packages/codemods:
+  packages/codemods-tasks:
     dependencies:
       eslint:
         specifier: 8.57.0
@@ -382,6 +394,9 @@ importers:
       '@ag-grid-devtools/utils':
         specifier: workspace:*
         version: link:../utils
+      recast:
+        specifier: 0.23.9
+        version: 0.23.9
 
   packages/systemjs-plugin:
     dependencies:

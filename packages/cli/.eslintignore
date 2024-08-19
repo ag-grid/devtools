@@ -1,3 +1,6 @@
+/src/codemods/versions/*/__fixtures__/scenarios
+/src/codemods/plugins/*/__fixtures__/scenarios
+/src/codemods/transforms/*/__fixtures__/scenarios
 /dist/
 /vitest.config.mts.timestamp-*.mjs
 _temp
