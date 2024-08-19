@@ -9,7 +9,6 @@ export async function copyTemplateDirectory(templateDir, outputDir, variables) {
         `Failed to process template filename "${join(templateDir, templateFilename)}"`,
         () => replaceVariables(templateFilename, variables),
       );
-      console.log('templateDir', templateDir, outputDir, templateFilename, outputFilename);
       const templateFilePath = join(templateDir, templateFilename);
       const outputFilePath = join(outputDir, outputFilename);
       return stat(templateFilePath).then((stats) =>

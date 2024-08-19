@@ -37,9 +37,9 @@ const LATEST_VERSION = versions[versions.length - 1].version;
 const DEFAULT_TARGET_VERSION = getMinorSemverVersion(getCliPackageVersion()) ?? LATEST_VERSION;
 
 const thisFolder = pathResolve(
-  (typeof __dirname !== 'undefined' ? __dirname : '.')
-    ? import.meta.url && dirname(fileURLToPath(import.meta.url))
-    : './',
+  (typeof __dirname !== 'undefined' ? __dirname : '.') ||
+    (import.meta.url && dirname(fileURLToPath(import.meta.url))) ||
+    './',
 );
 const CODEMODS_FOLDER = dirname(
   dynamicRequire.tryResolveOneOf(
