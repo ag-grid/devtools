@@ -8,7 +8,7 @@ See the README instructions for the relevant [source transformation](./src/trans
 
 ### Creating a new codemod
 
-All codemods are tied to a specific release version. To create a new codemod release, in the root workspace directory, run the following command:
+All codemods are tied to a specific release version. To create a new codemod release, navigate to the packages/codemods-tasks directory within the repository and run the following command:
 
 ```
 pnpm run task:create-version

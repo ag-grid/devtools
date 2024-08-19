@@ -1,9 +1,9 @@
 {
   "private": true,
-  "name": "@ag-grid-devtools/codemods",
+  "name": "@ag-grid-devtools/codemods-tasks",
   "version": "0.0.1",
   "license": "MIT",
-  "description": "AG Grid codemods",
+  "description": "AG Grid codemods tasks and templates",
   "author": "AG Grid <info@ag-grid.com>",
   "homepage": "https://www.ag-grid.com/",
   "repository": {
@@ -24,7 +24,11 @@
     "build:tasks": "pnpm run --filter @ag-grid-devtools/ast --filter @ag-grid-devtools/codemod-utils --filter @ag-grid-devtools/test-utils build",
     "lint": "pnpm run '/^lint:.*/'",
     "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
-    "lint:typescript": "tsc --noEmit"
+    "lint:typescript": "tsc --noEmit",
+    "task:create-version": "pnpm run --filter build-tools task $PWD/tasks/create-version.mjs",
+    "task:create-transform": "pnpm run --filter build-tools task $PWD/tasks/create-transform.mjs",
+    "task:include-transform": "pnpm run --filter build-tools task $PWD/tasks/include-transform.mjs",
+    "task:create-test": "pnpm run --filter build-tools task $PWD/tasks/create-test.mjs"
   },
   "devDependencies": {
     "@ag-grid-devtools/ast": "workspace:*",
