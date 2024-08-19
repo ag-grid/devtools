@@ -17,8 +17,8 @@ import { validateOneOf } from '../../build-tools/src/validate.mjs';
 
 const __dirname = dirname(new URL(import.meta.url).pathname);
 
-const PROJECT_TRANSFORMS_DIR = './src/transforms';
-const PROJECT_VERSIONS_DIR = './src/versions';
+const PROJECT_TRANSFORMS_DIR = './transforms';
+const PROJECT_VERSIONS_DIR = './versions';
 
 const VARIABLES = [
   {

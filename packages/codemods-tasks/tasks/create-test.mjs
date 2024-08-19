@@ -16,9 +16,9 @@ import { getLatestReleaseVersion, retrieveExistingVersions } from './src/version
 const __dirname = dirname(new URL(import.meta.url).pathname);
 const TEMPLATE_DIR = join(__dirname, '../templates/create-test');
 
-const PROJECT_PLUGINS_DIR = './src/plugins';
-const PROJECT_TRANSFORMS_DIR = './src/transforms';
-const PROJECT_VERSIONS_DIR = './src/versions';
+const PROJECT_PLUGINS_DIR = './plugins';
+const PROJECT_TRANSFORMS_DIR = './transforms';
+const PROJECT_VERSIONS_DIR = './versions';
 
 const SCENARIOS_DIR = '__fixtures__/scenarios';
 

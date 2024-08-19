@@ -1,16 +1,36 @@
-import { ast } from '@ag-grid-devtools/ast/dist/lib/lib.js';
-import { replaceVariables } from '@ag-grid-devtools/build-tools';
-import {
-  addModuleImports,
-  applyBabelTransform,
-  applyPrettierFormat,
-  createBabelPlugin,
-  loadPrettierConfig,
-  parseBabelAst,
-} from '@ag-grid-devtools/codemod-utils/dist/lib/lib.js';
 import { readdirSync } from 'node:fs';
-import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, join, relative } from 'node:path';
+import { join } from 'node:path';
+
+const TEMPLATE_OPTIONS = {
+  plugins: ['jsx', 'typescript', 'decorators-legacy'],
+};
+
+function addModuleImports(imports) {
+  return function addModuleImports(babel) {
+    return {
+      visitor: {
+        Program(path) {
+          const finalExistingImport = path
+            .get('body')
+            .slice()
+            .reverse()
+            .find((path) => path.isImportDeclaration());
+          if (finalExistingImport) {
+            finalExistingImport.insertAfter(imports);
+          } else {
+            path.unshiftContainer('body', imports);
+          }
+        },
+      },
+    };
+  };
+}
+
+const ast = {
+  statement(literals, ...interpolations) {
+    return template.statement(TEMPLATE_OPTIONS).ast(literals, ...interpolations);
+  },
+};
 
 export function isValidReleaseVersion(value) {
   return parseReleaseVersion(value) !== null;
@@ -74,8 +94,8 @@ export async function addTransformToVersion({ versionPath, transformPath, transf
         addModuleImports(
           ast.statement`
             import ${transformIdentifier} from '${getModuleImportPath(transformPath, {
-              currentPath: transformsPath,
-            })}';
+            currentPath: transformsPath,
+          })}';
           `,
         ),
         addTransformToCodemod(transformIdentifier),
@@ -87,8 +107,8 @@ export async function addTransformToVersion({ versionPath, transformPath, transf
         addModuleImports(
           ast.statement`
             import ${transformIdentifier} from '${getModuleImportPath(transformManifestPath, {
-              currentPath: transformsPath,
-            })}';
+            currentPath: transformsPath,
+          })}';
           `,
         ),
         addTransformManifestToCodemodManifest(transformIdentifier),
@@ -98,7 +118,7 @@ export async function addTransformToVersion({ versionPath, transformPath, transf
   ]);
 
   function addTransformToCodemod(transformIdentifier) {
-    return createBabelPlugin((babel) => {
+    return (babel) => {
       const { types: t } = babel;
       return {
         visitor: {
@@ -127,11 +147,11 @@ export async function addTransformToVersion({ versionPath, transformPath, transf
           },
         },
       };
-    });
+    };
   }
 
   function addTransformManifestToCodemodManifest(transformIdentifier) {
-    return createBabelPlugin((babel) => {
+    return (babel) => {
       const { types: t } = babel;
       return {
         visitor: {
@@ -176,7 +196,7 @@ export async function addTransformToVersion({ versionPath, transformPath, transf
           },
         },
       };
-    });
+    };
   }
 }
 
@@ -200,7 +220,7 @@ export async function addReleaseToVersionsManifest({
   });
 
   function addReleaseVersionToVersionsManifest(transformIdentifier) {
-    return createBabelPlugin((babel) => {
+    return (babel) => {
       const { types: t } = babel;
       return {
         visitor: {
@@ -229,7 +249,7 @@ export async function addReleaseToVersionsManifest({
           },
         },
       };
-    });
+    };
   }
 }
 
@@ -240,7 +260,7 @@ export async function addReleaseToVersionsManifestTests({ manifestTestPath, vers
   });
 
   function addReleaseVersionToVersionsManifestTests(version) {
-    return createBabelPlugin((babel) => {
+    return (babel) => {
       const { types: t } = babel;
       return {
         visitor: {
@@ -255,6 +275,6 @@ export async function addReleaseToVersionsManifestTests({ manifestTestPath, vers
           },
         },
       };
-    });
+    };
   }
 }

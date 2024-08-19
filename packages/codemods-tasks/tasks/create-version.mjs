@@ -23,13 +23,10 @@ const __dirname = dirname(new URL(import.meta.url).pathname);
 const TEMPLATE_DIR = join(__dirname, '../templates/create-version');
 const CODEMOD_TEMPLATE_DIR = join(TEMPLATE_DIR, 'codemod');
 const EXPORTS_TEMPLATE_DIR = join(TEMPLATE_DIR, 'exports');
-const PACKAGE_JSON_TEMPLATE_PATH = join(TEMPLATE_DIR, 'pkg', 'pkg.json');
 
-const PROJECT_VERSIONS_DIR = './src/versions';
+const PROJECT_VERSIONS_DIR = './versions';
 const MANIFEST_FILENAME = 'manifest.ts';
 const MANIFEST_TEST_PATH = './lib.test.ts';
-
-const VERSION_EXPORTS_DIR = './version';
 
 const VARIABLES = [
   {
@@ -45,14 +42,6 @@ const VARIABLES = [
     label: 'Codemod versions directory',
     options: ({ projectRoot }) => ({
       value: join(projectRoot, PROJECT_VERSIONS_DIR),
-      validate: validateDirectory,
-    }),
-  },
-  {
-    name: 'exportsDir',
-    label: 'Codemod exports directory',
-    options: ({ projectRoot }) => ({
-      value: join(projectRoot, VERSION_EXPORTS_DIR),
       validate: validateDirectory,
     }),
   },

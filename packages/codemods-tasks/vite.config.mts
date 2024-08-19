@@ -16,7 +16,9 @@ export default mergeConfig(
     },
     build: {
       lib: {
-        entry: {},
+        entry: {
+          'lib/lib': resolve(__dirname, pkg.module),
+        },
         name: pkg.name,
         formats: ['cjs'],
         fileName: '[name]',
