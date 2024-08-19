@@ -44,20 +44,20 @@
     "@ag-grid-devtools/types": "workspace:*",
     "@ag-grid-devtools/utils": "workspace:*",
     "@angular-eslint/template-parser": "17.5.2",
-    "@angular/compiler": "17.0.1",
-    "@typescript-eslint/types": "7.16.1",
-    "memfs": "4.6.0"
+    "@angular/compiler": "17.3.12",
+    "@typescript-eslint/types": "7.18.0",
+    "memfs": "4.6.1"
   },
   "devDependencies": {
     "@ag-grid-devtools/build-config": "workspace:*"
   },
   "peerDependencies": {
-    "@vitest/expect": "^1",
-    "@vitest/runner": "^1",
+    "@vitest/expect": "^1.6.0",
+    "@vitest/runner": "^1.6.0",
     "eslint": "8.57.0",
-    "typedoc": "^0.26",
-    "typescript": "5.5.3",
-    "vite": "^5",
-    "vitest": "^1"
+    "typedoc": "^0.26.6",
+    "typescript": "5.5.4",
+    "vite": "^5.4.1",
+    "vitest": "^1.6.0"
   }
 }
