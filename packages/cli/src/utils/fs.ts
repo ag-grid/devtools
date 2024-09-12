@@ -30,28 +30,77 @@ export async function findGitRoot(path: string): Promise<string | undefined> {
   }
 }
 
+export async function isDirectory(path: string): Promise<boolean> {
+  try {
+    return (await stat(path)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+async function resolveFilesOrDirectories(
+  input: string[],
+  cwd: string,
+): Promise<{ filesSet: Set<string>; directoriesSet: Set<string> }> {
+  const files = new Set<string>();
+  const directories = new Set<string>();
+
+  const checks = input.map(async (item) => {
+    const fullPath = resolve(cwd, item);
+    try {
+      const statResult = await stat(fullPath);
+      if (statResult.isDirectory()) {
+        directories.add(fullPath);
+      } else {
+        files.add(fullPath);
+      }
+    } catch {
+      files.add(fullPath);
+    }
+  });
+
+  await Promise.all(checks);
+
+  return { filesSet: files, directoriesSet: directories };
+}
+
 export async function findSourceFiles(
-  path: string,
+  cwd: string,
+  paths: string[],
   extensions: string[],
-  skipFiles: string[],
+  skipFiles: ReadonlySet<string> | null,
   gitRoot: string | undefined,
 ): Promise<Array<string>> {
-  path = resolve(path);
+  const { filesSet, directoriesSet } = await resolveFilesOrDirectories(paths, cwd);
 
-  let files = await glob(
-    extensions.map((ext) => `**/*${ext}`),
-    {
-      dot: true,
-      cwd: path,
-      nodir: true,
-      absolute: true,
-      ignore: ['**/node_modules/**', '**/.git/**'],
-    },
-  );
+  for (let path of directoriesSet) {
+    path = resolve(path);
+    for (const file of await glob(
+      extensions.map((ext) => `**/*${ext}`),
+      {
+        dot: true,
+        cwd: path,
+        nodir: true,
+        absolute: true,
+        ignore: [
+          '**/node_modules/**',
+          '**/.git/**',
+          '**/.hg/**',
+          '**/.svn/**',
 
-  if (skipFiles.length > 0) {
-    const skipFilesSet = new Set(skipFiles);
-    files = files.filter((file) => !skipFilesSet.has(file));
+          // ignore .d.ts files as we cannot properly parse and process them
+          '**/*.d.ts',
+        ],
+      },
+    )) {
+      filesSet.add(file);
+    }
+  }
+
+  let files = Array.from(filesSet);
+
+  if (skipFiles && skipFiles.size > 0) {
+    files = files.filter((file) => !skipFiles.has(file));
   }
 
   interface DirGitignore {

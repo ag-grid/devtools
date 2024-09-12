@@ -9,5 +9,5 @@ export function getCliPackageVersion(): string {
 }
 
 export function getCliCommand(): string {
-  return `npx ${getCliPackageName()}@${getCliPackageVersion().replace(/^(\d+\.\d+).+$/, '$1')}`;
+  return `npx ${getCliPackageName()}@latest`;
 }
