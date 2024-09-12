@@ -1,5 +1,4 @@
 {
   "name": "Transform Grid API methods",
-  "description": "Transform deprecated Grid API method invocations",
-  "template": "../../../templates/plugin-transform-grid-api-methods"
+  "description": "Transform deprecated Grid API method invocations"
 }

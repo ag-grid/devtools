@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 
 import * as lib from './lib';
 
-const versions: Array<string> = ['31.0.0', '31.1.0', '31.2.0', '31.3.0', '32.0.0'];
+const versions: Array<string> = ['31.0.0', '31.1.0', '31.2.0', '31.3.0', '32.0.0', '32.2.0'];
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({

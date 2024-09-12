@@ -4,7 +4,7 @@ import { deprecations, replacements } from './replacements';
 
 const plugin: AstTransform<AstCliContext> = transformGridApiMethods({ replacements, deprecations });
 
-const transform: AstTransform<AstCliContext> = function transformGridApiMethodsV32_0(babel) {
+const transform: AstTransform<AstCliContext> = function transformGridApiMethodsV32_2(babel) {
   return plugin(babel);
 };
 
