@@ -9,3 +9,11 @@ const gridApi = createGrid(document.body, {
 gridApi.getDisplayedRowCount();
 gridApi?.getDisplayedRowCount();
 gridApi!.getDisplayedRowCount();
+
+gridApi.paginationGetRootRowCount();
+gridApi?.paginationGetRootRowCount();
+gridApi!.paginationGetRootRowCount();
+
+gridApi.paginationGetPageCount();
+gridApi?.paginationGetPageCount();
+gridApi!.paginationGetPageCount();
