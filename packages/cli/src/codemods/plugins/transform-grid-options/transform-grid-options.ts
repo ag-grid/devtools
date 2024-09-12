@@ -60,7 +60,6 @@ type JSXIdentifier = Types.JSXIdentifier;
 type JSXNamespacedName = Types.JSXNamespacedName;
 type Literal = Types.Literal;
 type MemberExpression = Types.MemberExpression;
-type OptionalMemberExpression = Types.OptionalMemberExpression;
 type ObjectExpression = Types.ObjectExpression;
 type ObjectMethod = Types.ObjectMethod;
 type ObjectProperty = Types.ObjectProperty;
@@ -725,6 +724,93 @@ export function migrateProperty<S extends AstTransformContext<AstCliContext>>(
     },
   };
   return transformer;
+}
+
+export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>>(
+  path: string[],
+  transform: ObjectPropertyValueTransformer<S>,
+): ObjectPropertyTransformer<S> {
+  if (path.length === 1) {
+    return migrateProperty(path[0], transform);
+  }
+
+  const transformer: ObjectPropertyTransformer<S> = {
+    init(node, context) {
+      if (node.shouldSkip) {
+        return;
+      }
+      node.skip();
+
+      // find or create sibling root prop
+      // recurse into prop with find or create
+      // at lowest level, add transformed value to properties
+      if (!node.parentPath.isObjectExpression()) return;
+      let rootNode = node.parentPath;
+      for (let i = 0; i < path.length; i++) {
+        const part = path[i];
+        const rootAccessor = { key: t.identifier(part), computed: false };
+        let initializer = findSiblingPropertyInitializer(rootNode, rootAccessor);
+        if (!initializer) {
+          initializer = createSiblingPropertyInitializer(rootNode, rootAccessor);
+        }
+        if (!initializer) return;
+        const newObj = initializer.get('value');
+        if (!newObj.isObjectExpression()) return;
+        rootNode = newObj;
+        if (i === path.length - 1) {
+          const accessor = createStaticPropertyKey(rootAccessor.key, rootAccessor.computed);
+          const value = node.get('value');
+          if (Array.isArray(value)) return;
+          const updatedValue = transform.property(
+            value as NodePath<Expression>,
+            accessor!,
+            context,
+          )!;
+          rewriteObjectPropertyInitializer(initializer, rootAccessor, updatedValue);
+        }
+      }
+
+      node.remove();
+    },
+
+    get(node, context) {},
+
+    set(node, context) {},
+
+    angularAttribute(attributeNode, component, element, context) {},
+
+    jsxAttribute(node, element, context) {},
+
+    vueAttribute(templateNode, component, element, context) {},
+  };
+
+  return transformer;
+}
+
+function createSiblingPropertyInitializer(
+  objExp: NodePath<ObjectExpression>,
+  accessor: PropertyAccessor,
+) {
+  const prop = t.objectProperty(accessor.key, t.objectExpression([]));
+  const [newPath] = objExp.replaceWith(t.objectExpression(objExp.node.properties.concat(prop)));
+  return newPath
+    .get('properties')
+    .find((p) => p.isObjectProperty() && p.node.key === accessor.key) as
+    | NodePath<ObjectProperty>
+    | undefined;
+}
+
+function findSiblingPropertyInitializer(
+  objExp: NodePath<ObjectExpression>,
+  accessor: PropertyAccessor,
+): NodePath<t.ObjectProperty> | undefined {
+  return objExp
+    .get('properties')
+    .filter((p): p is NodePath<t.ObjectProperty> => t.isObjectProperty(p.node))
+    .find((p) => {
+      const existingAccessor = parseObjectPropertyInitializerAccessor(p);
+      return existingAccessor ? arePropertyAccessorsEqual(accessor, existingAccessor) : false;
+    });
 }
 
 export function removeProperty(
