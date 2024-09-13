@@ -779,13 +779,49 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
 
     angularAttribute(attributeNode, component, element, context) {},
 
-    jsxAttribute(node, element, context) {},
+    jsxAttribute(node, element, context) {
+      if (node.shouldSkip) return;
+      node.skip();
+
+      if (!node.parentPath.isJSXOpeningElement()) return;
+      const root = node.parentPath;
+
+      const rootSibling = root.get('attributes').find((att): att is NodePath<JSXAttribute> => {
+        return att.isJSXAttribute() && att.get('name').node.name === path[0];
+      });
+
+      const jsxExpressionContainer = rootSibling?.get('value');
+      if (!jsxExpressionContainer?.isJSXExpressionContainer()) return;
+      const objExp = jsxExpressionContainer.get('expression');
+      if (!objExp.isObjectExpression()) return;
+
+      let rootNode = objExp;
+      for (let i = 1; i < path.length; i++) {
+        const part = path[i];
+        const accessor = { key: t.identifier(part), computed: false };
+        let initializer = findSiblingPropertyInitializer(rootNode, accessor);
+        if (!initializer) {
+          initializer = createSiblingPropertyInitializer(rootNode, accessor);
+        }
+        if (!initializer) return;
+        const newObj = initializer.get('value');
+        if (!newObj.isObjectExpression()) return;
+        rootNode = newObj;
+        if (i === path.length - 1) {
+          const staticKey = createStaticPropertyKey(accessor.key, accessor.computed);
+          const value = node.get('value');
+          transform.jsxAttribute(value);
+        }
+      }
+    },
 
     vueAttribute(templateNode, component, element, context) {},
   };
 
   return transformer;
 }
+
+function findJSXSiblingAttribute();
 
 function createSiblingPropertyInitializer(
   objExp: NodePath<ObjectExpression>,
@@ -1067,8 +1103,7 @@ function getPropertyInitializerValue(
 ): NodePath<ObjectPropertyValueNode> | null {
   if (property.isObjectProperty()) {
     const value = property.get('value');
-    if (value.isExpression()) return value;
-    return null;
+    return value.isExpression() ? value : null;
   } else if (property.isObjectMethod()) {
     return property;
   } else {
@@ -1080,13 +1115,10 @@ function renameObjectProperty(
   property: NodePath<ObjectPropertyNode>,
   targetAccessor: PropertyAccessor,
 ): NodePath<ObjectPropertyNode> {
-  if (
-    property.node.key === targetAccessor.key &&
-    property.node.computed === targetAccessor.computed
-  ) {
+  const { node } = property;
+  if (node.key === targetAccessor.key && node.computed === targetAccessor.computed) {
     return property;
   }
-  const { node } = property;
   const value = t.isObjectMethod(node) ? node : t.isExpression(node.value) ? node.value : null;
   if (!value) return property;
   return rewriteObjectPropertyInitializer(property, targetAccessor, value);
