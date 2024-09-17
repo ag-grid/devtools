@@ -786,9 +786,13 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
       if (!node.parentPath.isJSXOpeningElement()) return;
       const root = node.parentPath;
 
-      const rootSibling = root.get('attributes').find((att): att is NodePath<JSXAttribute> => {
+      let rootSibling = root.get('attributes').find((att): att is NodePath<JSXAttribute> => {
         return att.isJSXAttribute() && att.get('name').node.name === path[0];
       });
+      if (!rootSibling) {
+        rootSibling = createJSXSiblingAttribute(root, path[0]);
+      }
+      if (!rootSibling) return;
 
       const jsxExpressionContainer = rootSibling?.get('value');
       if (!jsxExpressionContainer?.isJSXExpressionContainer()) return;
@@ -808,11 +812,24 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
         if (!newObj.isObjectExpression()) return;
         rootNode = newObj;
         if (i === path.length - 1) {
-          const staticKey = createStaticPropertyKey(accessor.key, accessor.computed);
-          const value = node.get('value');
-          transform.jsxAttribute(value);
+          let value = node.get('value');
+          if (!isNonNullNodePath(value)) {
+            const [transformed] = value.replaceWith(
+              t.jsxExpressionContainer(t.booleanLiteral(true)),
+            );
+            value = transformed;
+          }
+          let updatedValue = transform.jsxAttribute(value as any, element, node, context);
+          if (!updatedValue || updatedValue === true) return;
+          if (t.isJSXExpressionContainer(updatedValue)) {
+            updatedValue = (updatedValue as unknown as t.JSXExpressionContainer).expression;
+          }
+          if (t.isJSXEmptyExpression(updatedValue)) return;
+          rewriteObjectPropertyInitializer(initializer, accessor, updatedValue);
         }
       }
+
+      node.remove();
     },
 
     vueAttribute(templateNode, component, element, context) {},
@@ -821,7 +838,31 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
   return transformer;
 }
 
-function findJSXSiblingAttribute();
+function isNonNullNodePath<T>(x: NodePath<T>): x is NodePath<NonNullable<T>> {
+  return x.node != null;
+}
+
+function createJSXSiblingAttribute(
+  root: NodePath<t.JSXOpeningElement>,
+  name: string,
+): NodePath<JSXAttribute> | undefined {
+  const newAttribute = t.jsxAttribute(
+    t.jsxIdentifier(name),
+    t.jsxExpressionContainer(t.objectExpression([])),
+  );
+  const [transformed] = root.replaceWith(
+    t.jSXOpeningElement(root.get('name').node, root.node.attributes.concat(newAttribute), true),
+  );
+
+  const wrappedNewAttribute = transformed
+    .get('attributes')
+    .find(
+      (attr): attr is NodePath<JSXAttribute> =>
+        attr.isJSXAttribute() && attr.get('name').node.name === name,
+    );
+
+  return wrappedNewAttribute;
+}
 
 function createSiblingPropertyInitializer(
   objExp: NodePath<ObjectExpression>,
