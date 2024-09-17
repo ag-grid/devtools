@@ -115,7 +115,7 @@ Options:
                               See https://ag-grid.com/javascript-data-grid/codemods/#configuration-file
 
   Additional arguments:
-    [<file>...]               List of input files to operate on.
+    [<file>...<dir>...]       List of input files and directories to operate on.
                               Defaults to all source files in the current working directory excluding patterns in .gitignore
 
   Other options:
@@ -323,17 +323,18 @@ async function migrate(
     ? (await getGitSourceFiles(gitRoot)).map((path) => resolve(gitRoot, path))
     : null;
 
-  let inputFilePaths: string[];
-
-  if (input.length > 0) {
-    inputFilePaths = input.map((path) => resolve(cwd, path));
-  } else {
-    const skipFiles: string[] = [];
-    if (userConfigPath) {
-      skipFiles.push(userConfigPath);
-    }
-    inputFilePaths = await findSourceFiles(cwd, SOURCE_FILE_EXTENSIONS, skipFiles, gitRoot);
+  let skipFiles = new Set<string>();
+  if (userConfigPath) {
+    skipFiles.add(userConfigPath);
   }
+
+  const inputFilePaths = await findSourceFiles(
+    cwd,
+    input.length > 0 ? input : [cwd],
+    SOURCE_FILE_EXTENSIONS,
+    skipFiles,
+    gitRoot,
+  );
 
   if (!allowUntracked) {
     const trackedFilePaths = gitSourceFilePaths ? new Set(gitSourceFilePaths) : null;
