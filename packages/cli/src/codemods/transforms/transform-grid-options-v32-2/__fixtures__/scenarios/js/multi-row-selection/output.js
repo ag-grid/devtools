@@ -8,11 +8,14 @@ const gridApi = createGrid(document.body, {
   onCellSelectionDeleteEnd: () => {},
   suppressRowClickSelection: true,
   suppressRowDeselection: true,
+  groupSelectsChildren: true,
+  groupSelectsFiltered: true,
   suppressCopyRowsToClipboard: true,
   suppressCopySingleCellRanges: true,
 
   selection: {
-    mode: "singleRow",
-    isRowSelectable: (params) => params.data.year < 2007
+    mode: "multiRow",
+    isRowSelectable: (params) => params.data.year < 2007,
+    enableMultiSelectWithClick: true
   }
 });
