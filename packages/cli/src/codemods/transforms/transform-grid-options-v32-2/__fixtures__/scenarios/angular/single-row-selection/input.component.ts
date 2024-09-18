@@ -11,6 +11,22 @@ import { IOlympicData } from './interfaces';
     <ag-grid-angular
       [columnDefs]="columnDefs"
       [rowData]="rowData"
+      [rowSelection]="single"
+      [suppressRowClickSelection]="true"
+      [suppressRowDeselection]="true"
+      [isRowSelectable]="true"
+      [rowMultiSelectWithClick]="true"
+      [groupSelectsChildren]="true"
+      [groupSelectsFiltered]="true"
+      [enableRangeSelection]="true"
+      [suppressMultiRangeSelection]="true"
+      [suppressClearOnFillReduction]="true"
+      [enableRangeHandle]="true"
+      [enableFillHandle]="true"
+      [fillHandleDirection]="true"
+      [fillOperation]="fillOperation($params)"
+      [suppressCopyRowsToClipboard]="true"
+      [suppressCopySingleCellRanges]="true"
       (gridReady)="onGridReady($event)"
     ></ag-grid-angular>
   </div>`,

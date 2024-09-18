@@ -23,6 +23,7 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
   rowSelection: migrateDeepProperty(
     ['selection', 'mode'],
     transformOptionalValue(apply(transformRowSelection)),
+    getManualInterventionMessage('rowSelection', MIGRATION_URL),
   ),
   suppressRowClickSelection: removeProperty(
     getManualInterventionMessage('suppressRowClickSelection', MIGRATION_URL),
@@ -30,10 +31,15 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
   suppressRowDeselection: removeProperty(
     getManualInterventionMessage('suppressRowDeselection', MIGRATION_URL),
   ),
-  isRowSelectable: migrateDeepProperty(['selection', 'isRowSelectable'], migrateOptionalValue()),
+  isRowSelectable: migrateDeepProperty(
+    ['selection', 'isRowSelectable'],
+    migrateOptionalValue(),
+    getManualInterventionMessage('isRowSelectable', MIGRATION_URL),
+  ),
   rowMultiSelectWithClick: migrateDeepProperty(
     ['selection', 'enableMultiSelectWithClick'],
     migrateOptionalValue(),
+    getManualInterventionMessage('rowMultiSelectWithClick', MIGRATION_URL),
   ),
 
   groupSelectsChildren: removeProperty(
@@ -46,30 +52,37 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
   enableRangeSelection: migrateDeepProperty(
     ['selection', 'mode'],
     transformOptionalValue(apply(transformCellSelection)),
+    getManualInterventionMessage('enableRangeSelection', MIGRATION_URL),
   ),
   suppressMultiRangeSelection: migrateDeepProperty(
     ['selection', 'suppressMultiRanges'],
     migrateOptionalValue(),
+    getManualInterventionMessage('suppressMultiRangeSelection', MIGRATION_URL),
   ),
   suppressClearOnFillReduction: migrateDeepProperty(
     ['selection', 'suppressClearOnFillReduction'],
     migrateOptionalValue(),
+    getManualInterventionMessage('suppressClearOnFillReduction', MIGRATION_URL),
   ),
   enableRangeHandle: migrateDeepProperty(
     ['selection', 'handle', 'mode'],
     transformOptionalValue(apply(transformRangeHandle)),
+    getManualInterventionMessage('enableRangeHandle', MIGRATION_URL),
   ),
   enableFillHandle: migrateDeepProperty(
     ['selection', 'handle', 'mode'],
     transformOptionalValue(apply(transformFillHandle)),
+    getManualInterventionMessage('enableFillHandle', MIGRATION_URL),
   ),
   fillHandleDirection: migrateDeepProperty(
     ['selection', 'handle', 'direction'],
     migrateOptionalValue(),
+    getManualInterventionMessage('fillHandleDirection', MIGRATION_URL),
   ),
   fillOperation: migrateDeepProperty(
     ['selection', 'handle', 'setFillValue'],
     migrateOptionalValue(),
+    getManualInterventionMessage('fillOperation', MIGRATION_URL),
   ),
 
   suppressCopyRowsToClipboard: removeProperty(
@@ -85,8 +98,6 @@ function transformFillHandle(value: ObjectPropertyValue): t.Expression {
     if (value.node.value) {
       return ast.expression`'fill'`;
     }
-  } else if (value.isJSXExpressionContainer()) {
-    return transformFillHandle((value as any).get('expression'));
   }
 
   return ast.expression`undefined`;
@@ -97,8 +108,6 @@ function transformRangeHandle(value: ObjectPropertyValue): t.Expression {
     if (value.node.value) {
       return ast.expression`'range'`;
     }
-  } else if (value.isJSXExpressionContainer()) {
-    return transformRangeHandle((value as any).get('expression'));
   }
   return ast.expression`undefined`;
 }
@@ -113,8 +122,6 @@ function transformRowSelection(value: ObjectPropertyValue): t.Expression {
       default:
         break;
     }
-  } else if (value.isJSXExpressionContainer()) {
-    return transformRowSelection((value as any).get('expression'));
   }
 
   return ast.expression`undefined`;
@@ -125,8 +132,6 @@ function transformCellSelection(value: ObjectPropertyValue): t.Expression {
     if (value.node.value) {
       return ast.expression`'cell'`;
     }
-  } else if (value.isJSXExpressionContainer()) {
-    return transformCellSelection((value as any).get('expression'));
   }
 
   return ast.expression`undefined`;
@@ -140,8 +145,8 @@ function apply<S extends AstTransformContext<AstCliContext>>(
       return tff(value);
     },
     jsxAttribute(value, element, attribute, context) {
-      if (isNonNullJsxPropertyValue(value)) return tff(value);
-      return null;
+      if (!isNonNullJsxPropertyValue(value)) return null;
+      return value.isJSXExpressionContainer() ? tff((value as any).get('expression')) : tff(value);
     },
     angularAttribute(value, component, element, attribute, context) {
       return value;

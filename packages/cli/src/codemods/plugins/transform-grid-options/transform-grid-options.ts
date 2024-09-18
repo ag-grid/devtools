@@ -729,6 +729,7 @@ export function migrateProperty<S extends AstTransformContext<AstCliContext>>(
 export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>>(
   path: string[],
   transform: ObjectPropertyValueTransformer<S>,
+  deprecationWarning?: string,
 ): ObjectPropertyTransformer<S> {
   if (path.length === 1) {
     return migrateProperty(path[0], transform);
@@ -773,11 +774,23 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
       node.remove();
     },
 
-    get(node, context) {},
+    get(node, context) {
+      if (node.shouldSkip) return;
+      node.skip();
 
-    set(node, context) {},
+      deprecationWarning && context.opts.warn(node, deprecationWarning);
+    },
 
-    angularAttribute(attributeNode, component, element, context) {},
+    set(node, context) {
+      if (node.shouldSkip) return;
+      node.skip();
+
+      deprecationWarning && context.opts.warn(node, deprecationWarning);
+    },
+
+    angularAttribute(attributeNode, component, element, context) {
+      deprecationWarning && context.opts.warn(null, deprecationWarning);
+    },
 
     jsxAttribute(node, element, context) {
       if (node.shouldSkip) return;
@@ -813,7 +826,7 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
         rootNode = newObj;
         if (i === path.length - 1) {
           let value = node.get('value');
-          if (!isNonNullNodePath(value)) {
+          if (isNullNodePath(value)) {
             const [transformed] = value.replaceWith(
               t.jsxExpressionContainer(t.booleanLiteral(true)),
             );
@@ -832,14 +845,16 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
       node.remove();
     },
 
-    vueAttribute(templateNode, component, element, context) {},
+    vueAttribute(templateNode, component, element, context) {
+      deprecationWarning && context.opts.warn(null, deprecationWarning);
+    },
   };
 
   return transformer;
 }
 
-function isNonNullNodePath<T>(x: NodePath<T>): x is NodePath<NonNullable<T>> {
-  return x.node != null;
+function isNullNodePath<T>(x: NodePath<T | null | undefined>): x is NodePath<null | undefined> {
+  return x.node == null;
 }
 
 function createJSXSiblingAttribute(
