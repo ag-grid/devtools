@@ -758,6 +758,15 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
       // Start off at the root node, where the target object should be defined
       let rootNode = node.parentPath;
 
+      const value = node.get('value');
+      if (Array.isArray(value) || !value.isExpression()) return;
+      const accessor = createStaticPropertyKey(t.identifier(path[path.length - 1]), false);
+      const updatedValue = transform.property(value, accessor, context);
+      if (updatedValue == null) {
+        deprecationWarning && context.opts.warn(node, deprecationWarning);
+        return;
+      }
+
       // Step through the target path, either finding an existing field by that name,
       // or creating an object property if one doesn't exist
       for (let i = 0; i < path.length; i++) {
@@ -774,10 +783,6 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
 
         // On the final path part, apply the transformation and set the value
         if (i === path.length - 1) {
-          const accessor = createStaticPropertyKey(rootAccessor.key, rootAccessor.computed);
-          const value = node.get('value');
-          if (Array.isArray(value) || !value.isExpression()) return;
-          const updatedValue = transform.property(value, accessor!, context)!;
           rewriteObjectPropertyInitializer(initializer, rootAccessor, updatedValue);
         }
       }
@@ -811,7 +816,37 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
       if (!node.parentPath.isJSXOpeningElement()) return;
       const root = node.parentPath;
 
-      // Find or create the root attribute of the target object
+      // Compute the transformed value of the property ahead of time
+      let value: NodePath<Expression | t.JSXExpressionContainer | null | undefined> =
+        node.get('value');
+      // A null value for the JSXAttribute is an implicit truthy value
+      // (e.g. <Component foo />)
+      if (isNullNodePath(value)) {
+        const [transformed] = value.replaceWith(t.jsxExpressionContainer(t.booleanLiteral(true)));
+        value = transformed;
+      }
+      // When getting the value to set at the inner-most level of the object,
+      // we'll need to extract it from the expression container
+      if (value.isJSXExpressionContainer()) {
+        const innerExpression = value.get('expression');
+        // Shouldn't be possible to encounter an empty expression here
+        if (innerExpression.isJSXEmptyExpression()) return;
+        value = innerExpression as NodePath<Expression>;
+      }
+      // At this point, after the above clauses, we know `value` can only be `NodePath<Expression>`
+      let updatedValue = transform.jsxAttribute(
+        value as NodePath<Expression>,
+        element,
+        node,
+        context,
+      );
+      if (!updatedValue || updatedValue === true || t.isJSXEmptyExpression(updatedValue)) {
+        deprecationWarning && context.opts.warn(node, deprecationWarning);
+        return;
+      }
+
+      // Find or create the root attribute of the target object, injecting
+      // an empty object expression into the expression container
       let rootSibling = root
         .get('attributes')
         .find(
@@ -823,7 +858,7 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
       }
       if (!rootSibling) return;
 
-      // Inject an empty object expression into the expression container
+      // Fish out the reference to the object expression
       const jsxExpressionContainer = rootSibling?.get('value');
       if (!jsxExpressionContainer?.isJSXExpressionContainer()) return;
       const objExp = jsxExpressionContainer.get('expression');
@@ -847,34 +882,6 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
 
         // On the final path part, apply the transformation and set the value
         if (i === path.length - 1) {
-          let value: NodePath<Expression | t.JSXExpressionContainer | null | undefined> =
-            node.get('value');
-          // A null value for the JSXAttribute is an implicit truthy value
-          // (e.g. <Component foo />)
-          if (isNullNodePath(value)) {
-            const [transformed] = value.replaceWith(
-              t.jsxExpressionContainer(t.booleanLiteral(true)),
-            );
-            value = transformed;
-          }
-          // When getting the value to set at the inner-most level of the object,
-          // we'll need to extract it from the expression container
-          if (value.isJSXExpressionContainer()) {
-            const innerExpression = value.get('expression');
-            // Shouldn't be possible to encounter an empty expression here
-            if (innerExpression.isJSXEmptyExpression()) return;
-            value = innerExpression as NodePath<Expression>;
-          }
-          // At this point, after the above clauses, we know `value` can only be `NodePath<Expression>`
-          let updatedValue = transform.jsxAttribute(
-            value as NodePath<Expression>,
-            element,
-            node,
-            context,
-          );
-          if (!updatedValue || updatedValue === true || t.isJSXEmptyExpression(updatedValue)) {
-            return;
-          }
           rewriteObjectPropertyInitializer(initializer, accessor, updatedValue);
         }
       }
