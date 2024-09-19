@@ -7,8 +7,10 @@ import {
   ObjectPropertyValue,
   ObjectPropertyValueTransformer,
   removeProperty,
+  transformObjectListValue,
   transformObjectProperties,
   transformOptionalValue,
+  transformPropertyValue,
   type CodemodObjectPropertyReplacement,
 } from '../../plugins/transform-grid-options/transform-grid-options';
 import { ast, AstCliContext, AstTransformContext, Types as t } from '@ag-grid-devtools/ast';
@@ -16,6 +18,30 @@ import { ast, AstCliContext, AstTransformContext, Types as t } from '@ag-grid-de
 const MIGRATION_URL = 'https://ag-grid.com/javascript-data-grid/upgrading-to-ag-grid-32-2/';
 
 export const replacements: Array<CodemodObjectPropertyReplacement> = transformObjectProperties({
+  columnDefs: transformPropertyValue(
+    transformOptionalValue(
+      transformObjectListValue(
+        transformObjectProperties({
+          checkboxSelection: removeProperty(
+            getManualInterventionMessage('checkboxSelection', MIGRATION_URL),
+          ),
+          headerCheckboxSelection: removeProperty(
+            getManualInterventionMessage('headerCheckboxSelection', MIGRATION_URL),
+          ),
+          headerCheckboxSelectionCurrentPageOnly: removeProperty(
+            getManualInterventionMessage('headerCheckboxSelectionCurrentPageOnly', MIGRATION_URL),
+          ),
+          headerCheckboxSelectionFilteredOnly: removeProperty(
+            getManualInterventionMessage('headerCheckboxSelectionFilteredOnly', MIGRATION_URL),
+          ),
+          showDisabledCheckboxes: removeProperty(
+            getManualInterventionMessage('showDisabledCheckboxes', MIGRATION_URL),
+          ),
+        }),
+      ),
+    ),
+  ),
+
   onRangeSelectionChanged: migrateProperty('onCellSelectionChanged', migrateOptionalValue()),
   onRangeDeleteStart: migrateProperty('onCellSelectionDeleteStart', migrateOptionalValue()),
   onRangeDeleteEnd: migrateProperty('onCellSelectionDeleteEnd', migrateOptionalValue()),
