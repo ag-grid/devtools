@@ -22,7 +22,8 @@ import {
 } from './src/version.mjs';
 
 const __dirname = dirname(new URL(import.meta.url).pathname);
-const TEMPLATE_DIR = join(__dirname, '../templates/create-transform');
+const TEMPLATES_DIR = join(__dirname, '..', 'templates');
+const TEMPLATE_DIR = join(TEMPLATES_DIR, 'create-transform');
 
 const PROJECT_PLUGINS_DIR = './plugins';
 const PROJECT_TRANSFORMS_DIR = './transforms';
@@ -155,8 +156,8 @@ const VARIABLES = [
 export default async function task(...args) {
   const variables = await prompt(VARIABLES, { args, input: stdin, output: stderr });
   if (!variables) throw null;
-  const { outputPath, filename, identifier, pluginsDir, plugin, versionsDir, release } = variables;
-  const pluginTemplate = plugin ? getPluginTemplatePath({ pluginsDir, plugin }) : null;
+  const { outputPath, filename, identifier, plugin, versionsDir, release } = variables;
+  const pluginTemplate = plugin ? getPluginTemplatePath(plugin) : null;
   const templateDir = pluginTemplate ?? TEMPLATE_DIR;
   await copyTemplateDirectory(templateDir, outputPath, variables);
   if (release) {
@@ -225,10 +226,8 @@ function loadPluginManifest({ plugin, pluginsDir }) {
   return JSON.parse(readFileSync(pluginManifestPath, 'utf-8'));
 }
 
-function getPluginTemplatePath({ pluginsDir, plugin }) {
-  const pluginPath = join(pluginsDir, plugin);
-  const { template } = loadPluginManifest({ plugin, pluginsDir });
-  return join(pluginPath, template);
+function getPluginTemplatePath(plugin) {
+  return join(TEMPLATES_DIR, `plugin-${plugin}`);
 }
 
 function isValidTransformName(value) {

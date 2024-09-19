@@ -1,4 +1,5 @@
 import { Enum, dynamicRequire, match } from '@ag-grid-devtools/utils';
+import path from 'path';
 import {
   parseArgs as parseMigrateCommandArgs,
   cli as migrate,

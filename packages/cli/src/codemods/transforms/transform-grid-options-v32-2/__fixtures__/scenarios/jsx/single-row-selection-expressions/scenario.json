@@ -1,0 +1,8 @@
+{
+  "scenario": {
+    "input": "input.jsx",
+    "output": "output.jsx",
+    "errors": "output.errors.cjs",
+    "warnings": "output.warnings.cjs"
+  }
+}

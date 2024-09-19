@@ -60,7 +60,6 @@ type JSXIdentifier = Types.JSXIdentifier;
 type JSXNamespacedName = Types.JSXNamespacedName;
 type Literal = Types.Literal;
 type MemberExpression = Types.MemberExpression;
-type OptionalMemberExpression = Types.OptionalMemberExpression;
 type ObjectExpression = Types.ObjectExpression;
 type ObjectMethod = Types.ObjectMethod;
 type ObjectProperty = Types.ObjectProperty;
@@ -727,6 +726,229 @@ export function migrateProperty<S extends AstTransformContext<AstCliContext>>(
   return transformer;
 }
 
+/**
+ * Migrate a property into a nested object. For example `gridOptions.rowSelection` -> `gridOptions.selection.mode`.
+ *
+ * If the target object doesn't exist, it will be created.
+ *
+ * Note that a lot of the early returns in the transformers are to do with type narrowing; we don't expect those code paths
+ * to be triggered normally.
+ *
+ * @param path Ordered field names specifying the path in the target object
+ * @param transform Transformation to apply to the original value
+ * @param deprecationWarning Deprecation warning to print for unsupported transformations (e.g. Angular)
+ * @returns Object property transformer
+ */
+export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>>(
+  path: string[],
+  transform: ObjectPropertyValueTransformer<S>,
+  deprecationWarning?: string,
+): ObjectPropertyTransformer<S> {
+  if (path.length === 1) {
+    return migrateProperty(path[0], transform);
+  }
+
+  const transformer: ObjectPropertyTransformer<S> = {
+    init(node, context) {
+      if (node.shouldSkip) return;
+      node.skip();
+
+      if (!node.parentPath.isObjectExpression()) return;
+
+      // Start off at the root node, where the target object should be defined
+      let rootNode = node.parentPath;
+
+      const value = node.get('value');
+      if (Array.isArray(value) || !value.isExpression()) return;
+      const accessor = createStaticPropertyKey(t.identifier(path[path.length - 1]), false);
+      const updatedValue = transform.property(value, accessor, context);
+      if (updatedValue == null) {
+        deprecationWarning && context.opts.warn(node, deprecationWarning);
+        return;
+      }
+
+      // Step through the target path, either finding an existing field by that name,
+      // or creating an object property if one doesn't exist
+      for (let i = 0; i < path.length; i++) {
+        const part = path[i];
+        const rootAccessor = { key: t.identifier(part), computed: false };
+        let initializer = findSiblingPropertyInitializer(rootNode, rootAccessor);
+        if (!initializer) {
+          initializer = createSiblingPropertyInitializer(rootNode, rootAccessor);
+        }
+        if (!initializer) return;
+        const newObj = initializer.get('value');
+        if (!newObj.isObjectExpression()) return;
+        rootNode = newObj;
+
+        // On the final path part, apply the transformation and set the value
+        if (i === path.length - 1) {
+          rewriteObjectPropertyInitializer(initializer, rootAccessor, updatedValue);
+        }
+      }
+
+      node.remove();
+    },
+
+    get(node, context) {
+      if (node.shouldSkip) return;
+      node.skip();
+
+      deprecationWarning && context.opts.warn(node, deprecationWarning);
+    },
+
+    set(node, context) {
+      if (node.shouldSkip) return;
+      node.skip();
+
+      deprecationWarning && context.opts.warn(node, deprecationWarning);
+    },
+
+    angularAttribute(attributeNode, component, element, context) {
+      deprecationWarning && context.opts.warn(null, deprecationWarning);
+    },
+
+    jsxAttribute(node, element, context) {
+      if (node.shouldSkip) return;
+      node.skip();
+
+      // Parent should be the JSX element
+      if (!node.parentPath.isJSXOpeningElement()) return;
+      const root = node.parentPath;
+
+      // Compute the transformed value of the property ahead of time
+      let value: NodePath<Expression | t.JSXExpressionContainer | null | undefined> =
+        node.get('value');
+      // A null value for the JSXAttribute is an implicit truthy value
+      // (e.g. <Component foo />)
+      if (isNullNodePath(value)) {
+        const [transformed] = value.replaceWith(t.jsxExpressionContainer(t.booleanLiteral(true)));
+        value = transformed;
+      }
+      // When getting the value to set at the inner-most level of the object,
+      // we'll need to extract it from the expression container
+      if (value.isJSXExpressionContainer()) {
+        const innerExpression = value.get('expression');
+        // Shouldn't be possible to encounter an empty expression here
+        if (innerExpression.isJSXEmptyExpression()) return;
+        value = innerExpression as NodePath<Expression>;
+      }
+      // At this point, after the above clauses, we know `value` can only be `NodePath<Expression>`
+      let updatedValue = transform.jsxAttribute(
+        value as NodePath<Expression>,
+        element,
+        node,
+        context,
+      );
+      if (!updatedValue || updatedValue === true || t.isJSXEmptyExpression(updatedValue)) {
+        deprecationWarning && context.opts.warn(node, deprecationWarning);
+        return;
+      }
+
+      // Find or create the root attribute of the target object, injecting
+      // an empty object expression into the expression container
+      let rootSibling = root
+        .get('attributes')
+        .find(
+          (att): att is NodePath<JSXAttribute> =>
+            att.isJSXAttribute() && att.get('name').node.name === path[0],
+        );
+      if (!rootSibling) {
+        rootSibling = createJSXSiblingAttribute(root, path[0]);
+      }
+      if (!rootSibling) return;
+
+      // Fish out the reference to the object expression
+      const jsxExpressionContainer = rootSibling?.get('value');
+      if (!jsxExpressionContainer?.isJSXExpressionContainer()) return;
+      const objExp = jsxExpressionContainer.get('expression');
+      if (!objExp.isObjectExpression()) return;
+
+      // This loop is doing largely the same thing as the loop in the `.init` transformer:
+      // stepping through the path, either finding or creating the target field and setting the
+      // transformed value on the final step
+      let rootNode = objExp;
+      for (let i = 1; i < path.length; i++) {
+        const part = path[i];
+        const accessor = { key: t.identifier(part), computed: false };
+        let initializer = findSiblingPropertyInitializer(rootNode, accessor);
+        if (!initializer) {
+          initializer = createSiblingPropertyInitializer(rootNode, accessor);
+        }
+        if (!initializer) return;
+        const newObj = initializer.get('value');
+        if (!newObj.isObjectExpression()) return;
+        rootNode = newObj;
+
+        // On the final path part, apply the transformation and set the value
+        if (i === path.length - 1) {
+          rewriteObjectPropertyInitializer(initializer, accessor, updatedValue);
+        }
+      }
+
+      node.remove();
+    },
+
+    vueAttribute(templateNode, component, element, context) {
+      deprecationWarning && context.opts.warn(null, deprecationWarning);
+    },
+  };
+
+  return transformer;
+}
+
+function isNullNodePath<T>(x: NodePath<T | null | undefined>): x is NodePath<null | undefined> {
+  return x.node == null;
+}
+
+function createJSXSiblingAttribute(
+  root: NodePath<t.JSXOpeningElement>,
+  name: string,
+): NodePath<JSXAttribute> | undefined {
+  const newAttribute = t.jsxAttribute(
+    t.jsxIdentifier(name),
+    t.jsxExpressionContainer(t.objectExpression([])),
+  );
+  const [transformed] = root.replaceWith(
+    t.jSXOpeningElement(root.get('name').node, root.node.attributes.concat(newAttribute), true),
+  );
+
+  const wrappedNewAttribute = transformed
+    .get('attributes')
+    .find(
+      (attr): attr is NodePath<JSXAttribute> =>
+        attr.isJSXAttribute() && attr.get('name').node.name === name,
+    );
+
+  return wrappedNewAttribute;
+}
+
+function createSiblingPropertyInitializer(
+  objExp: NodePath<ObjectExpression>,
+  accessor: PropertyAccessor,
+) {
+  const prop = t.objectProperty(accessor.key, t.objectExpression([]));
+  const [newPath] = objExp.replaceWith(t.objectExpression(objExp.node.properties.concat(prop)));
+  return newPath
+    .get('properties')
+    .find(
+      (p): p is NodePath<ObjectProperty> => p.isObjectProperty() && p.node.key === accessor.key,
+    );
+}
+
+function findSiblingPropertyInitializer(
+  objExp: NodePath<ObjectExpression>,
+  accessor: PropertyAccessor,
+): NodePath<t.ObjectProperty> | undefined {
+  return objExp
+    .get('properties')
+    .filter((p): p is NodePath<t.ObjectProperty> => t.isObjectProperty(p.node))
+    .find((p) => {
+      const existingAccessor = parseObjectPropertyInitializerAccessor(p);
+      return existingAccessor ? arePropertyAccessorsEqual(accessor, existingAccessor) : false;
+    });
+}
+
 export function removeProperty(
   deprecationWarning: string,
 ): ObjectPropertyTransformer<AstTransformContext<AstCliContext>> {
@@ -981,8 +1203,7 @@ function getPropertyInitializerValue(
 ): NodePath<ObjectPropertyValueNode> | null {
   if (property.isObjectProperty()) {
     const value = property.get('value');
-    if (value.isExpression()) return value;
-    return null;
+    return value.isExpression() ? value : null;
   } else if (property.isObjectMethod()) {
     return property;
   } else {
@@ -994,13 +1215,10 @@ function renameObjectProperty(
   property: NodePath<ObjectPropertyNode>,
   targetAccessor: PropertyAccessor,
 ): NodePath<ObjectPropertyNode> {
-  if (
-    property.node.key === targetAccessor.key &&
-    property.node.computed === targetAccessor.computed
-  ) {
+  const { node } = property;
+  if (node.key === targetAccessor.key && node.computed === targetAccessor.computed) {
     return property;
   }
-  const { node } = property;
   const value = t.isObjectMethod(node) ? node : t.isExpression(node.value) ? node.value : null;
   if (!value) return property;
   return rewriteObjectPropertyInitializer(property, targetAccessor, value);
