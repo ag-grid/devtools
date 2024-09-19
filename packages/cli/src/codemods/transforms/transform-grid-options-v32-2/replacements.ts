@@ -93,26 +93,26 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
   ),
 });
 
-function transformFillHandle(value: ObjectPropertyValue): t.Expression {
+function transformFillHandle(value: ObjectPropertyValue): t.Expression | null {
   if (value.isBooleanLiteral()) {
     if (value.node.value) {
       return ast.expression`'fill'`;
     }
   }
 
-  return ast.expression`undefined`;
+  return null;
 }
 
-function transformRangeHandle(value: ObjectPropertyValue): t.Expression {
+function transformRangeHandle(value: ObjectPropertyValue): t.Expression | null {
   if (value.isBooleanLiteral()) {
     if (value.node.value) {
       return ast.expression`'range'`;
     }
   }
-  return ast.expression`undefined`;
+  return null;
 }
 
-function transformRowSelection(value: ObjectPropertyValue): t.Expression {
+function transformRowSelection(value: ObjectPropertyValue): t.Expression | null {
   if (value.isStringLiteral()) {
     switch (value.node.value) {
       case 'single':
@@ -124,29 +124,29 @@ function transformRowSelection(value: ObjectPropertyValue): t.Expression {
     }
   }
 
-  return ast.expression`undefined`;
+  return null;
 }
 
-function transformCellSelection(value: ObjectPropertyValue): t.Expression {
+function transformCellSelection(value: ObjectPropertyValue): t.Expression | null {
   if (value.isBooleanLiteral()) {
     if (value.node.value) {
       return ast.expression`'cell'`;
     }
   }
 
-  return ast.expression`undefined`;
+  return null;
 }
 
 function apply<S extends AstTransformContext<AstCliContext>>(
-  tff: (v: ObjectPropertyValue) => t.Expression,
+  transform: (v: ObjectPropertyValue) => t.Expression | null,
 ): ObjectPropertyValueTransformer<S> {
   return {
     property(value, accessor, context) {
-      return tff(value);
+      return transform(value);
     },
     jsxAttribute(value, element, attribute, context) {
       if (!isNonNullJsxPropertyValue(value)) return null;
-      return value.isJSXExpressionContainer() ? tff((value as any).get('expression')) : tff(value);
+      return transform(value);
     },
     angularAttribute(value, component, element, attribute, context) {
       return value;
