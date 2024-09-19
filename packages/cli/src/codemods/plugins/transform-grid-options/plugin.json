@@ -1,5 +1,4 @@
 {
   "name": "Transform Grid options",
-  "description": "Transform deprecated Grid options",
-  "template": "../../../templates/plugin-transform-grid-options"
+  "description": "Transform deprecated Grid options"
 }
