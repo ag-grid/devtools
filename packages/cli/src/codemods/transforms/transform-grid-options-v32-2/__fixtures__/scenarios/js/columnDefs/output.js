@@ -13,9 +13,7 @@ const gridApi = createGrid(document.body, {
     headerCheckboxSelection: true,
     headerCheckboxSelectionCurrentPageOnly: true,
   }],
-
   rowData: [],
-
   rowSelection: {
     mode: "multiRow"
   }

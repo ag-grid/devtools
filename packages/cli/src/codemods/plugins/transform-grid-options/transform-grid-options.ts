@@ -795,6 +795,10 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
         }
       }
 
+      const key = node.get('key');
+      if (key.isIdentifier() && key.node.name === path[0]) {
+        return;
+      }
       node.remove();
     },
 
