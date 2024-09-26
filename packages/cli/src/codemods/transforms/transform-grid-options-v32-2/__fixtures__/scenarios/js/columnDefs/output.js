@@ -16,7 +16,7 @@ const gridApi = createGrid(document.body, {
 
   rowData: [],
 
-  selection: {
+  rowSelection: {
     mode: "multiRow"
   }
 });

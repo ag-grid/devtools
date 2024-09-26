@@ -47,7 +47,7 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
   onRangeDeleteEnd: migrateProperty('onCellSelectionDeleteEnd', migrateOptionalValue()),
 
   rowSelection: migrateDeepProperty(
-    ['selection', 'mode'],
+    ['rowSelection', 'mode'],
     transformOptionalValue(apply(transformRowSelection)),
     getManualInterventionMessage('rowSelection', MIGRATION_URL),
   ),
@@ -58,12 +58,12 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
     getManualInterventionMessage('suppressRowDeselection', MIGRATION_URL),
   ),
   isRowSelectable: migrateDeepProperty(
-    ['selection', 'isRowSelectable'],
+    ['rowSelection', 'isRowSelectable'],
     migrateOptionalValue(),
     getManualInterventionMessage('isRowSelectable', MIGRATION_URL),
   ),
   rowMultiSelectWithClick: migrateDeepProperty(
-    ['selection', 'enableMultiSelectWithClick'],
+    ['rowSelection', 'enableSelectionWithoutKeys'],
     migrateOptionalValue(),
     getManualInterventionMessage('rowMultiSelectWithClick', MIGRATION_URL),
   ),
@@ -75,38 +75,37 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
     getManualInterventionMessage('groupSelectsFiltered', MIGRATION_URL),
   ),
 
-  enableRangeSelection: migrateDeepProperty(
-    ['selection', 'mode'],
-    transformOptionalValue(apply(transformCellSelection)),
-    getManualInterventionMessage('enableRangeSelection', MIGRATION_URL),
-  ),
+  // Migration of this must come before all other cell selection properties.
+  // If no other cell selection properties are specified,
+  enableRangeSelection: migrateProperty('cellSelection', migrateOptionalValue()),
+
   suppressMultiRangeSelection: migrateDeepProperty(
-    ['selection', 'suppressMultiRanges'],
+    ['cellSelection', 'suppressMultiRanges'],
     migrateOptionalValue(),
     getManualInterventionMessage('suppressMultiRangeSelection', MIGRATION_URL),
   ),
   suppressClearOnFillReduction: migrateDeepProperty(
-    ['selection', 'suppressClearOnFillReduction'],
+    ['cellSelection', 'handle', 'suppressClearOnFillReduction'],
     migrateOptionalValue(),
     getManualInterventionMessage('suppressClearOnFillReduction', MIGRATION_URL),
   ),
   enableRangeHandle: migrateDeepProperty(
-    ['selection', 'handle', 'mode'],
+    ['cellSelection', 'handle', 'mode'],
     transformOptionalValue(apply(transformRangeHandle)),
     getManualInterventionMessage('enableRangeHandle', MIGRATION_URL),
   ),
   enableFillHandle: migrateDeepProperty(
-    ['selection', 'handle', 'mode'],
+    ['cellSelection', 'handle', 'mode'],
     transformOptionalValue(apply(transformFillHandle)),
     getManualInterventionMessage('enableFillHandle', MIGRATION_URL),
   ),
   fillHandleDirection: migrateDeepProperty(
-    ['selection', 'handle', 'direction'],
+    ['cellSelection', 'handle', 'direction'],
     migrateOptionalValue(),
     getManualInterventionMessage('fillHandleDirection', MIGRATION_URL),
   ),
   fillOperation: migrateDeepProperty(
-    ['selection', 'handle', 'setFillValue'],
+    ['cellSelection', 'handle', 'setFillValue'],
     migrateOptionalValue(),
     getManualInterventionMessage('fillOperation', MIGRATION_URL),
   ),
@@ -154,11 +153,11 @@ function transformRowSelection(value: ObjectPropertyValue): t.Expression | null 
 }
 
 function transformCellSelection(value: ObjectPropertyValue): t.Expression | null {
-  if (value.isBooleanLiteral()) {
-    if (value.node.value) {
-      return ast.expression`'cell'`;
-    }
-  }
+  // if (value.isBooleanLiteral()) {
+  //   if (value.node.value) {
+  //     return ast.expression`'cell'`;
+  //   }
+  // }
 
   return null;
 }

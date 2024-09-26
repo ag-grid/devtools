@@ -14,7 +14,7 @@ function MyComponent(props) {
       groupSelectsFiltered
       suppressCopyRowsToClipboard
       suppressCopySingleCellRanges
-      selection={{
+      rowSelection={{
         mode: "multiRow",
         isRowSelectable: (params) => params.data.year < 2007,
         enableMultiSelectWithClick: true

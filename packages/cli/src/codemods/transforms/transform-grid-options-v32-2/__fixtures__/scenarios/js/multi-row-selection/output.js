@@ -13,9 +13,9 @@ const gridApi = createGrid(document.body, {
   suppressCopyRowsToClipboard: true,
   suppressCopySingleCellRanges: true,
 
-  selection: {
+  rowSelection: {
     mode: "multiRow",
     isRowSelectable: (params) => params.data.year < 2007,
-    enableMultiSelectWithClick: true
+    enableSelectionWithoutKeys: true
   }
 });

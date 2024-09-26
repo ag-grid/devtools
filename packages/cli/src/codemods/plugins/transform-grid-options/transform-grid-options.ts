@@ -777,7 +777,15 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
           initializer = createSiblingPropertyInitializer(rootNode, rootAccessor);
         }
         if (!initializer) return;
-        const newObj = initializer.get('value');
+        let newObj = initializer.get('value');
+        if (!newObj.isObjectExpression()) {
+          // overwrite value with a new object expression
+          const [transformed] = initializer.replaceWith(
+            t.objectProperty(initializer.node.key, t.objectExpression([])),
+          );
+          initializer = transformed;
+          newObj = initializer.get('value') as NodePath<ObjectExpression>;
+        }
         if (!newObj.isObjectExpression()) return;
         rootNode = newObj;
 
@@ -876,7 +884,15 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
           initializer = createSiblingPropertyInitializer(rootNode, accessor);
         }
         if (!initializer) return;
-        const newObj = initializer.get('value');
+        let newObj = initializer.get('value');
+        if (!newObj.isObjectExpression()) {
+          // overwrite value with a new object expression
+          const [transformed] = initializer.replaceWith(
+            t.objectProperty(initializer.node.key, t.objectExpression([])),
+          );
+          initializer = transformed;
+          newObj = initializer.get('value') as NodePath<ObjectExpression>;
+        }
         if (!newObj.isObjectExpression()) return;
         rootNode = newObj;
 

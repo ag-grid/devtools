@@ -12,7 +12,7 @@ function MyComponent(props) {
       suppressRowDeselection
       suppressCopyRowsToClipboard
       suppressCopySingleCellRanges
-      selection={{
+      rowSelection={{
         mode: "singleRow",
         isRowSelectable: (params) => params.data.year < 2007
       }} />)

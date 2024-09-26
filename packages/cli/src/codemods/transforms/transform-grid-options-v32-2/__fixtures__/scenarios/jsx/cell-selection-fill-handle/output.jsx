@@ -17,12 +17,11 @@ function MyComponent(props) {
       onCellSelectionDeleteEnd={() => {}}
       suppressCopyRowsToClipboard={true}
       suppressCopySingleCellRanges={true}
-      selection={{
-        mode: "cell",
+      cellSelection={{
         suppressMultiRanges: suppressMultiRangeSelection,
-        suppressClearOnFillReduction: suppressClearOnFillReduction,
 
         handle: {
+          suppressClearOnFillReduction: suppressClearOnFillReduction,
           mode: "fill",
           direction: 'x',
           setFillValue: () => {console.log('filling')}
