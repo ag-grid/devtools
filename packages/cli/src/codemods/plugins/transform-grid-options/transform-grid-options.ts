@@ -871,13 +871,23 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
       if (!rootSibling) return;
 
       // Fish out the reference to the object expression
-      const jsxExpressionContainer = rootSibling?.get('value');
-      if (!jsxExpressionContainer?.isJSXExpressionContainer()) return;
-      let objExp = jsxExpressionContainer.get('expression');
-      if (!objExp.isObjectExpression()) {
+      const jsxAttributeValue = rootSibling?.get('value');
+      let objExp: NodePath<Expression | JSXEmptyExpression>;
+      if (jsxAttributeValue?.isJSXExpressionContainer()) {
+        objExp = jsxAttributeValue.get('expression');
+        if (!objExp.isObjectExpression()) {
+          // overwrite value with a new object expression
+          const [transformed] = objExp.replaceWith(t.objectExpression([]));
+          objExp = transformed;
+        }
+      } else if (jsxAttributeValue?.isStringLiteral()) {
         // overwrite value with a new object expression
-        const [transformed] = objExp.replaceWith(t.objectExpression([]));
-        objExp = transformed;
+        const [transformed] = jsxAttributeValue.replaceWith(
+          t.jsxExpressionContainer(t.objectExpression([])),
+        );
+        objExp = transformed.get('expression');
+      } else {
+        return;
       }
       if (!objExp.isObjectExpression()) return;
 

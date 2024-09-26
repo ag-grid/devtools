@@ -7,15 +7,15 @@ function MyComponent(props) {
     (<AgGridReact
       columnDefs={[]}
       rowData={[]}
+      rowSelection={{
+        isRowSelectable: (params) => params.data.year < 2007
+      }}
       onCellSelectionChanged={() => {}}
       onCellSelectionDeleteStart={() => {}}
       onCellSelectionDeleteEnd={() => {}}
       suppressRowClickSelection
       suppressRowDeselection
       suppressCopyRowsToClipboard
-      suppressCopySingleCellRanges
-      rowSelection={{
-        isRowSelectable: (params) => params.data.year < 2007
-      }} />)
+      suppressCopySingleCellRanges />)
   );
 }
