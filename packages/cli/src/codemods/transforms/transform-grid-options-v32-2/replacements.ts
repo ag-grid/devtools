@@ -1,4 +1,5 @@
 import {
+  frameworkWarning,
   getManualInterventionMessage,
   isNonNullJsxPropertyValue,
   migrateDeepProperty,
@@ -75,40 +76,22 @@ export const replacements: Array<CodemodObjectPropertyReplacement> = transformOb
     getManualInterventionMessage('groupSelectsFiltered', MIGRATION_URL),
   ),
 
-  // Migration of this must come before all other cell selection properties.
-  // If no other cell selection properties are specified,
   enableRangeSelection: migrateProperty('cellSelection', migrateOptionalValue()),
 
-  suppressMultiRangeSelection: migrateDeepProperty(
-    ['cellSelection', 'suppressMultiRanges'],
-    migrateOptionalValue(),
+  suppressMultiRangeSelection: removeProperty(
     getManualInterventionMessage('suppressMultiRangeSelection', MIGRATION_URL),
   ),
-  suppressClearOnFillReduction: migrateDeepProperty(
-    ['cellSelection', 'handle', 'suppressClearOnFillReduction'],
-    migrateOptionalValue(),
+  suppressClearOnFillReduction: removeProperty(
     getManualInterventionMessage('suppressClearOnFillReduction', MIGRATION_URL),
   ),
-  enableRangeHandle: migrateDeepProperty(
-    ['cellSelection', 'handle', 'mode'],
-    transformOptionalValue(apply(transformRangeHandle)),
+  enableRangeHandle: removeProperty(
     getManualInterventionMessage('enableRangeHandle', MIGRATION_URL),
   ),
-  enableFillHandle: migrateDeepProperty(
-    ['cellSelection', 'handle', 'mode'],
-    transformOptionalValue(apply(transformFillHandle)),
-    getManualInterventionMessage('enableFillHandle', MIGRATION_URL),
-  ),
-  fillHandleDirection: migrateDeepProperty(
-    ['cellSelection', 'handle', 'direction'],
-    migrateOptionalValue(),
+  enableFillHandle: removeProperty(getManualInterventionMessage('enableFillHandle', MIGRATION_URL)),
+  fillHandleDirection: removeProperty(
     getManualInterventionMessage('fillHandleDirection', MIGRATION_URL),
   ),
-  fillOperation: migrateDeepProperty(
-    ['cellSelection', 'handle', 'setFillValue'],
-    migrateOptionalValue(),
-    getManualInterventionMessage('fillOperation', MIGRATION_URL),
-  ),
+  fillOperation: removeProperty(getManualInterventionMessage('fillOperation', MIGRATION_URL)),
 
   suppressCopyRowsToClipboard: removeProperty(
     getManualInterventionMessage('suppressCopyRowsToClipboard', MIGRATION_URL),
@@ -153,11 +136,11 @@ function transformRowSelection(value: ObjectPropertyValue): t.Expression | null 
 }
 
 function transformCellSelection(value: ObjectPropertyValue): t.Expression | null {
-  // if (value.isBooleanLiteral()) {
-  //   if (value.node.value) {
-  //     return ast.expression`'cell'`;
-  //   }
-  // }
+  if (value.isBooleanLiteral()) {
+    if (value.node.value) {
+      return ast.expression`'cell'`;
+    }
+  }
 
   return null;
 }
