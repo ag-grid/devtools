@@ -10,22 +10,19 @@ function foo() {}
 function MyComponent(props) {
   return (
     (<AgGridReact
-      columnDefs={[]}
-      rowData={[]}
-      onCellSelectionChanged={onRangeSelectionChanged}
-      onCellSelectionDeleteStart={foo}
-      onCellSelectionDeleteEnd={() => {}}
-      suppressCopyRowsToClipboard={true}
-      suppressCopySingleCellRanges={true}
-      cellSelection={{
-        suppressMultiRanges: suppressMultiRangeSelection,
-
-        handle: {
-          suppressClearOnFillReduction: suppressClearOnFillReduction,
-          mode: "fill",
-          direction: 'x',
-          setFillValue: () => {console.log('filling')}
-        }
-      }} />)
+        columnDefs={[]}
+        rowData={[]}
+        onCellSelectionChanged={onRangeSelectionChanged}
+        onCellSelectionDeleteStart={foo}
+        onCellSelectionDeleteEnd={() => {}}
+        cellSelection={true}
+        suppressMultiRangeSelection={suppressMultiRangeSelection}
+        suppressClearOnFillReduction={suppressClearOnFillReduction}
+        enableFillHandle={true}
+        fillHandleDirection={'x'}
+        fillOperation={() => {console.log('filling')}}
+        suppressCopyRowsToClipboard={true}
+        suppressCopySingleCellRanges={true}
+      />)
   );
 }

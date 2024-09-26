@@ -873,7 +873,12 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
       // Fish out the reference to the object expression
       const jsxExpressionContainer = rootSibling?.get('value');
       if (!jsxExpressionContainer?.isJSXExpressionContainer()) return;
-      const objExp = jsxExpressionContainer.get('expression');
+      let objExp = jsxExpressionContainer.get('expression');
+      if (!objExp.isObjectExpression()) {
+        // overwrite value with a new object expression
+        const [transformed] = objExp.replaceWith(t.objectExpression([]));
+        objExp = transformed;
+      }
       if (!objExp.isObjectExpression()) return;
 
       // This loop is doing largely the same thing as the loop in the `.init` transformer:
@@ -906,6 +911,10 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
         }
       }
 
+      const key = node.get('name');
+      if (key.isJSXIdentifier() && key.node.name === path[0]) {
+        return;
+      }
       node.remove();
     },
 
