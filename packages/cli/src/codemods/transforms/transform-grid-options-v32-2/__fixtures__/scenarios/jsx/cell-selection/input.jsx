@@ -9,7 +9,7 @@ function foo() {}
 
 function MyComponent (props) {
   return (
-    <AgGridReact 
+    <AgGridReact
       columnDefs={[]}
       rowData={[]}
       onRangeSelectionChanged={onRangeSelectionChanged}

@@ -5,6 +5,11 @@ function MyComponent(props) {
     (<AgGridReact
       columnDefs={[]}
       rowData={[]}
+      rowSelection={{
+        mode: "multiRow",
+        isRowSelectable: (params) => params.data.year < 2007,
+        enableSelectionWithoutKeys: true
+      }}
       onCellSelectionChanged={() => {}}
       onCellSelectionDeleteStart={() => {}}
       onCellSelectionDeleteEnd={() => {}}
@@ -13,11 +18,6 @@ function MyComponent(props) {
       groupSelectsChildren
       groupSelectsFiltered
       suppressCopyRowsToClipboard
-      suppressCopySingleCellRanges
-      selection={{
-        mode: "multiRow",
-        isRowSelectable: (params) => params.data.year < 2007,
-        enableMultiSelectWithClick: true
-      }} />)
+      suppressCopySingleCellRanges />)
   );
 }

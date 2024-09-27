@@ -15,17 +15,14 @@ function MyComponent (props) {
       onCellSelectionChanged={onRangeSelectionChanged}
       onCellSelectionDeleteStart={foo}
       onCellSelectionDeleteEnd={() => {}}
+
+      cellSelection={true}
+      enableRangeHandle={true}
+      suppressMultiRangeSelection={suppressMultiRangeSelection}
+      suppressClearOnFillReduction={suppressClearOnFillReduction}
+
       suppressCopyRowsToClipboard={true}
       suppressCopySingleCellRanges={true}
-      selection={{
-        mode: "cell",
-
-        handle: {
-          mode: "range"
-        },
-
-        suppressMultiRanges: suppressMultiRangeSelection,
-        suppressClearOnFillReduction: suppressClearOnFillReduction
-      }} />)
+    />)
   );
 }

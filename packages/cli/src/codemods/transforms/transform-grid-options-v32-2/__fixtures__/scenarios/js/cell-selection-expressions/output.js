@@ -17,13 +17,12 @@ const gridApi = createGrid(document.body, {
   onCellSelectionChanged: onRangeSelectionChanged,
   onCellSelectionDeleteStart: foo,
   onCellSelectionDeleteEnd: () => {},
-  enableRangeSelection: cellSelection,
+
+  cellSelection: cellSelection,
   enableRangeHandle: isEnableRangeHandle(),
+  suppressMultiRangeSelection: suppressMultiRangeSelection,
+  suppressClearOnFillReduction,
+
   suppressCopyRowsToClipboard: true,
   suppressCopySingleCellRanges: true,
-
-  selection: {
-    suppressMultiRanges: suppressMultiRangeSelection,
-    suppressClearOnFillReduction: suppressClearOnFillReduction
-  }
 });
