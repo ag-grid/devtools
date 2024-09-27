@@ -777,7 +777,15 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
           initializer = createSiblingPropertyInitializer(rootNode, rootAccessor);
         }
         if (!initializer) return;
-        const newObj = initializer.get('value');
+        let newObj = initializer.get('value');
+        if (!newObj.isObjectExpression()) {
+          // overwrite value with a new object expression
+          const [transformed] = initializer.replaceWith(
+            t.objectProperty(initializer.node.key, t.objectExpression([])),
+          );
+          initializer = transformed;
+          newObj = initializer.get('value') as NodePath<ObjectExpression>;
+        }
         if (!newObj.isObjectExpression()) return;
         rootNode = newObj;
 
@@ -787,6 +795,10 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
         }
       }
 
+      const key = node.get('key');
+      if (key.isIdentifier() && key.node.name === path[0]) {
+        return;
+      }
       node.remove();
     },
 
@@ -859,9 +871,24 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
       if (!rootSibling) return;
 
       // Fish out the reference to the object expression
-      const jsxExpressionContainer = rootSibling?.get('value');
-      if (!jsxExpressionContainer?.isJSXExpressionContainer()) return;
-      const objExp = jsxExpressionContainer.get('expression');
+      const jsxAttributeValue = rootSibling?.get('value');
+      let objExp: NodePath<Expression | JSXEmptyExpression>;
+      if (jsxAttributeValue?.isJSXExpressionContainer()) {
+        objExp = jsxAttributeValue.get('expression');
+        if (!objExp.isObjectExpression()) {
+          // overwrite value with a new object expression
+          const [transformed] = objExp.replaceWith(t.objectExpression([]));
+          objExp = transformed;
+        }
+      } else if (jsxAttributeValue?.isStringLiteral()) {
+        // overwrite value with a new object expression
+        const [transformed] = jsxAttributeValue.replaceWith(
+          t.jsxExpressionContainer(t.objectExpression([])),
+        );
+        objExp = transformed.get('expression');
+      } else {
+        return;
+      }
       if (!objExp.isObjectExpression()) return;
 
       // This loop is doing largely the same thing as the loop in the `.init` transformer:
@@ -876,7 +903,15 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
           initializer = createSiblingPropertyInitializer(rootNode, accessor);
         }
         if (!initializer) return;
-        const newObj = initializer.get('value');
+        let newObj = initializer.get('value');
+        if (!newObj.isObjectExpression()) {
+          // overwrite value with a new object expression
+          const [transformed] = initializer.replaceWith(
+            t.objectProperty(initializer.node.key, t.objectExpression([])),
+          );
+          initializer = transformed;
+          newObj = initializer.get('value') as NodePath<ObjectExpression>;
+        }
         if (!newObj.isObjectExpression()) return;
         rootNode = newObj;
 
@@ -886,6 +921,10 @@ export function migrateDeepProperty<S extends AstTransformContext<AstCliContext>
         }
       }
 
+      const key = node.get('name');
+      if (key.isJSXIdentifier() && key.node.name === path[0]) {
+        return;
+      }
       node.remove();
     },
 

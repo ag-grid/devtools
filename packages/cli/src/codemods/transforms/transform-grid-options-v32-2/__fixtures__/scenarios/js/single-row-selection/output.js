@@ -6,13 +6,14 @@ const gridApi = createGrid(document.body, {
   onCellSelectionChanged: () => {},
   onCellSelectionDeleteStart: () => {},
   onCellSelectionDeleteEnd: () => {},
+
+  rowSelection: {
+    mode: "singleRow",
+    isRowSelectable: (params) => params.data.year < 2007
+  },
+
   suppressRowClickSelection: true,
   suppressRowDeselection: true,
   suppressCopyRowsToClipboard: true,
-  suppressCopySingleCellRanges: true,
-
-  selection: {
-    mode: "singleRow",
-    isRowSelectable: (params) => params.data.year < 2007
-  }
+  suppressCopySingleCellRanges: true
 });

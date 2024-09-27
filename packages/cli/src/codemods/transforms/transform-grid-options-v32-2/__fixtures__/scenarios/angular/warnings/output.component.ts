@@ -18,7 +18,7 @@ import { IOlympicData } from './interfaces';
       [rowMultiSelectWithClick]="true"
       [groupSelectsChildren]="true"
       [groupSelectsFiltered]="true"
-      [enableRangeSelection]="true"
+      [cellSelection]="true"
       [suppressMultiRangeSelection]="true"
       [suppressClearOnFillReduction]="true"
       [enableRangeHandle]="true"
