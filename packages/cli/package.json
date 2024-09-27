@@ -94,7 +94,7 @@
     "@ag-grid-devtools/worker-utils": "workspace:*",
     "@types/diff": "5.2.2",
     "@types/graceful-fs": "4.1.9",
-    "@types/node": "22.4.1",
+    "@types/node": "22.7.3",
     "@types/semver": "7.5.8",
     "diff": "5.2.0",
     "glob": "11.0.0",
