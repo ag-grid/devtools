@@ -2,7 +2,12 @@ import { type TransformManifest, type VersionManifest } from '@ag-grid-devtools/
 
 import transformGridApiMethodsV33_0 from '../../transforms/transform-grid-api-methods-v33-0/manifest.ts';
 
-const transforms: Array<TransformManifest> = [transformGridApiMethodsV33_0];
+import migrateSparklinesOptions from '../../transforms/migrate-sparklines-options/manifest.ts';
+
+const transforms: Array<TransformManifest> = [
+  transformGridApiMethodsV33_0,
+  migrateSparklinesOptions,
+];
 
 const manifest: VersionManifest = {
   version: '33.0.0',
