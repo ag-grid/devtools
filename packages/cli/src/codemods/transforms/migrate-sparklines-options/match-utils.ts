@@ -17,16 +17,7 @@ type SegmentMatchResult =
     }
   | undefined;
 
-type SegmentMatchFunction = (path: NodePath) => SegmentMatchResult;
-
-type SegmentOptions = {
-  search: boolean;
-};
-
-type SegmentStepFunction = (
-  predicate: Record<string, string>,
-  options?: SegmentOptions,
-) => SegmentMatchFunction;
+type SegmentMatchFunction = ((path: NodePath) => SegmentMatchResult) & { type?: string };
 
 interface IdentifierPredicateParams extends PredicateParams {
   name?: string;
@@ -41,8 +32,13 @@ interface ObjectPropertyParams extends PredicateParams {
   value?: string;
 }
 
+const tag = (type: string, fn: SegmentMatchFunction): SegmentMatchFunction => {
+  fn.type = type;
+  return fn;
+};
+
 export function objectExpression(params: ObjectPropertyParams) {
-  return (path: NodePath): SegmentMatchResult => {
+  return tag('ObjectExpression', function (path: NodePath): SegmentMatchResult {
     const matchPath = isObjectExpressionPath(path) ? path : undefined;
 
     let matchName = true;
@@ -63,13 +59,11 @@ export function objectExpression(params: ObjectPropertyParams) {
       };
     }
     return undefined;
-  };
+  });
 }
 
-objectExpression.type = 'objectExpression';
-
 export function objectProperty(params: ObjectExpressionParams) {
-  return (path: NodePath): SegmentMatchResult => {
+  return tag('ObjectProperty', function (path: NodePath): SegmentMatchResult {
     const matchPath = isObjectPropertyPath(path) ? path : undefined;
 
     let matchName = true;
@@ -100,13 +94,11 @@ export function objectProperty(params: ObjectExpressionParams) {
       };
     }
     return undefined;
-  };
+  });
 }
 
-objectProperty.type = 'objectProperty';
-
 export function identifier(params: IdentifierPredicateParams) {
-  return (path: NodePath): SegmentMatchResult => {
+  return tag('Identifier', function (path: NodePath): SegmentMatchResult {
     const matchPath = isIdentifierPath(path) ? path : undefined;
 
     const matchName = params.name ? matchPath?.node.name === params.name : true;
@@ -129,26 +121,27 @@ export function identifier(params: IdentifierPredicateParams) {
       };
     }
     return undefined;
-  };
+  });
 }
 
-identifier.type = 'identifier';
+const allOrNothing = (results: any[], conditions: any[]) =>
+  results.length === conditions.length ? results : undefined;
 
 export function match(path: NodePath | null | undefined, segments: SegmentMatchFunction[]) {
-  const allOrNothing = (results: any[], conditions: any[]) =>
-    results.length === conditions.length ? results : undefined;
+  const conditions = [...segments].reverse();
 
   const stack = [];
-  for (const segment of segments) {
+
+  for (const segment of conditions) {
     if (!path) {
-      return allOrNothing(stack, segments);
+      return allOrNothing(stack, conditions);
     }
     const result = segment(path);
     if (!result) {
-      return allOrNothing(stack, segments);
+      return allOrNothing(stack, conditions);
     }
     stack.push(result);
     path = result.path?.parentPath;
   }
-  return allOrNothing(stack, segments);
+  return allOrNothing(stack, conditions);
 }
