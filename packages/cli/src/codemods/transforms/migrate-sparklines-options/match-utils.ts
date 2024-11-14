@@ -1,23 +1,31 @@
-import { NodePath, Node } from '@ag-grid-devtools/ast';
+import { NodePath } from '@ag-grid-devtools/ast';
 import * as t from '@babel/types';
-import {
-  isIdentifierPath,
-  isObjectExpressionPath,
-  isObjectPropertyPath,
-  isStringLiteralPath,
-} from './babel-utils';
+import * as b from './babel-utils';
+
+export type OrderedRecord<K extends string, V> = Record<K, V>;
+
+export type ComplexTransform = {
+  matchOn: OrderedRecord<string, SegmentMatchFunction[]>;
+  transformer: (matches: OrderedRecord<string, SegmentMatchResult[]>) => void;
+};
 
 type PredicateParams = Record<string, any>;
 
-type SegmentMatchResult =
+export type SegmentMatchResult<T = keyof typeof t> =
   | {
-      type: keyof typeof t;
-      path?: NodePath;
-      node?: Node;
+      type: string;
+      path: NodePath<T>;
     }
   | undefined;
 
-type SegmentMatchFunction = ((path: NodePath) => SegmentMatchResult) & { type?: string };
+// All nodes have a type string, even if the types don't show it
+type TypedNodePath<T = t.Node> = NodePath<T> & { node: T & { type?: string } };
+
+export type SegmentMatchFunction<T = any, R = any> = ((
+  path: TypedNodePath<T>,
+) => SegmentMatchResult) & {
+  type?: string;
+};
 
 interface IdentifierPredicateParams extends PredicateParams {
   name?: string;
@@ -34,19 +42,112 @@ interface ObjectPropertyParams extends PredicateParams {
 
 const tag = (type: string, fn: SegmentMatchFunction): SegmentMatchFunction => {
   fn.type = type;
-  return fn;
+  const typed = function (path: TypedNodePath) {
+    if (path.node.type === type) {
+      return fn(path);
+    }
+
+    return undefined;
+  };
+
+  typed.type = type;
+
+  return typed;
 };
 
+interface ImportDeclarationParams extends PredicateParams {
+  some?: string[];
+  all?: string[];
+  from?: string;
+}
+
+export type ImportDeclarationMatchResult =
+  | (SegmentMatchResult<t.ImportDeclaration> & ImportDeclarationParams)
+  | undefined;
+
+interface TypeReferenceParams extends PredicateParams {
+  name?: string;
+}
+
+export function typeReference(params: TypeReferenceParams) {
+  return tag('TSTypeReference', function (path: TypedNodePath): SegmentMatchResult {
+    const matchPath = path;
+
+    let matchTypeName = true;
+
+    if (params.name) {
+      const typeNamePath = matchPath.get('typeName');
+
+      if (b.isIdentifierPath(typeNamePath)) {
+        matchTypeName = typeNamePath.node.name === params.name;
+      }
+    }
+
+    if (matchPath && matchTypeName) {
+      return {
+        type: 'typeReference',
+        ...(params.name ? { name: params.name } : {}),
+        path,
+      };
+    }
+    return undefined;
+  });
+}
+
+export function importDeclaration(params: ImportDeclarationParams) {
+  return tag('ImportDeclaration', function (path: TypedNodePath): ImportDeclarationMatchResult {
+    const specifiers = path.get('specifiers') as TypedNodePath<t.ImportSpecifier>[];
+
+    let matchContainsAll = true;
+    let matchContainsSome = true;
+
+    if (specifiers) {
+      if (params.all) {
+        matchContainsAll = params.all.every((contains) => {
+          return specifiers.some((specifier) => {
+            return specifier.node.local.name === contains;
+          });
+        });
+      } else if (params.some) {
+        matchContainsSome = params.some.some((contains) => {
+          return specifiers.some((specifier) => {
+            return specifier.node.local.name === contains;
+          });
+        });
+      }
+    }
+
+    const source = path.get('source') as TypedNodePath;
+    let matchFrom = true;
+
+    if (b.isLiteralPath(source)) {
+      matchFrom = source.value === params.from;
+    }
+
+    if (matchContainsAll && matchContainsSome && matchFrom) {
+      return {
+        type: 'importDeclaration',
+        ...(params.all ? { all: params.all } : {}),
+        ...(params.some ? { some: params.some } : {}),
+        ...(params.from ? { from: params.from } : {}),
+        path,
+      };
+    }
+
+    return undefined;
+  });
+}
+
 export function objectExpression(params: ObjectPropertyParams) {
-  return tag('ObjectExpression', function (path: NodePath): SegmentMatchResult {
-    const matchPath = isObjectExpressionPath(path) ? path : undefined;
+  return tag('ObjectExpression', function (path: TypedNodePath): SegmentMatchResult {
+    const matchPath = b.isObjectExpressionPath(path) ? path : undefined;
 
     let matchName = true;
 
     if (params.name) {
       const keyPath = matchPath?.getSibling('key');
 
-      if (isIdentifierPath(keyPath)) {
+      if (b.isIdentifierPath(keyPath)) {
         matchName = keyPath.node.name === params.name;
       }
     }
@@ -63,15 +164,15 @@ export function objectExpression(params: ObjectPropertyParams) {
 }
 
 export function objectProperty(params: ObjectExpressionParams) {
-  return tag('ObjectProperty', function (path: NodePath): SegmentMatchResult {
-    const matchPath = isObjectPropertyPath(path) ? path : undefined;
+  return tag('ObjectProperty', function (path: TypedNodePath): SegmentMatchResult {
+    const matchPath = b.isObjectPropertyPath(path) ? path : undefined;
 
     let matchName = true;
 
     if (params.name) {
       const keyPath = matchPath?.get('key');
 
-      if (isIdentifierPath(keyPath)) {
+      if (b.isIdentifierPath(keyPath)) {
         matchName = keyPath.node.name === params.name;
       }
     }
@@ -80,7 +181,7 @@ export function objectProperty(params: ObjectExpressionParams) {
 
     if (params.value) {
       const valuePath = matchPath?.get('value');
-      if (isStringLiteralPath(valuePath)) {
+      if (b.isStringLiteralPath(valuePath)) {
         matchValue = valuePath.node.value === params.value;
       }
     }
@@ -98,8 +199,8 @@ export function objectProperty(params: ObjectExpressionParams) {
 }
 
 export function identifier(params: IdentifierPredicateParams) {
-  return tag('Identifier', function (path: NodePath): SegmentMatchResult {
-    const matchPath = isIdentifierPath(path) ? path : undefined;
+  return tag('Identifier', function (path: TypedNodePath): SegmentMatchResult {
+    const matchPath = b.isIdentifierPath(path) ? path : undefined;
 
     const matchName = params.name ? matchPath?.node.name === params.name : true;
 
@@ -107,7 +208,7 @@ export function identifier(params: IdentifierPredicateParams) {
 
     if (params.value) {
       const valuePath = matchPath?.getSibling('value');
-      if (isStringLiteralPath(valuePath)) {
+      if (b.isStringLiteralPath(valuePath)) {
         matchValue = valuePath.node.value === params.value;
       }
     }
@@ -125,7 +226,7 @@ export function identifier(params: IdentifierPredicateParams) {
 }
 
 const allOrNothing = (results: any[], conditions: any[]) =>
-  results.length === conditions.length ? results : undefined;
+  results.length === conditions.length ? results.reverse() : undefined;
 
 export function match(path: NodePath | null | undefined, segments: SegmentMatchFunction[]) {
   const conditions = [...segments].reverse();

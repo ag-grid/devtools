@@ -32,3 +32,9 @@ export function isStringLiteralPath(path?: NodePath): path is NodePath<t.StringL
 export function isStringLiteralNode(node?: Node): node is t.StringLiteral {
   return node?.type === 'StringLiteral';
 }
+
+export function isLiteralPath(
+  path?: NodePath,
+): path is NodePath<Node & { value: string; raw: string }> {
+  return path?.value && path?.raw;
+}
