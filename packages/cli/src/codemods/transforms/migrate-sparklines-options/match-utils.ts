@@ -1,6 +1,5 @@
 import { NodePath } from '@ag-grid-devtools/ast';
 import * as t from '@babel/types';
-import * as b from './babel-utils';
 
 export type OrderedRecord<K extends string, V> = Record<K, V>;
 
@@ -77,15 +76,15 @@ export function typeReference(params: TypeReferenceParams) {
     let matchTypeName = true;
 
     if (params.name) {
-      const typeNamePath = matchPath.get('typeName');
+      const typeNamePath = matchPath.get('typeName') as TypedNodePath<t.Identifier>;
 
-      if (b.isIdentifierPath(typeNamePath)) {
+      if (typeNamePath.isIdentifier()) {
         matchTypeName = typeNamePath.node.name === params.name;
       }
     } else if (params.names) {
-      const typeNamePath = matchPath.get('typeName');
+      const typeNamePath = matchPath.get('typeName') as TypedNodePath<t.Identifier>;
 
-      if (b.isIdentifierPath(typeNamePath)) {
+      if (typeNamePath.isIdentifier()) {
         matchTypeName = params.names.includes(typeNamePath.node.name);
       }
     }
@@ -95,7 +94,7 @@ export function typeReference(params: TypeReferenceParams) {
         type: 'typeReference',
         ...(params.name ? { name: params.name } : {}),
         ...(params.names ? { names: params.names } : {}),
-        path,
+        path: path as any,
       };
     }
     return undefined;
@@ -103,7 +102,7 @@ export function typeReference(params: TypeReferenceParams) {
 }
 
 export function importDeclaration(params: ImportDeclarationParams) {
-  return tag('ImportDeclaration', function (path: TypedNodePath): ImportDeclarationMatchResult {
+  return tag('ImportDeclaration', function (path: TypedNodePath): SegmentMatchResult {
     const specifiers = path.get('specifiers') as TypedNodePath<t.ImportSpecifier>[];
 
     let matchContainsAll = true;
@@ -125,11 +124,11 @@ export function importDeclaration(params: ImportDeclarationParams) {
       }
     }
 
-    const source = path.get('source') as TypedNodePath;
+    const source = path.get('source') as NodePath<t.Literal>;
     let matchFrom = true;
 
-    if (b.isLiteralPath(source)) {
-      matchFrom = source.value === params.from;
+    if (source.isLiteral()) {
+      matchFrom = (source as any).value === params.from;
     }
 
     if (matchContainsAll && matchContainsSome && matchFrom) {
@@ -138,7 +137,7 @@ export function importDeclaration(params: ImportDeclarationParams) {
         ...(params.all ? { all: params.all } : {}),
         ...(params.some ? { some: params.some } : {}),
         ...(params.from ? { from: params.from } : {}),
-        path,
+        path: path as any,
       };
     }
 
@@ -148,14 +147,14 @@ export function importDeclaration(params: ImportDeclarationParams) {
 
 export function objectExpression(params: ObjectPropertyParams) {
   return tag('ObjectExpression', function (path: TypedNodePath): SegmentMatchResult {
-    const matchPath = b.isObjectExpressionPath(path) ? path : undefined;
+    const matchPath = path.isObjectExpression() ? path : undefined;
 
     let matchName = true;
 
     if (params.name) {
       const keyPath = matchPath?.getSibling('key');
 
-      if (b.isIdentifierPath(keyPath)) {
+      if (keyPath?.isIdentifier()) {
         matchName = keyPath.node.name === params.name;
       }
     }
@@ -164,7 +163,7 @@ export function objectExpression(params: ObjectPropertyParams) {
       return {
         type: 'objectExpression',
         ...(params.name ? { name: params.name } : {}),
-        path,
+        path: path as any,
       };
     }
     return undefined;
@@ -173,14 +172,14 @@ export function objectExpression(params: ObjectPropertyParams) {
 
 export function objectProperty(params: ObjectExpressionParams) {
   return tag('ObjectProperty', function (path: TypedNodePath): SegmentMatchResult {
-    const matchPath = b.isObjectPropertyPath(path) ? path : undefined;
+    const matchPath = path.isObjectProperty() ? path : undefined;
 
     let matchName = true;
 
     if (params.name) {
-      const keyPath = matchPath?.get('key');
+      const keyPath = matchPath?.get('key') as NodePath<t.Identifier>;
 
-      if (b.isIdentifierPath(keyPath)) {
+      if (keyPath?.isIdentifier()) {
         matchName = keyPath.node.name === params.name;
       }
     }
@@ -188,8 +187,8 @@ export function objectProperty(params: ObjectExpressionParams) {
     let matchValue = true;
 
     if (params.value) {
-      const valuePath = matchPath?.get('value');
-      if (b.isStringLiteralPath(valuePath)) {
+      const valuePath = matchPath?.get('value') as NodePath<t.StringLiteral>;
+      if (valuePath?.isStringLiteral()) {
         matchValue = valuePath.node.value === params.value;
       }
     }
@@ -199,7 +198,7 @@ export function objectProperty(params: ObjectExpressionParams) {
         type: 'objectProperty',
         ...(params.name ? { name: params.name } : {}),
         ...(params.value ? { value: params.value } : {}),
-        path,
+        path: path as any,
       };
     }
     return undefined;
@@ -208,7 +207,7 @@ export function objectProperty(params: ObjectExpressionParams) {
 
 export function identifier(params: IdentifierPredicateParams) {
   return tag('Identifier', function (path: TypedNodePath): SegmentMatchResult {
-    const matchPath = b.isIdentifierPath(path) ? path : undefined;
+    const matchPath = path.isIdentifier() ? path : undefined;
 
     const matchName = params.name ? matchPath?.node.name === params.name : true;
 
@@ -216,7 +215,7 @@ export function identifier(params: IdentifierPredicateParams) {
 
     if (params.value) {
       const valuePath = matchPath?.getSibling('value');
-      if (b.isStringLiteralPath(valuePath)) {
+      if (valuePath?.isStringLiteral()) {
         matchValue = valuePath.node.value === params.value;
       }
     }
@@ -226,7 +225,7 @@ export function identifier(params: IdentifierPredicateParams) {
         type: 'identifier',
         ...(params.name ? { name: params.name } : {}),
         ...(params.value ? { value: params.value } : {}),
-        path,
+        path: path as any,
       };
     }
     return undefined;

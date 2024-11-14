@@ -4,7 +4,7 @@ import * as t from '@babel/types';
 export const removeImports = (path: NodePath<t.ImportDeclaration>, importsToRemove: string[]) => {
   const specifierPaths = path.get('specifiers') as NodePath<t.ImportSpecifier>[];
   specifierPaths
-    .filter((specifier) => importsToRemove.includes(specifier.node.imported.name))
+    .filter((specifier) => importsToRemove.includes((specifier.node.imported as t.Identifier).name))
     .forEach((specifier) => specifier.remove());
 };
 

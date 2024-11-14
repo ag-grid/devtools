@@ -1,4 +1,7 @@
+// @ts-nocheck
 import { LineSparklineOptions, AreaSparklineOptions, TestImport } from '@ag-grid-community/core';
+
+const tooltipRenderer = (params: any) => {};
 
 const test = {
   sparklineOptions: {

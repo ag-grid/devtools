@@ -1,6 +1,9 @@
+// @ts-nocheck
 import { TestImport } from '@ag-grid-community/core';
 
 import { AgSparklineOptions } from "ag-charts-types";
+
+const tooltipRenderer = (params: any) => {};
 
 const test = {
   sparklineOptions: {
