@@ -1,4 +1,4 @@
-import { LineSparklineOptions, TestImport } from '@ag-grid-community/core';
+import { LineSparklineOptions, AreaSparklineOptions, TestImport } from '@ag-grid-community/core';
 
 const test = {
   sparklineOptions: {
@@ -13,5 +13,5 @@ const ggg = {
     tooltip: {
       renderer: tooltipRenderer,
     },
-  }
+  } as AreaSparklineOptions,
 }

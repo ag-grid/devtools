@@ -67,6 +67,7 @@ export type ImportDeclarationMatchResult =
 
 interface TypeReferenceParams extends PredicateParams {
   name?: string;
+  names?: string[];
 }
 
 export function typeReference(params: TypeReferenceParams) {
@@ -81,12 +82,19 @@ export function typeReference(params: TypeReferenceParams) {
       if (b.isIdentifierPath(typeNamePath)) {
         matchTypeName = typeNamePath.node.name === params.name;
       }
+    } else if (params.names) {
+      const typeNamePath = matchPath.get('typeName');
+
+      if (b.isIdentifierPath(typeNamePath)) {
+        matchTypeName = params.names.includes(typeNamePath.node.name);
+      }
     }
 
     if (matchPath && matchTypeName) {
       return {
         type: 'typeReference',
         ...(params.name ? { name: params.name } : {}),
+        ...(params.names ? { names: params.names } : {}),
         path,
       };
     }

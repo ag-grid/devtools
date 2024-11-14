@@ -15,5 +15,5 @@ const ggg = {
     tooltip: {
       renderer: tooltipRenderer,
     },
-  }
+  } as AgSparklineOptions,
 }

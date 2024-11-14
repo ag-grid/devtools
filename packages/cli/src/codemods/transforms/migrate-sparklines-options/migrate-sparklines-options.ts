@@ -45,7 +45,16 @@ export const importTransformer: m.ComplexTransform = {
 
 export const typecastTransformer: m.ComplexTransform = {
   matchOn: {
-    sparklineTypecast: [m.typeReference({ name: 'LineSparklineOptions' })],
+    sparklineTypecast: [
+      m.typeReference({
+        names: [
+          'AreaSparklineOptions',
+          'BarSparklineOptions',
+          'ColumnSparklineOptions',
+          'LineSparklineOptions',
+        ],
+      }),
+    ],
   },
   transformer: (matches: Record<string, m.SegmentMatchResult[]>) => {
     const sparklineTypecastPath = matches.sparklineTypecast[0]!.path;
