@@ -1,13 +1,15 @@
 const line = {
-    sparklineOptions: {
-        type: 'line'
+    cellRendererParams: {
+        sparklineOptions: {
+            type: 'line'
+        }
     }
 }
 
 const area = {
-    sparklineOptions: {
+    cellRendererParams: {sparklineOptions: {
         type: 'area'
-    }
+    }}
 }
 
 const bar = {
@@ -17,6 +19,13 @@ const bar = {
 }
 
 const column = {
+    cellRendererParams: {
+        sparklineOptions: {
+            type: 'column'
+        }
+    }
+}
+const shouldntChange0 = {
     sparklineOptions: {
         type: 'column'
     }

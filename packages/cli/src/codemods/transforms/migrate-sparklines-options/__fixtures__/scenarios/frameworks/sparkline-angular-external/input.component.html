@@ -1,0 +1,12 @@
+<div>
+  <ag-grid-angular
+    [columnDefs]="[[{field: 'test', cellRenderer: 'agSparklineRenderer', cellRendererParams: {sparklineOptions: {type: 'column'}}}]]"
+    [rowData]="rowData"
+    (gridReady)="onGridReady($event)"
+  ></ag-grid-angular>
+  <ag-grid-angular
+    [columnDefs]="columnDefs"
+    [rowData]="rowData"
+    (gridReady)="onGridReady($event)"
+  ></ag-grid-angular>
+</div>

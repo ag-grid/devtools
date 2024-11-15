@@ -4,7 +4,10 @@ import * as t from '@babel/types';
 export type OrderedRecord<K extends string, V> = Record<K, V>;
 
 export type ComplexTransform = {
-  matchOn: OrderedRecord<string, SegmentMatchFunction[]>;
+  matchOn: OrderedRecord<
+    string,
+    (SegmentMatchFunction<any, any> | SegmentMatchFunction<any, any>[])[]
+  >;
   transformer: (matches: OrderedRecord<string, SegmentMatchResult[]>) => void;
 };
 
@@ -170,6 +173,10 @@ export function objectExpression(params: ObjectPropertyParams) {
   });
 }
 
+export function object({ name }: { name: string }) {
+  return [objectProperty({ name }), objectExpression({ name })];
+}
+
 export function objectProperty(params: ObjectExpressionParams) {
   return tag('ObjectProperty', function (path: TypedNodePath): SegmentMatchResult {
     const matchPath = path.isObjectProperty() ? path : undefined;
@@ -236,7 +243,7 @@ const allOrNothing = (results: any[], conditions: any[]) =>
   results.length === conditions.length ? results.reverse() : undefined;
 
 export function match(path: NodePath | null | undefined, segments: SegmentMatchFunction[]) {
-  const conditions = [...segments].reverse();
+  const conditions = segments.flat().reverse();
 
   const stack = [];
 
