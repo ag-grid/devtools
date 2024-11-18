@@ -3,14 +3,14 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, onTestFinished, test } from 'vitest';
 import { loadTransformScenarios } from '../../test/runners/transform';
 
-import migrateSparklinesOptions from './migrate-sparklines-options';
+import transformSparklinesOptionsV33_0 from './transform-sparklines-options-v33-0';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-describe(migrateSparklinesOptions, () => {
+describe(transformSparklinesOptionsV33_0, () => {
   const scenariosPath = join(__dirname, './__fixtures__/scenarios');
   loadTransformScenarios(scenariosPath, {
-    transforms: [migrateSparklinesOptions],
+    transforms: [transformSparklinesOptionsV33_0],
     vitest: { describe, expect, test, onTestFinished },
   });
 });
