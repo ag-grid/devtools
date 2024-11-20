@@ -43,6 +43,7 @@ export const createVisitor: OnVisit = (conditions: any[], then: (results: any[])
   return {
     [deepestType]: (path: NodePath) => {
       const results = m.match(path, conditions);
+      console.log();
       if (results) {
         then(results);
       }
