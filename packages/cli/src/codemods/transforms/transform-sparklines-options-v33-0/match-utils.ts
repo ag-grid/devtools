@@ -1,5 +1,6 @@
 import { NodePath } from '@ag-grid-devtools/ast';
 import * as t from '@babel/types';
+import { ImportSpecifierOption } from './types';
 
 export type OrderedRecord<K extends string, V> = Record<K, V>;
 
@@ -27,6 +28,7 @@ export type SegmentMatchFunction<T = any, R = any> = ((
   path: TypedNodePath<T>,
 ) => SegmentMatchResult) & {
   type?: string;
+  params?: PredicateParams;
 };
 
 interface IdentifierPredicateParams extends PredicateParams {
@@ -42,8 +44,13 @@ interface ObjectPropertyParams extends PredicateParams {
   value?: string;
 }
 
-const tag = (type: string, fn: SegmentMatchFunction): SegmentMatchFunction => {
+const tag = (
+  type: string,
+  params: PredicateParams,
+  fn: SegmentMatchFunction,
+): SegmentMatchFunction => {
   fn.type = type;
+  fn.params = params;
   const typed = function (path: TypedNodePath) {
     if (path.node.type === type) {
       return fn(path);
@@ -53,13 +60,14 @@ const tag = (type: string, fn: SegmentMatchFunction): SegmentMatchFunction => {
   };
 
   typed.type = type;
+  typed.params = params;
 
   return typed;
 };
 
 interface ImportDeclarationParams extends PredicateParams {
-  some?: string[];
-  all?: string[];
+  some?: ImportSpecifierOption[];
+  all?: ImportSpecifierOption[];
   from?: string;
 }
 
@@ -73,7 +81,7 @@ interface TypeReferenceParams extends PredicateParams {
 }
 
 export function typeReference(params: TypeReferenceParams) {
-  return tag('TSTypeReference', function (path: TypedNodePath): SegmentMatchResult {
+  return tag('TSTypeReference', params, function (path: TypedNodePath): SegmentMatchResult {
     const matchPath = path;
 
     let matchTypeName = true;
@@ -105,7 +113,7 @@ export function typeReference(params: TypeReferenceParams) {
 }
 
 export function importDeclaration(params: ImportDeclarationParams) {
-  return tag('ImportDeclaration', function (path: TypedNodePath): SegmentMatchResult {
+  return tag('ImportDeclaration', params, function (path: TypedNodePath): SegmentMatchResult {
     const specifiers = path.get('specifiers') as TypedNodePath<t.ImportSpecifier>[];
 
     let matchContainsAll = true;
@@ -149,7 +157,7 @@ export function importDeclaration(params: ImportDeclarationParams) {
 }
 
 export function objectExpression(params: ObjectPropertyParams) {
-  return tag('ObjectExpression', function (path: TypedNodePath): SegmentMatchResult {
+  return tag('ObjectExpression', params, function (path: TypedNodePath): SegmentMatchResult {
     const matchPath = path.isObjectExpression() ? path : undefined;
 
     let matchName = true;
@@ -164,7 +172,7 @@ export function objectExpression(params: ObjectPropertyParams) {
 
     if (matchPath && matchName) {
       return {
-        type: 'objectExpression',
+        type: path.type,
         ...(params.name ? { name: params.name } : {}),
         path: path as any,
       };
@@ -178,7 +186,7 @@ export function object({ name }: { name: string }) {
 }
 
 export function objectProperty(params: ObjectExpressionParams) {
-  return tag('ObjectProperty', function (path: TypedNodePath): SegmentMatchResult {
+  return tag('ObjectProperty', params, function (path: TypedNodePath): SegmentMatchResult {
     const matchPath = path.isObjectProperty() ? path : undefined;
 
     let matchName = true;
@@ -213,7 +221,7 @@ export function objectProperty(params: ObjectExpressionParams) {
 }
 
 export function identifier(params: IdentifierPredicateParams) {
-  return tag('Identifier', function (path: TypedNodePath): SegmentMatchResult {
+  return tag('Identifier', params, function (path: TypedNodePath): SegmentMatchResult {
     const matchPath = path.isIdentifier() ? path : undefined;
 
     const matchName = params.name ? matchPath?.node.name === params.name : true;
@@ -252,6 +260,7 @@ export function match(path: NodePath | null | undefined, segments: SegmentMatchF
       return allOrNothing(stack, conditions);
     }
     const result = segment(path);
+    console.log(segment.type, segment.params, !!result);
     if (!result) {
       return allOrNothing(stack, conditions);
     }
