@@ -9,7 +9,7 @@ export const highlightStyle: JSCodeShiftTransformer = (root) => {
     .find(j.ObjectProperty, { key: { name: 'cellRendererParams' } })
     .find(j.ObjectProperty, { key: { name: 'sparklineOptions' } });
 
-  return sparklineOptions.forEach((path) => {
+  sparklineOptions.forEach((path) => {
     const sparklineOption = j(path);
     const highlightStyle = sparklineOption.find(j.ObjectProperty, {
       key: { name: 'highlightStyle' },

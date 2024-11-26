@@ -5,6 +5,7 @@ import {
   chartTypeSubobject,
   columnToVerticalBarTransform,
   highlightStyle,
+  markerFormatter,
   processImports,
   removeCrosshairs,
   replaceTypes,
@@ -18,6 +19,7 @@ const transform: AstTransform<AstCliContext> = function migrateSparklinesOptions
     replaceTypes,
     chartTypeSubobject,
     highlightStyle,
+    markerFormatter,
   );
 };
 
