@@ -1,6 +1,8 @@
 // @ts-nocheck
-import { TestImport } from "@ag-grid-community/core";
+import { TestImport } from '@ag-grid-community/core';
+
 import type { AgSparklineOptions } from "ag-charts-community";
+
 const tooltipRenderer = (params: any) => {};
 
 const test = {
@@ -9,7 +11,7 @@ const test = {
       renderer: tooltipRenderer
     }
   } as AgSparklineOptions
-};
+}
 
 const ggg = {
   notASparkline: {
@@ -17,4 +19,4 @@ const ggg = {
       renderer: tooltipRenderer
     }
   } as AgSparklineOptions
-};
+}

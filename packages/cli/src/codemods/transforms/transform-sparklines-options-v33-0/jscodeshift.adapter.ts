@@ -22,22 +22,17 @@ export const jsCodeShiftTransform = (...transforms: JSCodeShiftTransformer[]) =>
           for (const transform of transforms) {
             root = j((path.hub as any).file.ast);
 
-            const getFirstNode = () => {
-              const bodyNodes = root.find(j.Body);
-              if (bodyNodes.length === 0) {
-                return {} as any;
-              } else return bodyNodes.at(0).get().node;
-            };
+            const getFirstNode = () => root.find(j.Program).get('body', 0).node;
 
             const firstNode = getFirstNode();
             const { comments } = firstNode;
 
-            root = transform(root);
+            const result = transform(root);
             const firstNode2 = getFirstNode();
             if (firstNode2 !== firstNode) {
               firstNode2.comments = comments;
             }
-            const program = root.getAST()[0].node.program;
+            const program = result.getAST()[0].node.program;
             path.replaceWith(program);
           }
         },

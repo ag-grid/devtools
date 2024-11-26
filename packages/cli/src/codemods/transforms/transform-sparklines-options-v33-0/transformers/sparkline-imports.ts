@@ -32,15 +32,20 @@ export const processImports: JSCodeShiftTransformer = (root) => {
 
   if (matches > 0) {
     // construct new import
-    result = reset(result, true)
-      .find(j.ImportDeclaration)
-      .insertAfter(
-        j.importDeclaration(
-          [j.importSpecifier(j.identifier((newImport as any).name))],
-          j.stringLiteral(newPackage),
-          'type',
-        ),
-      );
+    result = reset(result);
+    const imports = result.find(j.ImportDeclaration);
+
+    const newImportDeclaration = j.importDeclaration(
+      [j.importSpecifier(j.identifier((newImport as any).name))],
+      j.stringLiteral(newPackage),
+      'type',
+    );
+
+    if (imports.length > 0) {
+      result = imports.insertAfter(newImportDeclaration);
+    } else {
+      result.get().node.program.body.unshift(newImportDeclaration);
+    }
   }
 
   return result;
