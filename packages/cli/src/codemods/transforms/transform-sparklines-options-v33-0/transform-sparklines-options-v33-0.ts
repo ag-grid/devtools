@@ -4,6 +4,7 @@ import * as m from './match-utils';
 import * as t from '@babel/types';
 import * as v from './visitor-utils';
 import { mergeImports, mergeTypecasts } from './transform-utils';
+import { jsCodeShiftTransform } from './jscodeshift.adapter';
 
 export const c2bTransform: m.ComplexTransform = {
   matchOn: {
