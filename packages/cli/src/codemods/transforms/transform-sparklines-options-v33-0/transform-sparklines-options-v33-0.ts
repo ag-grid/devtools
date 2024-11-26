@@ -4,6 +4,7 @@ import { jsCodeShiftTransform } from './jscodeshift.adapter';
 import {
   chartTypeSubobject,
   columnToVerticalBarTransform,
+  highlightStyle,
   processImports,
   removeCrosshairs,
   replaceTypes,
@@ -16,6 +17,7 @@ const transform: AstTransform<AstCliContext> = function migrateSparklinesOptions
     removeCrosshairs,
     replaceTypes,
     chartTypeSubobject,
+    highlightStyle,
   );
 };
 
