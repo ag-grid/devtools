@@ -1,23 +1,14 @@
-import * as m from '../match-utils';
-import * as t from '@babel/types';
-import * as v from '../visitor-utils';
+import j from 'jscodeshift';
+import { JSCodeShiftTransformer } from '../types';
 
 // match cellRendererParams.sparklineOptions.type === 'column'
 // replace with type: 'bar', direction: 'vertical'
-export const columnTransform = v.createComplexVisitor({
-  matchOn: {
-    columnSparkline: [
-      m.objectProperty({ name: 'cellRendererParams' }),
-      m.objectExpression({ name: 'cellRendererParams' }),
-      m.objectProperty({ name: 'sparklineOptions' }),
-      m.objectExpression({ name: 'sparklineOptions' }),
-      m.objectProperty({ name: 'type', value: 'column' }),
-    ],
-  },
-  transformer: (matches: Record<string, m.SegmentMatchResult[]>) => {
-    const { columnSparkline } = matches;
-    const property = columnSparkline[4]!.path;
-    property.replaceWith(t.objectProperty(t.identifier('type'), t.stringLiteral('bar')));
-    property.insertAfter(t.objectProperty(t.identifier('direction'), t.stringLiteral('vertical')));
-  },
-});
+export const columnToVerticalBarTransform: JSCodeShiftTransformer = (root) =>
+  root
+    .find(j.ObjectProperty, { key: { name: 'cellRendererParams' } })
+    .find(j.ObjectProperty, { key: { name: 'sparklineOptions' } })
+    .find(j.ObjectProperty, { key: { name: 'type' }, value: { value: 'column' } })
+    .forEach((path) => {
+      path.replace(j.objectProperty(j.identifier('type'), j.stringLiteral('bar')));
+      path.insertAfter(j.objectProperty(j.identifier('direction'), j.stringLiteral('vertical')));
+    });

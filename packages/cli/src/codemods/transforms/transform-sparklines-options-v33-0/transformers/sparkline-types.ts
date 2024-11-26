@@ -1,18 +1,14 @@
-import * as v from '../visitor-utils';
-import * as t from '@babel/types';
-import * as m from '../match-utils';
+import j from 'jscodeshift';
+import { JSCodeShiftTransformer } from '../types';
 import { newType, oldTypes } from './constants';
 
-const mergeTypecasts = (from: string[], to: string) => {
-  return v.createComplexVisitor({
-    matchOn: {
-      typecast: [m.typeReference({ names: from })],
-    },
-    transformer: (matches: Record<string, m.SegmentMatchResult[]>) => {
-      const typecastPath = matches.typecast[0]!.path;
-      typecastPath.replaceWith(t.tsTypeReference(t.identifier(to)));
-    },
-  });
-};
-
-export const types = mergeTypecasts(oldTypes, newType);
+export const replaceTypes: JSCodeShiftTransformer = (root) =>
+  root
+    .find(j.TSTypeReference)
+    .filter((path) => {
+      return oldTypes.includes((path.value.typeName as any).name);
+    })
+    .forEach((path) => {
+      // console.log(path.value.typeName);
+      path.replace(j.tsTypeReference(j.identifier(newType)));
+    });

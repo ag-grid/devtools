@@ -39,15 +39,18 @@ export const createComplexVisitor: OnComplexVisit = (complex: m.ComplexTransform
 
 export const createVisitor: OnVisit = (conditions: any[], then: (results: any[]) => void) => {
   const deepestType = conditions.at(-1).type;
+  const visitor = function (path: NodePath) {
+    const results = m.match(path, conditions);
+    console.log();
+    if (results) {
+      then(results);
+    }
+  };
+  visitor.type = deepestType;
+  visitor.params = conditions.at(-1).params;
 
   return {
-    [deepestType]: (path: NodePath) => {
-      const results = m.match(path, conditions);
-      console.log();
-      if (results) {
-        then(results);
-      }
-    },
+    [deepestType]: visitor,
   };
 };
 

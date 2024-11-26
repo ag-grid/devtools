@@ -24,11 +24,3 @@ const shouldntChange2 = {
         type: 'asdadasqda'
     }
 }
-
-const shouldntChange3 = {
-    cellRendererParams: {
-        sparklineOptions: {
-            type: 'column'
-        }
-    }
-}

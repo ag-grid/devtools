@@ -1,26 +1,47 @@
-import * as v from '../visitor-utils';
-import * as t from '@babel/types';
-import * as m from '../match-utils';
-import { NodePath } from '@ag-grid-devtools/ast';
-import { removeImports, createImport } from '../import-utils';
-import { newPackage, oldImports, newImport } from './constants';
-import { ImportSpecifierOption } from '../types';
+import { newPackage, oldImports, newImport, oldPackage } from './constants';
 
-const mergeImports = (from: ImportSpecifierOption[], to: ImportSpecifierOption, source: string) =>
-  v.createComplexVisitor({
-    matchOn: {
-      importDeclaration: [m.importDeclaration({ some: from })],
-    },
-    transformer: (matches: Record<string, m.SegmentMatchResult[]>) => {
-      const importParams = (matches.importDeclaration[0] as m.ImportDeclarationMatchResult)!;
-      const path = importParams.path as NodePath<t.ImportDeclaration>;
-      const dest = typeof to === 'string' ? { name: to } : to;
+import j, { Collection } from 'jscodeshift';
+import { JSCodeShiftTransformer } from '../types';
+import { reset } from '../jscodeshift.adapter';
 
-      removeImports(path, importParams.some!);
-      if (!path.removed) {
-        path.insertAfter(createImport([dest], source));
-      }
-    },
-  });
+export const processImports: JSCodeShiftTransformer = (root) => {
+  let matches = 0;
 
-export const imports = mergeImports(oldImports, newImport, newPackage);
+  let result: Collection<any> = root
+    .find(j.ImportDeclaration)
+    .filter((path) => path.node.source.value === oldPackage)
+    .find(j.ImportSpecifier)
+    .filter((path) => oldImports.includes(path.node.imported.name));
+
+  matches = result.length;
+
+  if (matches > 0) {
+    result = result.forEach((path) => path.replace());
+  }
+
+  result = reset(result)
+    .find(j.ImportDeclaration)
+    .filter((path) => path.node.source.value === oldPackage);
+
+  const importSpecifiers = result.find(j.ImportSpecifier);
+  if (importSpecifiers.length === 0) {
+    result = result.forEach((path) => {
+      path.replace();
+    });
+  }
+
+  if (matches > 0) {
+    // construct new import
+    result = reset(result, true)
+      .find(j.ImportDeclaration)
+      .insertAfter(
+        j.importDeclaration(
+          [j.importSpecifier(j.identifier((newImport as any).name))],
+          j.stringLiteral(newPackage),
+          'type',
+        ),
+      );
+  }
+
+  return result;
+};

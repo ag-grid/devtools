@@ -10,6 +10,8 @@ export const newImport: ImportSpecifierOption = {
   name: 'AgSparklineOptions',
   type: 'type',
 };
+
+export const oldPackage = '@ag-grid-community/core';
 export const newPackage = 'ag-charts-community';
 
 export const oldTypes: string[] = oldImports.map((io) => (typeof io === 'string' ? io : io.name));

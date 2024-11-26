@@ -28,7 +28,7 @@ export type SegmentMatchFunction<T = any, R = any> = ((
   path: TypedNodePath<T>,
 ) => SegmentMatchResult) & {
   type?: string;
-  params?: PredicateParams;
+  params?: PredicateParams | PredicateParams[];
 };
 
 interface IdentifierPredicateParams extends PredicateParams {
@@ -64,6 +64,24 @@ const tag = (
 
   return typed;
 };
+
+export function or(...segments: SegmentMatchFunction[]): SegmentMatchFunction {
+  const typed = function (path: TypedNodePath) {
+    for (const segment of segments) {
+      const result = segment(path);
+      if (result) {
+        return result;
+      }
+    }
+
+    return undefined;
+  };
+
+  typed.type = 'OR';
+  typed.params = segments.map((segment) => segment.params);
+
+  return typed;
+}
 
 interface ImportDeclarationParams extends PredicateParams {
   some?: ImportSpecifierOption[];
@@ -159,6 +177,31 @@ export function importDeclaration(params: ImportDeclarationParams) {
 export function objectExpression(params: ObjectPropertyParams) {
   return tag('ObjectExpression', params, function (path: TypedNodePath): SegmentMatchResult {
     const matchPath = path.isObjectExpression() ? path : undefined;
+
+    let matchName = true;
+
+    if (params.name) {
+      const keyPath = matchPath?.getSibling('key');
+
+      if (keyPath?.isIdentifier()) {
+        matchName = keyPath.node.name === params.name;
+      }
+    }
+
+    if (matchPath && matchName) {
+      return {
+        type: path.type,
+        ...(params.name ? { name: params.name } : {}),
+        path: path as any,
+      };
+    }
+    return undefined;
+  });
+}
+
+export function tsAsExpression(params: ObjectPropertyParams) {
+  return tag('TSAsExpression', params, function (path: TypedNodePath): SegmentMatchResult {
+    const matchPath = path.isTSAsExpression() ? path : undefined;
 
     let matchName = true;
 

@@ -1,14 +1,8 @@
 // @ts-nocheck
-import type { AgSparklineOptions } from 'ag-charts-enterprise';
+import type { AgSparklineOptions } from "ag-charts-community";
 
 const test = {
   cellRendererParams: {
-    sparklineOptions: {
-      crosshair: {
-        enabled: true,
-        lineDash: [3, 3],
-        stroke: '#999',
-      },
-    } as LineSparklineOptions,
+    sparklineOptions: {} as AgSparklineOptions
   }
-}
+};
