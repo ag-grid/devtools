@@ -31,34 +31,16 @@ export const c2bTransform: m.ComplexTransform = {
   },
 };
 
-export const test = jsCodeShiftTransform(
-  columnToVerticalBarTransform,
-  processImports,
-  removeCrosshairs,
-  replaceTypes,
-  chartTypeSubobject,
-  highlightStyle,
-  markerFormatter,
-);
-
 const transform: AstTransform<AstCliContext> = function migrateSparklinesOptions(_babel) {
-  const oldOptionNames = [
-    'AreaSparklineOptions',
-    'BarSparklineOptions',
-    'ColumnSparklineOptions',
-    'LineSparklineOptions',
-  ];
-
-  const newOptionName = 'AgSparklineOptions';
-  const newPackage = 'ag-charts-types';
-
-  return {
-    visitor: v.combineVisitors(
-      v.createComplexVisitor(c2bTransform),
-      v.createComplexVisitor(mergeImports(oldOptionNames, newOptionName, newPackage)),
-      v.createComplexVisitor(mergeTypecasts(oldOptionNames, newOptionName)),
-    ),
-  };
+  return jsCodeShiftTransform(
+    columnToVerticalBarTransform,
+    // processImports,
+    // removeCrosshairs,
+    // replaceTypes,
+    // chartTypeSubobject,
+    // highlightStyle,
+    // markerFormatter,
+  );
 };
 
 export default transform;
