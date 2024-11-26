@@ -34,9 +34,9 @@ export const c2bTransform: m.ComplexTransform = {
 const transform: AstTransform<AstCliContext> = function migrateSparklinesOptions(_babel) {
   return jsCodeShiftTransform(
     columnToVerticalBarTransform,
-    // processImports,
+    processImports,
     // removeCrosshairs,
-    // replaceTypes,
+    replaceTypes,
     // chartTypeSubobject,
     // highlightStyle,
     // markerFormatter,
