@@ -24,14 +24,20 @@ export const jsCodeShiftTransform = (...transforms: JSCodeShiftTransformer[]) =>
 
             const getFirstNode = () => root.find(j.Program).get('body', 0).node;
 
+            // save initial comment if any
             const firstNode = getFirstNode();
             const { comments } = firstNode;
 
+            // transform
             const result = transform(root);
+
+            // restore initial comment if any
             const firstNode2 = getFirstNode();
             if (firstNode2 !== firstNode) {
               firstNode2.comments = comments;
             }
+
+            // inject result back into babel AST
             const program = result.getAST()[0].node.program;
             path.replaceWith(program);
           }

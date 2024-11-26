@@ -5,10 +5,5 @@ import { newType, oldTypes } from './constants';
 export const replaceTypes: JSCodeShiftTransformer = (root) =>
   root
     .find(j.TSTypeReference)
-    .filter((path) => {
-      return oldTypes.includes((path.value.typeName as any).name);
-    })
-    .forEach((path) => {
-      // console.log(path.value.typeName);
-      path.replace(j.tsTypeReference(j.identifier(newType)));
-    });
+    .filter((path) => oldTypes.includes((path.value.typeName as any).name))
+    .forEach((path) => path.replace(j.tsTypeReference(j.identifier(newType))));
