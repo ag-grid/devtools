@@ -35,7 +35,7 @@ const transform: AstTransform<AstCliContext> = function migrateSparklinesOptions
   return jsCodeShiftTransform(
     columnToVerticalBarTransform,
     processImports,
-    // removeCrosshairs,
+    removeCrosshairs,
     replaceTypes,
     // chartTypeSubobject,
     // highlightStyle,
