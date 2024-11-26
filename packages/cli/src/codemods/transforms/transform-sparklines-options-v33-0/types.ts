@@ -5,4 +5,4 @@ export type ImportKind = ImportSpecifier['importKind'];
 
 export type ImportSpecifierOption = string | { name: string; type?: ImportKind };
 
-export type JSCodeShiftTransformer = (root: Collection<any>) => Collection<any>;
+export type JSCodeShiftTransformer = (root: Collection<any>) => void;

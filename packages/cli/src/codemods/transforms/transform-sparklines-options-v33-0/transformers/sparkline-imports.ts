@@ -2,51 +2,57 @@ import { newPackage, oldImports, newImport, oldPackage } from './constants';
 
 import j, { Collection } from 'jscodeshift';
 import { JSCodeShiftTransformer } from '../types';
-import { reset } from '../jscodeshift.adapter';
 
+// Find old named imports and replace them with the new named import
+// remove the old import if no other named imports are present
 export const processImports: JSCodeShiftTransformer = (root) => {
-  let matches = 0;
-
-  let result: Collection<any> = root
-    .find(j.ImportDeclaration)
-    .filter((path) => path.node.source.value === oldPackage)
-    .find(j.ImportSpecifier)
-    .filter((path) => oldImports.includes(path.node.imported.name));
-
-  matches = result.length;
-
-  if (matches > 0) {
-    result = result.forEach((path) => path.replace());
-  }
-
-  result = reset(result)
+  // find old imports
+  const importToBeInspected: Collection<any> = root
     .find(j.ImportDeclaration)
     .filter((path) => path.node.source.value === oldPackage);
 
-  const importSpecifiers = result.find(j.ImportSpecifier);
-  if (importSpecifiers.length === 0) {
-    result = result.forEach((path) => {
-      path.replace();
-    });
-  }
+  // get all named imports in old import
+  const allSpecifiers = importToBeInspected.find(j.ImportSpecifier);
 
-  if (matches > 0) {
-    // construct new import
-    result = reset(result);
-    const imports = result.find(j.ImportDeclaration);
+  // get all old named imports
+  const importsToBeRemoved = allSpecifiers.filter((path) =>
+    oldImports.includes(path.node.imported.name),
+  );
 
-    const newImportDeclaration = j.importDeclaration(
-      [j.importSpecifier(j.identifier((newImport as any).name))],
-      j.stringLiteral(newPackage),
-      'type',
-    );
+  const matches = importsToBeRemoved.length;
+  const nonMatchingImports = allSpecifiers.length - matches;
 
-    if (imports.length > 0) {
-      result = imports.insertAfter(newImportDeclaration);
-    } else {
-      result.get().node.program.body.unshift(newImportDeclaration);
+  // remove old named imports, if any
+  importsToBeRemoved.forEach((path) => path.replace());
+
+  // remove import line if no other named imports were present
+  if (nonMatchingImports === 0) {
+    const importSpecifiers = importToBeInspected.find(j.ImportSpecifier);
+    if (importSpecifiers.length === 0) {
+      importToBeInspected.forEach((path) => path.replace());
     }
   }
 
-  return result;
+  // no need to add new import if no old imports were found
+  if (matches === 0) {
+    return;
+  }
+
+  // construct new import
+  const newImportDeclaration = j.importDeclaration(
+    [j.importSpecifier(j.identifier((newImport as any).name))],
+    j.stringLiteral(newPackage),
+    'type',
+  );
+
+  // find attachment point
+  const imports = root.find(j.ImportDeclaration);
+
+  if (imports.length > 0) {
+    // after imports
+    imports.insertAfter(newImportDeclaration);
+  } else {
+    // top of file
+    root.get().node.program.body.unshift(newImportDeclaration);
+  }
 };
