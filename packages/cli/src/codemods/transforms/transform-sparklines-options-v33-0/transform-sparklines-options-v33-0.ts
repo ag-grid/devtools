@@ -37,7 +37,7 @@ const transform: AstTransform<AstCliContext> = function migrateSparklinesOptions
     processImports,
     removeCrosshairs,
     replaceTypes,
-    // chartTypeSubobject,
+    chartTypeSubobject,
     // highlightStyle,
     markerFormatter,
   );
