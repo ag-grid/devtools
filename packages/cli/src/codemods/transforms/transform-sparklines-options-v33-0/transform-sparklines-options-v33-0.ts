@@ -38,7 +38,7 @@ const transform: AstTransform<AstCliContext> = function migrateSparklinesOptions
     removeCrosshairs,
     replaceTypes,
     chartTypeSubobject,
-    // highlightStyle,
+    highlightStyle,
     markerFormatter,
   );
 };
