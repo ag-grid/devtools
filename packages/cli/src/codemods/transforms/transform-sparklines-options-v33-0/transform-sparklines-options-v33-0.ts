@@ -2,6 +2,7 @@ import { type AstCliContext, type AstTransform } from '@ag-grid-devtools/ast';
 
 import { jsCodeShiftTransform } from './jscodeshift.adapter';
 import {
+  chartTypeSubobject,
   columnToVerticalBarTransform,
   processImports,
   removeCrosshairs,
@@ -14,6 +15,7 @@ const transform: AstTransform<AstCliContext> = function migrateSparklinesOptions
     processImports,
     removeCrosshairs,
     replaceTypes,
+    chartTypeSubobject,
   );
 };
 
