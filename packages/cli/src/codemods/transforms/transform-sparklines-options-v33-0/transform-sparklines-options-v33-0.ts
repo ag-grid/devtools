@@ -39,7 +39,7 @@ const transform: AstTransform<AstCliContext> = function migrateSparklinesOptions
     replaceTypes,
     // chartTypeSubobject,
     // highlightStyle,
-    // markerFormatter,
+    markerFormatter,
   );
 };
 
