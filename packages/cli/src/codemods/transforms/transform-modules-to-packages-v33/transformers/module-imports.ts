@@ -26,21 +26,13 @@ function sortImports(imports: any[]) {
   });
 }
 
-function writeNewImports(
-  allSpecifiers: any[],
-  newPackage: string,
-  root: j.Collection,
-  isTypeImport = false,
-) {
-  allSpecifiers = sortImports(allSpecifiers);
-  // Create a new import declaration with the collected specifiers
-  if (allSpecifiers.length > 0) {
-    const newImport = j.importDeclaration(allSpecifiers, j.literal(newPackage));
-    if (isTypeImport) {
-      newImport.importKind = 'type';
+function isSorted(list: string[]): boolean {
+  for (let i = 0; i < list.length - 1; i++) {
+    if (list[i] > list[i + 1]) {
+      return false;
     }
-    root.get().node.program.body.unshift(newImport);
   }
+  return true;
 }
 
 function updateImports(
@@ -63,20 +55,21 @@ function updateImports(
   }
 
   matchingImports.forEach((path) => {
-    const isTypeImport = path.node.importKind === 'type';
-    if (path.node.specifiers?.length ?? 0 > 0) {
-      path.node.specifiers?.forEach((specifier) => {
-        if (isTypeImport) {
-          allTypeSpecifiers.push(specifier);
-        } else {
-          allSpecifiers.push(specifier);
-        }
-      });
-      j(path).remove();
+    path.node.source.value = newPackage; // path.node.source.value?.toString().replace('@ag-grid-community', communityPackage);
+
+    // if the specifiers include ModuleRegistry, add AllCommunityModule
+    if (path.node.specifiers?.some((s: any) => s.imported?.name === 'ModuleRegistry')) {
+      // if it is sorted by name then sort updated specifiers
+      const isSortedImports = isSorted(path.node.specifiers.map((s: any) => s.imported.name));
+
+      if (isSortedImports) {
+        path.node.specifiers.push(j.importSpecifier(j.identifier('AllCommunityModule')));
+        path.node.specifiers = sortImports(path.node.specifiers);
+      } else {
+        path.node.specifiers.unshift(j.importSpecifier(j.identifier('AllCommunityModule')));
+      }
     }
   });
-  writeNewImports(allSpecifiers, newPackage, root);
-  writeNewImports(allTypeSpecifiers, newPackage, root, true);
 }
 
 // Find old named imports and replace them with the new named import
@@ -86,10 +79,11 @@ export const processImports: JSCodeShiftTransformer = (root) => {
   const communityStyleImports = root.find(j.ImportDeclaration).filter((path) => {
     return !!path?.node?.source?.value?.toString()?.startsWith('@ag-grid-community/styles');
   });
-  const styleImports: any[] = [];
+  // const styleImports: any[] = [];
   communityStyleImports.forEach((path) => {
-    styleImports.push(path.node);
-    j(path).remove();
+    path.node.source.value = path.node.source.value
+      ?.toString()
+      .replace('@ag-grid-community', communityPackage);
   });
 
   updateImports(root, [reactModule], reactPackage);
@@ -98,13 +92,6 @@ export const processImports: JSCodeShiftTransformer = (root) => {
   updateImports(root, communityModules, communityPackage, 'AllCommunityModule');
 
   updateImports(root, enterpriseModules, enterprisePackage);
-
-  // Add other imports (like CSS imports) back to the top
-  styleImports.reverse().forEach((path) => {
-    // rename the source to the new package
-    path.source.value = path.source.value.replace('@ag-grid-community', communityPackage);
-    root.get().node.program.body.unshift(path);
-  });
 
   // Add AllCommunityModule to ModuleRegistry.registerModules
   root

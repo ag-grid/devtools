@@ -1,12 +1,12 @@
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
+import { ClientSideRowModelModule } from 'ag-grid-community';
 import {
   AllCommunityModule,
-  ClientSideRowModelModule,
   type GridApi,
-  type GridOptions,
   ModuleRegistry,
+  type GridOptions,
   createGrid,
 } from 'ag-grid-community';
 

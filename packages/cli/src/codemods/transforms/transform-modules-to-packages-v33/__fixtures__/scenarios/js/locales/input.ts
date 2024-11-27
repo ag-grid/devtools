@@ -5,6 +5,7 @@ import '@ag-grid-community/styles/ag-theme-quartz.css';
 
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
 import {
+  AlignedGrid,
   GridOptions,
   ModuleRegistry
 } from '@ag-grid-community/core';
