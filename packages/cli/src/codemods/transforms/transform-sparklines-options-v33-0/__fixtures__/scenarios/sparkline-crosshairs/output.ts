@@ -1,5 +1,5 @@
 // @ts-nocheck
-import type { AgSparklineOptions } from "ag-charts-community";
+import type { AgSparklineOptions } from 'ag-charts-community';
 
 const test = {
   cellRendererParams: {

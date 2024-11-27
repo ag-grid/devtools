@@ -21,8 +21,8 @@ const bar = {
 const column = {
     cellRendererParams: {
         sparklineOptions: {
-            type: "bar",
-            direction: "vertical"
+            type: 'bar',
+            direction: 'vertical'
         }
     }
 }

@@ -42,6 +42,9 @@ export function applyBabelTransform<S, T extends object = object>(
   const lineTerminator = crlfLineEndings ? '\r\n' : lfLineEndings ? '\n' : undefined;
   // Parse the source AST
   const ast = parseBabelAst(source, parserContext);
+
+  const quoteType = getQuoteStyleFromProgram(source);
+
   // Transform the AST
   const transformedAst = transformAst(ast, plugins, parserContext, { source });
   // Print the transformed AST
@@ -49,9 +52,26 @@ export function applyBabelTransform<S, T extends object = object>(
     ? print(transformedAst, {
         lineTerminator,
         ...printOptions,
+        quote: quoteType,
       }).code
     : null;
   return transformedSource;
+}
+
+function getQuoteStyleFromProgram(source: string): 'single' | 'double' | 'auto' {
+  let singleQuotes = 0;
+  let doubleQuotes = 0;
+  for (let i = 0; i < source.length; i++) {
+    if (source[i] === "'") {
+      singleQuotes++;
+    } else if (source[i] === '"') {
+      doubleQuotes++;
+    }
+  }
+  if (singleQuotes === doubleQuotes) {
+    return 'auto';
+  }
+  return singleQuotes > doubleQuotes ? 'single' : 'double';
 }
 
 export function parseBabelAst<S, T extends object = object>(

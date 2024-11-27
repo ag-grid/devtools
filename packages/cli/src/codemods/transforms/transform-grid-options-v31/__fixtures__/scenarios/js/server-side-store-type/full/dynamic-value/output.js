@@ -5,5 +5,5 @@ const serverSideStoreType = 'full';
 const gridApi = createGrid(document.body, {
   columnDefs: [],
   rowData: [],
-  suppressServerSideInfiniteScroll: serverSideStoreType !== "partial",
+  suppressServerSideInfiniteScroll: serverSideStoreType !== 'partial',
 });

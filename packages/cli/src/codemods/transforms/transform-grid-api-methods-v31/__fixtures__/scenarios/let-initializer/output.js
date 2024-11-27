@@ -5,5 +5,5 @@ let gridApi = createGrid(document.body, {
   rowData: [],
 });
 
-gridApi.setGridOption("serverSideDatasource", value);
-gridApi?.setGridOption("serverSideDatasource", value);
+gridApi.setGridOption('serverSideDatasource', value);
+gridApi?.setGridOption('serverSideDatasource', value);

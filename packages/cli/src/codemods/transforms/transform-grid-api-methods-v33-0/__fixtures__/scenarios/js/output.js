@@ -6,13 +6,13 @@ const gridApi = createGrid(document.body, {
 });
 
 gridApi.selectAll();
-gridApi?.selectAll("all", 'api');
+gridApi?.selectAll('all', 'api');
 
 gridApi.deselectAll();
-gridApi.deselectAll("all", 'api');
+gridApi.deselectAll('all', 'api');
 
-gridApi.selectAll("filtered", 'api');
-gridApi?.deselectAll("filtered");
+gridApi.selectAll('filtered', 'api');
+gridApi?.deselectAll('filtered');
 
-gridApi?.selectAll("currentPage");
-gridApi.deselectAll("currentPage", 'api');
+gridApi?.selectAll('currentPage');
+gridApi.deselectAll('currentPage', 'api');
