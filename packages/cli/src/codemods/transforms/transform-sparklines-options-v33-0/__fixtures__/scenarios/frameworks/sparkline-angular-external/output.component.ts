@@ -12,8 +12,8 @@ import { IOlympicData } from './interfaces';
 export class AppComponent {
   @ViewChild(AgGridAngular) private grid!: AgGridAngular;
   public columnDefs: (ColDef | ColGroupDef)[] = [{field: 'test', cellRenderer: 'agSparklineRenderer', cellRendererParams: {sparklineOptions: {
-    type: "bar",
-    direction: "vertical"
+    type: 'bar',
+    direction: 'vertical'
   }}}];
   public rowData!: IOlympicData[];
 
