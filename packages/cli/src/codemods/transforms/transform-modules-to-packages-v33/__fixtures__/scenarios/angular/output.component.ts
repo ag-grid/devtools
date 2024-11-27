@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { AdvancedFilterModel, ColDef, ColGroupDef, GridReadyEvent } from '@ag-grid-community/core';
-import { AgGridAngular } from '@ag-grid-community/angular';
+import { AdvancedFilterModel, ColDef, ColGroupDef, GridReadyEvent } from 'ag-grid-community';
+import { AgGridAngular } from 'ag-grid-angular';
 import { HttpClient } from '@angular/common/http';
 import { Component, ViewChild } from '@angular/core';
 import { IOlympicData } from './interfaces';
@@ -28,7 +28,7 @@ export class AppComponent {
       .get<IOlympicData[]>('https://www.ag-grid.com/example-assets/olympic-winners.json')
       .subscribe((data) => {
         this.rowData = data;
-        console.log("Goodbye, world!");
+        console.log("Hello, world!");
       });
   }
 }

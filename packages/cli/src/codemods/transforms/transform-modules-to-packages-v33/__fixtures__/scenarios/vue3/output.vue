@@ -9,7 +9,12 @@
 </template>
 
 <script>
-import { AgGridVue } from '@ag-grid-community/vue';
+import { AgGridVue } from 'ag-grid-vue3';
+
+import { ClientSideRowModelModule } from 'ag-grid-community';
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+
+ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
 
 export default {
   components: {
@@ -23,7 +28,7 @@ export default {
   },
   methods: {
     onGridReady(params) {
-      console.log("Goodbye, world!");
+      console.log("Hello, world!");
     },
   },
 };
