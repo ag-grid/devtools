@@ -11,26 +11,17 @@ import {
   MultiFilterModule,
   RangeSelectionModule,
   RowGroupingModule,
+  ServerSideRowModelModule,
   SetFilterModule,
   SideBarModule,
   StatusBarModule,
 } from 'ag-grid-enterprise';
 
-import {
-  AllCommunityModule,
-  ClientSideRowModelModule,
-  CsvExportModule,
-  GridOptions,
-  ModuleRegistry,
-} from 'ag-grid-community';
-
-import { AG_GRID_LOCALE_DE } from '@ag-grid-community/locale';
-
-import { IOlympicData } from './interfaces';
+import { AllCommunityModule, CsvExportModule, GridOptions, ModuleRegistry } from 'ag-grid-community';
 
 ModuleRegistry.registerModules([
   AllCommunityModule,
-  ClientSideRowModelModule,
+  ServerSideRowModelModule,
   ClipboardModule,
   ColumnsToolPanelModule,
   CsvExportModule,
