@@ -23,8 +23,8 @@ export default {
   data() {
     return {
       columnDefs: [{field: 'test', cellRenderer: 'agSparklineRenderer', cellRendererParams: {sparklineOptions: {
-        type: "bar",
-        direction: "vertical"
+        type: 'bar',
+        direction: 'vertical'
       }}}],
       rowData: [],
     };

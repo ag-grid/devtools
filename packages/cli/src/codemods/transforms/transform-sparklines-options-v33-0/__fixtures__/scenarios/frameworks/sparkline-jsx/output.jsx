@@ -13,8 +13,8 @@ function MyComponent(props) {
     cellRenderer: 'agSparklineCellRenderer',
     cellRendererParams: {
       sparklineOptions: {
-        type: "bar",
-        direction: "vertical"
+        type: 'bar',
+        direction: 'vertical'
       }
     }
   }
@@ -48,8 +48,8 @@ function MyComponent(props) {
         cellRenderer: 'agSparklineCellRenderer',
         cellRendererParams: {
           sparklineOptions: {
-            type: "bar",
-            direction: "vertical"
+            type: 'bar',
+            direction: 'vertical'
           }
         }
       }, anotherColumn, {

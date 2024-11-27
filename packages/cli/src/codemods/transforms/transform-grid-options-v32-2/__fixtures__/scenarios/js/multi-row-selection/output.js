@@ -8,7 +8,7 @@ const gridApi = createGrid(document.body, {
   onCellSelectionDeleteEnd: () => {},
 
   rowSelection: {
-    mode: "multiRow",
+    mode: 'multiRow',
     isRowSelectable: (params) => params.data.year < 2007,
     enableSelectionWithoutKeys: true
   },
