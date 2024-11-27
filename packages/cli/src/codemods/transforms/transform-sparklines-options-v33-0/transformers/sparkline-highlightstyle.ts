@@ -1,8 +1,6 @@
 import j from 'jscodeshift';
 import { JSCodeShiftTransformer } from '../types';
 
-const chartTypeKeys = ['area', 'bar', 'column', 'line'];
-
 // find [chart-type] keys, and merge their contents into the parent object
 export const highlightStyle: JSCodeShiftTransformer = (root) => {
   const sparklineOptions = root
