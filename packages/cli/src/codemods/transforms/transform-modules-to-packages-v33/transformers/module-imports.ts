@@ -1,13 +1,17 @@
-// import { newPackage, oldPackage } from './constants';
-
 import j, { Collection } from 'jscodeshift';
 import { JSCodeShiftTransformer } from '../types';
 
 import {
+  angularModule,
+  angularPackage,
   communityModules,
   communityPackage,
   enterpriseModules,
   enterprisePackage,
+  reactModule,
+  reactPackage,
+  vueModule,
+  vuePackage,
 } from './constants';
 
 function sortImports(imports: any[]) {
@@ -43,7 +47,7 @@ function updateImports(
   root: Collection,
   moduleList: string[],
   newPackage: string,
-  isEnterprise = false,
+  includeDefault?: string,
 ) {
   // Find all import declarations that start with the communityPrefix
   const matchingImports = root.find(j.ImportDeclaration).filter((path) => {
@@ -54,8 +58,8 @@ function updateImports(
   let allSpecifiers: any[] = [];
   let allTypeSpecifiers: any[] = [];
 
-  if (!isEnterprise) {
-    allSpecifiers.push(j.importSpecifier(j.identifier('AllCommunityModule')));
+  if (includeDefault) {
+    allSpecifiers.push(j.importSpecifier(j.identifier(includeDefault)));
   }
 
   matchingImports.forEach((path) => {
@@ -88,8 +92,12 @@ export const processImports: JSCodeShiftTransformer = (root) => {
     j(path).remove();
   });
 
-  updateImports(root, communityModules, communityPackage);
-  updateImports(root, enterpriseModules, enterprisePackage, true);
+  updateImports(root, [reactModule], reactPackage);
+  updateImports(root, [angularModule], angularPackage);
+  updateImports(root, [vueModule], vuePackage);
+  updateImports(root, communityModules, communityPackage, 'AllCommunityModule');
+
+  updateImports(root, enterpriseModules, enterprisePackage);
 
   // Add other imports (like CSS imports) back to the top
   styleImports.reverse().forEach((path) => {

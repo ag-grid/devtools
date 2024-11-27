@@ -48,13 +48,25 @@ export function applyBabelTransform<S, T extends object = object>(
   // Transform the AST
   const transformedAst = transformAst(ast, plugins, parserContext, { source });
   // Print the transformed AST
-  const transformedSource = transformedAst
+  let transformedSource = transformedAst
     ? print(transformedAst, {
         lineTerminator,
         ...printOptions,
         quote: quoteStyle,
       }).code
     : null;
+
+  if (transformedSource) {
+    // HACK: Remove double semicolons on directives, it seems recast and babel are inserting them by mistake?
+    if (transformedSource.includes(';;')) {
+      transformedSource = transformedSource
+        .replace(/^'use strict';;$/gm, "'use strict';")
+        .replace(/^"use strict";;$/gm, '"use strict";')
+        .replace(/^'use client';;$/gm, "'use client';")
+        .replace(/^"use client";;$/gm, '"use client";');
+    }
+  }
+
   return transformedSource;
 }
 

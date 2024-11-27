@@ -1,15 +1,19 @@
 export const communityPackage = 'ag-grid-community';
 export const enterprisePackage = 'ag-grid-enterprise';
 
+export const reactModule = '@ag-grid-community/react';
+export const vueModule = '@ag-grid-community/vue3';
+export const angularModule = '@ag-grid-community/angular';
+
+export const reactPackage = 'ag-grid-react';
+export const vuePackage = 'ag-grid-vue3';
+export const angularPackage = 'ag-grid-angular';
+
 export const communityModules = [
   '@ag-grid-community/core',
-  //   '@ag-grid-community/styles',
   '@ag-grid-community/client-side-row-model',
   '@ag-grid-community/infinite-row-model',
   '@ag-grid-community/csv-export',
-  '@ag-grid-community/angular',
-  '@ag-grid-community/react',
-  '@ag-grid-community/vue3',
 ];
 
 export const enterpriseModules = [
