@@ -6,15 +6,15 @@ const tooltipRenderer = (params: any) => {};
 const test = {
   sparklineOptions: {
     tooltip: {
-      renderer: tooltipRenderer,
-    },
-  } as LineSparklineOptions,
+      renderer: tooltipRenderer
+    }
+  } as LineSparklineOptions
 }
 
 const ggg = {
   notASparkline: {
     tooltip: {
-      renderer: tooltipRenderer,
-    },
-  } as AreaSparklineOptions,
+      renderer: tooltipRenderer
+    }
+  } as AreaSparklineOptions
 }
