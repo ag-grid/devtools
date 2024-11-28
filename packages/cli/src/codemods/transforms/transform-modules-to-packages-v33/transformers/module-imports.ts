@@ -7,6 +7,7 @@ import {
   AllCommunityModule,
   angularModule,
   angularPackage,
+  CellSelectionModule,
   chartsCommunityPackage,
   chartsEnterprisePackage,
   communityModules,
@@ -17,6 +18,7 @@ import {
   gridChartsModule,
   GridChartsModule,
   IntegratedChartsModule,
+  RangeSelectionModule,
   reactModule,
   reactPackage,
   SparklinesModule,
@@ -49,6 +51,8 @@ export const processImports: JSCodeShiftTransformer = (root) => {
   } else {
     addAllCommunityModuleIfMissing(root);
   }
+
+  swapRangeSelectionForCellSelectionModule(root);
 
   return root.toSource();
 };
@@ -285,4 +289,11 @@ function updateAgGridStylesImport(root: j.Collection<any>) {
         ?.toString()
         .replace('@ag-grid-community', communityPackage);
     });
+}
+
+function swapRangeSelectionForCellSelectionModule(root: Collection) {
+  root.find(j.Identifier, { name: RangeSelectionModule }).forEach((path) => {
+    // replace RangeSelectionModule with CellSelectionModule
+    path.replace(j.identifier(CellSelectionModule));
+  });
 }

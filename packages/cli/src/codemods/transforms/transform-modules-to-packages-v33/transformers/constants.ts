@@ -27,6 +27,9 @@ export const gridChartsEnterpriseModule = '@ag-grid-enterprise/charts-enterprise
 export const GridChartsModule = 'GridChartsModule';
 export const IntegratedChartsModule = 'IntegratedChartsModule';
 
+export const RangeSelectionModule = 'RangeSelectionModule';
+export const CellSelectionModule = 'CellSelectionModule';
+
 export const AgChartsCommunityModule = 'AgChartsCommunityModule';
 export const AgChartsEnterpriseModule = 'AgChartsEnterpriseModule';
 export const chartsCommunityPackage = 'ag-charts-community';
