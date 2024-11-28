@@ -316,11 +316,10 @@ function swapRangeSelectionForCellSelectionModule(root: Collection) {
 // replace MenuModule with ColumnMenuModule and ContextMenuModule
 function swapMenuModuleForColumnAndContextModule(root: Collection) {
   root.find(j.Identifier, { name: 'MenuModule' }).forEach((path) => {
-    // replace MenuModule with ColumnMenuModule and ContextMenuModule
+    // replace MenuModule with ColumnMenuModule
     path.replace(j.identifier('ColumnMenuModule'));
-    // clone the path and insert the new identifier after the original
   });
-
+  // add ContextMenuModule next to ColumnMenuModule
   addNewImportNextToGiven(root, 'ColumnMenuModule', 'ContextMenuModule');
   addNewIdentifierNextToGiven(root, 'ColumnMenuModule', 'ContextMenuModule');
 }
