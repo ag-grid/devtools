@@ -64,3 +64,38 @@ export const enterpriseModules = [
   '@ag-grid-enterprise/status-bar',
   '@ag-grid-enterprise/viewport-row-model',
 ];
+
+export function sortImports(imports: any[]) {
+  return imports.sort((a: any, b: any) => {
+    if (a.imported.name < b.imported.name) {
+      return -1;
+    } else if (a.imported.name > b.imported.name) {
+      return 1;
+    } else {
+      return 0;
+    }
+  });
+}
+
+export function sortIdentifiers(identifiers: any[]) {
+  return identifiers.sort((a: any, b: any) => {
+    const aName = typeof a.name == 'string' ? a.name : 'Z';
+    const bName = typeof b.name == 'string' ? b.name : 'Z';
+    if (aName < bName) {
+      return -1;
+    } else if (aName > bName) {
+      return 1;
+    } else {
+      return 0;
+    }
+  });
+}
+
+export function isSorted(list: string[]): boolean {
+  for (let i = 0; i < list.length - 1; i++) {
+    if (list[i] > list[i + 1]) {
+      return false;
+    }
+  }
+  return true;
+}
