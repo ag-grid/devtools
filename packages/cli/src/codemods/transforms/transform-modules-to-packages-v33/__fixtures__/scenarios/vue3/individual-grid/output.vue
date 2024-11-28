@@ -4,6 +4,7 @@
       :columnDefs="columnDefs"
       :rowData="rowData"
       @grid-ready="onGridReady"
+      :modules="modules"
     ></ag-grid-vue>
   </div>
 </template>
@@ -12,9 +13,6 @@
 import { AgGridVue } from 'ag-grid-vue3';
 
 import { AllCommunityModule, ClientSideRowModelModule } from 'ag-grid-community';
-import { ModuleRegistry } from 'ag-grid-community';
-
-ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
 
 export default {
   components: {
@@ -24,6 +22,7 @@ export default {
     return {
       columnDefs: [],
       rowData: [],
+      modules: [AllCommunityModule, ClientSideRowModelModule],
     };
   },
   methods: {
