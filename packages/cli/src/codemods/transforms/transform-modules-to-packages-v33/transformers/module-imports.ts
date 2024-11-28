@@ -43,12 +43,17 @@ export const processImports: JSCodeShiftTransformer = (root) => {
   convertModuleImportsToPackages(root, [vueModule], vuePackage);
 
   // Import AllCommunityModule and add to ModuleRegistry.registerModules if it doesn't already exists
-  addAllCommunityModuleIfMissing(root);
+  // Or if not using ModuleRegistry, add AllCommunityModule to the createGrid call
+  if (getRegisterModulesCall(root).length === 0) {
+    addAllCommunityModuleToCreateGrid(root);
+  } else {
+    addAllCommunityModuleIfMissing(root);
+  }
 
   return root.toSource();
 };
 
-// convert ModuleRegistry.register(SingleModule) to ModuleRegistry.registerModules([SingleModule])
+// convert deprecated ModuleRegistry.register(SingleModule) to ModuleRegistry.registerModules([SingleModule])
 function convertRegisterModuleToRegisterModules(root: j.Collection<any>) {
   root
     .find(j.CallExpression, {
@@ -66,15 +71,39 @@ function convertRegisterModuleToRegisterModules(root: j.Collection<any>) {
     });
 }
 
-/** Include the AllCommunityModule to maintain all current working features */
-function addAllCommunityModuleIfMissing(root: Collection) {
-  // Import AllCommunityModule if it does not already exist next to the ModuleRegistry import
+// find usages of createGrid that have modules passed in and then add AllCommunityModule to the list
+// so createGrid(document.body, gridOptions, { modules: [ClientSideRowModelModule] });
+// becomes createGrid(document.body, gridOptions, { modules: [AllCommunityModule, ClientSideRowModelModule] });
+function addAllCommunityModuleToCreateGrid(root: j.Collection<any>) {
+  addAllCommunityNextToGivenImport(root, 'createGrid');
+
+  root
+    .find(j.CallExpression, {
+      callee: {
+        name: 'createGrid',
+      },
+    })
+    .forEach((path) => {
+      const args = path.node.arguments;
+      if (args.length === 3 && j.ObjectExpression.check(args[2])) {
+        const properties = args[2].properties;
+        const modulesProperty = properties.find(
+          (p: any) => p.key.name === 'modules' && j.ArrayExpression.check(p.value),
+        );
+        if (modulesProperty) {
+          modulesProperty.value.elements.unshift(j.identifier(AllCommunityModule));
+        }
+      }
+    });
+}
+
+function addAllCommunityNextToGivenImport(root: j.Collection<any>, targetImport: string) {
   root
     .find(j.ImportDeclaration)
     .filter(
       (path) =>
         !!path.node.specifiers &&
-        path.node.specifiers.some((s: any) => s.imported?.name === 'ModuleRegistry') &&
+        path.node.specifiers.some((s: any) => s.imported?.name === targetImport) &&
         !path.node.specifiers.some((s: any) => s.imported?.name === AllCommunityModule),
     )
     .forEach((path) => {
@@ -88,6 +117,12 @@ function addAllCommunityModuleIfMissing(root: Collection) {
         }
       }
     });
+}
+
+/** Include the AllCommunityModule to maintain all current working features */
+function addAllCommunityModuleIfMissing(root: Collection) {
+  // Import AllCommunityModule if it does not already exist next to the ModuleRegistry import
+  addAllCommunityNextToGivenImport(root, 'ModuleRegistry');
 
   // Find the ModuleRegistry.registerModules() call and include AllCommunityModule if it does not already exist
   getRegisterModulesCall(root).forEach((path) => {
@@ -180,36 +215,52 @@ function updateIntegratedCharts(root: Collection) {
     lastGridOrSparklinesImportPath.insertAfter(getChartsImport(isEnterpriseCharts ?? false));
   }
 
-  getRegisterModulesCall(root).forEach((path) => {
-    const args = path.node.arguments;
-    if (args.length === 1 && j.ArrayExpression.check(args[0])) {
-      args[0].elements = args[0].elements.map((e: any) => {
-        if (e.name === GridChartsModule) {
-          return j.callExpression(
-            j.memberExpression(j.identifier(IntegratedChartsModule), j.identifier('with')),
-            [
-              j.identifier(
-                isEnterpriseCharts === true ? AgChartsEnterpriseModule : AgChartsCommunityModule,
-              ),
-            ],
-          );
-        }
+  swapGridChartsModuleForIntegratedChartsModule(root, isEnterpriseCharts ?? false);
+  addChartsModuleToSparklinesModule(root, isEnterpriseCharts ?? false);
+}
 
-        if (e.name === SparklinesModule) {
-          return j.callExpression(
-            j.memberExpression(j.identifier(SparklinesModule), j.identifier('with')),
-            [
-              j.identifier(
-                isEnterpriseCharts === true ? AgChartsEnterpriseModule : AgChartsCommunityModule,
-              ),
-            ],
-          );
-        }
-
-        return e;
-      });
-    }
-  });
+// Wherever GridChartsModule is used outside of an import statement, replace it with IntegratedChartsModule.with(AgChartsModule)
+function swapGridChartsModuleForIntegratedChartsModule(
+  root: Collection,
+  isEnterpriseCharts: boolean,
+) {
+  root
+    .find(j.Identifier, { name: GridChartsModule })
+    // filter out imports
+    .filter((path) => {
+      return !j.ImportSpecifier.check(path.parent.value);
+    })
+    .forEach((path) => {
+      // replace GridChartsModule with IntegratedChartsModule.with(AgChartsModule)
+      path.replace(
+        j.callExpression(
+          j.memberExpression(j.identifier(IntegratedChartsModule), j.identifier('with')),
+          [
+            j.identifier(
+              isEnterpriseCharts === true ? AgChartsEnterpriseModule : AgChartsCommunityModule,
+            ),
+          ],
+        ),
+      );
+    });
+}
+function addChartsModuleToSparklinesModule(root: Collection, isEnterpriseCharts: boolean) {
+  root
+    .find(j.Identifier, { name: SparklinesModule })
+    // filter out imports
+    .filter((path) => {
+      return !j.ImportSpecifier.check(path.parent.value);
+    })
+    .forEach((path) => {
+      // replace SparklinesModule with SparklinesModule.with(AgChartsModule)
+      path.replace(
+        j.callExpression(j.memberExpression(j.identifier(SparklinesModule), j.identifier('with')), [
+          j.identifier(
+            isEnterpriseCharts === true ? AgChartsEnterpriseModule : AgChartsCommunityModule,
+          ),
+        ]),
+      );
+    });
 }
 
 function getChartsImport(isEnterpriseCharts: boolean): any {
