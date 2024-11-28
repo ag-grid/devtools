@@ -53,6 +53,7 @@ export const processImports: JSCodeShiftTransformer = (root) => {
   }
 
   swapRangeSelectionForCellSelectionModule(root);
+  swapMenuModuleForColumnAndContextModule(root);
 
   return root.toSource();
 };
@@ -79,7 +80,7 @@ function convertRegisterModuleToRegisterModules(root: j.Collection<any>) {
 // so createGrid(document.body, gridOptions, { modules: [ClientSideRowModelModule] });
 // becomes createGrid(document.body, gridOptions, { modules: [AllCommunityModule, ClientSideRowModelModule] });
 function addAllCommunityModuleToCreateGrid(root: j.Collection<any>) {
-  addAllCommunityNextToGivenImport(root, 'createGrid');
+  addNewImportNextToGiven(root, 'createGrid', AllCommunityModule);
 
   root
     .find(j.CallExpression, {
@@ -101,32 +102,46 @@ function addAllCommunityModuleToCreateGrid(root: j.Collection<any>) {
     });
 }
 
-function addAllCommunityNextToGivenImport(root: j.Collection<any>, targetImport: string) {
+function addNewImportNextToGiven(root: j.Collection<any>, targetImport: string, newImport: string) {
   root
     .find(j.ImportDeclaration)
     .filter(
       (path) =>
         !!path.node.specifiers &&
         path.node.specifiers.some((s: any) => s.imported?.name === targetImport) &&
-        !path.node.specifiers.some((s: any) => s.imported?.name === AllCommunityModule),
+        !path.node.specifiers.some((s: any) => s.imported?.name === newImport),
     )
     .forEach((path) => {
       if (path.node.specifiers) {
-        // if sorted then respect the order when adding AllCommunityModule
+        // if sorted then respect the order when adding newImport
         if (isSorted(path.node.specifiers.map((s: any) => s.imported.name))) {
-          path.node.specifiers.push(j.importSpecifier(j.identifier(AllCommunityModule)));
+          path.node.specifiers.push(j.importSpecifier(j.identifier(newImport)));
           path.node.specifiers = sortImports(path.node.specifiers);
         } else {
-          path.node.specifiers.unshift(j.importSpecifier(j.identifier(AllCommunityModule)));
+          path.node.specifiers.unshift(j.importSpecifier(j.identifier(newImport)));
         }
       }
+    });
+}
+function addNewIdentifierNextToGiven(
+  root: j.Collection<any>,
+  targetImport: string,
+  newImport: string,
+) {
+  root
+    .find(j.Identifier, { name: targetImport })
+    .filter((path) => {
+      return !j.ImportSpecifier.check(path.parent.value);
+    })
+    .forEach((path) => {
+      path.insertAfter(j.identifier(newImport));
     });
 }
 
 /** Include the AllCommunityModule to maintain all current working features */
 function addAllCommunityModuleIfMissing(root: Collection) {
   // Import AllCommunityModule if it does not already exist next to the ModuleRegistry import
-  addAllCommunityNextToGivenImport(root, 'ModuleRegistry');
+  addNewImportNextToGiven(root, 'ModuleRegistry', AllCommunityModule);
 
   // Find the ModuleRegistry.registerModules() call and include AllCommunityModule if it does not already exist
   getRegisterModulesCall(root).forEach((path) => {
@@ -296,4 +311,16 @@ function swapRangeSelectionForCellSelectionModule(root: Collection) {
     // replace RangeSelectionModule with CellSelectionModule
     path.replace(j.identifier(CellSelectionModule));
   });
+}
+
+// replace MenuModule with ColumnMenuModule and ContextMenuModule
+function swapMenuModuleForColumnAndContextModule(root: Collection) {
+  root.find(j.Identifier, { name: 'MenuModule' }).forEach((path) => {
+    // replace MenuModule with ColumnMenuModule and ContextMenuModule
+    path.replace(j.identifier('ColumnMenuModule'));
+    // clone the path and insert the new identifier after the original
+  });
+
+  addNewImportNextToGiven(root, 'ColumnMenuModule', 'ContextMenuModule');
+  addNewIdentifierNextToGiven(root, 'ColumnMenuModule', 'ContextMenuModule');
 }
