@@ -5,7 +5,6 @@ import { ServerSideRowModelModule } from 'ag-grid-enterprise';
 
 import { AllCommunityModule, GridOptions, ModuleRegistry } from 'ag-grid-community';
 import { CsvExportModule } from 'ag-grid-community';
-import { GridChartsModule } from 'ag-grid-enterprise';
 import { ClipboardModule } from 'ag-grid-enterprise';
 import { ColumnsToolPanelModule } from 'ag-grid-enterprise';
 import { ExcelExportModule } from 'ag-grid-enterprise';
@@ -26,7 +25,6 @@ ModuleRegistry.registerModules([
   CsvExportModule,
   ExcelExportModule,
   FiltersToolPanelModule,
-  GridChartsModule,
   MenuModule,
   MultiFilterModule,
   RangeSelectionModule,
@@ -37,6 +35,5 @@ ModuleRegistry.registerModules([
 ]);
 
 const gridOptions: GridOptions<IOlympicData> = {
-  localeText: AG_GRID_LOCALE_DE,
   rowSelection: { mode: 'multiRow' },
 };

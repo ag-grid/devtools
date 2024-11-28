@@ -10,7 +10,6 @@ import {
   ModuleRegistry
 } from '@ag-grid-community/core';
 import { CsvExportModule } from '@ag-grid-community/csv-export';
-import { GridChartsModule } from '@ag-grid-enterprise/charts-enterprise';
 import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
 import { ColumnsToolPanelModule } from '@ag-grid-enterprise/column-tool-panel';
 import { ExcelExportModule } from '@ag-grid-enterprise/excel-export';
@@ -31,7 +30,6 @@ ModuleRegistry.registerModules([
   CsvExportModule,
   ExcelExportModule,
   FiltersToolPanelModule,
-  GridChartsModule,
   MenuModule,
   MultiFilterModule,
   RangeSelectionModule,
