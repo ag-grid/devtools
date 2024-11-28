@@ -1,5 +1,5 @@
 import j from 'jscodeshift';
-import { JSCodeShiftTransformer } from '../types';
+import { JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
 import { newType, oldTypes } from './constants';
 
 export const replaceTypes: JSCodeShiftTransformer = (root) =>

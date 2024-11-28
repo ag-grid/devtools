@@ -1,5 +1,5 @@
 import j from 'jscodeshift';
-import { JSCodeShiftTransformer } from '../types';
+import { JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
 
 // rename marker.formatter to marker.itemStyler
 export const markerFormatter: JSCodeShiftTransformer = (root) => {
