@@ -1,5 +1,5 @@
 import j from 'jscodeshift';
-import { JSCodeShiftTransformer } from '../types';
+import { JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
 
 // find [chart-type] keys, and merge their contents into the parent object
 export const highlightStyle: JSCodeShiftTransformer = (root) => {

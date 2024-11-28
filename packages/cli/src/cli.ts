@@ -36,6 +36,10 @@ interface Args {
    * Show usage instructions
    */
   help: boolean;
+  /**
+   * Prefer AG Grid enterprise imports
+   */
+  enterprise: boolean;
 }
 
 function usage(env: CliEnv): string {
@@ -49,6 +53,7 @@ Commands:
 
 Options:
   --version, -v   Print the version of the command-line tool
+  --prefer-enterprise, -p Prefer AG Grid enterprise imports
   --help, -h      Show usage instructions for the specified command
 
 See individual command help for more options
@@ -74,6 +79,10 @@ export async function cli(args: Array<string>, cli: CliOptions): Promise<void> {
 
   dynamicRequire.initialize();
 
+  if (options.enterprise) {
+    process.env.AG_PREFER_ENTERPRISE_IMPORTS = 'true';
+  }
+
   const task = match(options.command, {
     Migrate: ({ args }) => migrate(args, cli),
   });
@@ -85,6 +94,7 @@ function parseArgs(args: string[], env: CliEnv): Args {
     command: null,
     version: false,
     help: false,
+    enterprise: false,
   };
   while (args.length > 0) {
     const arg = args.shift()!;
@@ -96,6 +106,10 @@ function parseArgs(args: string[], env: CliEnv): Args {
       case '--help':
       case '-h':
         options.help = true;
+        break;
+      case '--prefer-enterprise':
+      case '-p':
+        options.enterprise = true;
         break;
       case 'migrate': {
         options.command = CliCommand.Migrate({

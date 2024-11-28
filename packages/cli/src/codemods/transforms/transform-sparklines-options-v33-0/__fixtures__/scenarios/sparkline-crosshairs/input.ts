@@ -1,5 +1,4 @@
 // @ts-nocheck
-import { LineSparklineOptions } from '@ag-grid-community/core';
 
 const test = {
   cellRendererParams: {

@@ -1,5 +1,5 @@
 import j from 'jscodeshift';
-import { JSCodeShiftTransformer } from '../types';
+import { JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
 
 // match cellRendererParams.sparklineOptions.type === 'column'
 // replace with type: 'bar', direction: 'vertical'
