@@ -27,6 +27,8 @@ import {
 
 // Find old named imports and replace them with the new named import
 export const processImports: JSCodeShiftTransformer = (root) => {
+  convertRegisterModuleToRegisterModules(root);
+
   // find imports from "@ag-grid-community/styles/*"; imports and convert to 'ag-grid-community/styles/*'
   updateAgGridStylesImport(root);
 
@@ -45,6 +47,24 @@ export const processImports: JSCodeShiftTransformer = (root) => {
 
   return root.toSource();
 };
+
+// convert ModuleRegistry.register(SingleModule) to ModuleRegistry.registerModules([SingleModule])
+function convertRegisterModuleToRegisterModules(root: j.Collection<any>) {
+  root
+    .find(j.CallExpression, {
+      callee: {
+        object: { name: 'ModuleRegistry' },
+        property: { name: 'register' },
+      },
+    })
+    .forEach((path) => {
+      const args = path.node.arguments;
+      if (args.length === 1) {
+        path.node.callee.property.name = 'registerModules';
+        path.node.arguments = [j.arrayExpression([args[0]])];
+      }
+    });
+}
 
 /** Include the AllCommunityModule to maintain all current working features */
 function addAllCommunityModuleIfMissing(root: Collection) {
