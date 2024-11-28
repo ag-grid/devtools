@@ -1,9 +1,9 @@
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
-import { ServerSideRowModelModule } from 'ag-grid-enterprise';
+import { AllCommunityModule, ServerSideRowModelModule } from 'ag-grid-enterprise';
 
-import { AllCommunityModule, GridOptions, ModuleRegistry } from 'ag-grid-community';
+import { GridOptions, ModuleRegistry } from 'ag-grid-community';
 import { CsvExportModule } from 'ag-grid-community';
 import { ClipboardModule } from 'ag-grid-enterprise';
 import { ColumnsToolPanelModule } from 'ag-grid-enterprise';
@@ -18,8 +18,8 @@ import { SideBarModule } from 'ag-grid-enterprise';
 import { StatusBarModule } from 'ag-grid-enterprise';
 
 ModuleRegistry.registerModules([
-  AllCommunityModule,
   ServerSideRowModelModule,
+  AllCommunityModule,
   ClipboardModule,
   ColumnsToolPanelModule,
   CsvExportModule,

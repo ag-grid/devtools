@@ -1,7 +1,6 @@
 'use client';
 
 import React, { StrictMode, useState } from 'react';
-import { createRoot } from 'react-dom/client';
 
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
 import type { ColDef } from '@ag-grid-community/core';

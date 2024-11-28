@@ -17,6 +17,7 @@ import {
   gridChartsEnterpriseModule,
   gridChartsModule,
   GridChartsModule,
+  gridRowModelModules,
   IntegratedChartsModule,
   RangeSelectionModule,
   reactModule,
@@ -26,6 +27,7 @@ import {
   vueModule,
   vuePackage,
 } from './constants';
+import { i } from 'vitest/dist/reporters-yx5ZTtEV.js';
 
 // Find old named imports and replace them with the new named import
 export const processImports: JSCodeShiftTransformer = (root) => {
@@ -44,13 +46,10 @@ export const processImports: JSCodeShiftTransformer = (root) => {
   convertModuleImportsToPackages(root, [angularModule], angularPackage);
   convertModuleImportsToPackages(root, [vueModule], vuePackage);
 
-  // Import AllCommunityModule and add to ModuleRegistry.registerModules if it doesn't already exists
-  // Or if not using ModuleRegistry, add AllCommunityModule to the createGrid call
-  if (getRegisterModulesCall(root).length === 0) {
-    addAllCommunityModuleToCreateGrid(root);
-  } else {
-    addAllCommunityModuleIfMissing(root);
-  }
+  gridRowModelModules.forEach((module) => {
+    addNewImportNextToGiven(root, module, AllCommunityModule);
+    addNewIdentifierNextToGiven(root, module, AllCommunityModule);
+  });
 
   swapRangeSelectionForCellSelectionModule(root);
   swapMenuModuleForColumnAndContextModule(root);
@@ -76,32 +75,6 @@ function convertRegisterModuleToRegisterModules(root: j.Collection<any>) {
     });
 }
 
-// find usages of createGrid that have modules passed in and then add AllCommunityModule to the list
-// so createGrid(document.body, gridOptions, { modules: [ClientSideRowModelModule] });
-// becomes createGrid(document.body, gridOptions, { modules: [AllCommunityModule, ClientSideRowModelModule] });
-function addAllCommunityModuleToCreateGrid(root: j.Collection<any>) {
-  addNewImportNextToGiven(root, 'createGrid', AllCommunityModule);
-
-  root
-    .find(j.CallExpression, {
-      callee: {
-        name: 'createGrid',
-      },
-    })
-    .forEach((path) => {
-      const args = path.node.arguments;
-      if (args.length === 3 && j.ObjectExpression.check(args[2])) {
-        const properties = args[2].properties;
-        const modulesProperty = properties.find(
-          (p: any) => p.key.name === 'modules' && j.ArrayExpression.check(p.value),
-        );
-        if (modulesProperty) {
-          modulesProperty.value.elements.unshift(j.identifier(AllCommunityModule));
-        }
-      }
-    });
-}
-
 function addNewImportNextToGiven(root: j.Collection<any>, targetImport: string, newImport: string) {
   root
     .find(j.ImportDeclaration)
@@ -123,44 +96,25 @@ function addNewImportNextToGiven(root: j.Collection<any>, targetImport: string, 
       }
     });
 }
-function addNewIdentifierNextToGiven(
-  root: j.Collection<any>,
-  targetImport: string,
-  newImport: string,
-) {
+function addNewIdentifierNextToGiven(root: j.Collection<any>, targetName: string, newName: string) {
   root
-    .find(j.Identifier, { name: targetImport })
+    .find(j.Identifier, { name: targetName })
     .filter((path) => {
-      return !j.ImportSpecifier.check(path.parent.value);
+      return (
+        !j.ImportSpecifier.check(path.parent.value) &&
+        j.ArrayExpression.check(path.parent.value) &&
+        !path.parent.value.elements.some((e: any) => e.name === newName)
+      );
     })
     .forEach((path) => {
-      path.insertAfter(j.identifier(newImport));
-    });
-}
-
-/** Include the AllCommunityModule to maintain all current working features */
-function addAllCommunityModuleIfMissing(root: Collection) {
-  // Import AllCommunityModule if it does not already exist next to the ModuleRegistry import
-  addNewImportNextToGiven(root, 'ModuleRegistry', AllCommunityModule);
-
-  // Find the ModuleRegistry.registerModules() call and include AllCommunityModule if it does not already exist
-  getRegisterModulesCall(root).forEach((path) => {
-    const args = path.node.arguments;
-    if (args.length === 1 && j.ArrayExpression.check(args[0])) {
-      if (!args[0].elements.some((e: any) => e.name === AllCommunityModule)) {
-        args[0].elements.unshift(j.identifier(AllCommunityModule));
+      const areSorted = isSorted(path.parent.value.elements.map((e: any) => e.name));
+      if (areSorted) {
+        path.parent.value.elements.push(j.identifier(newName));
+        path.parent.value.elements = sortIdentifiers(path.parent.value.elements);
+      } else {
+        path.insertAfter(j.identifier(newName));
       }
-    }
-  });
-}
-
-function getRegisterModulesCall(root: Collection) {
-  return root.find(j.CallExpression, {
-    callee: {
-      object: { name: 'ModuleRegistry' },
-      property: { name: 'registerModules' },
-    },
-  });
+    });
 }
 
 function sortImports(imports: any[]) {
@@ -168,6 +122,20 @@ function sortImports(imports: any[]) {
     if (a.imported.name < b.imported.name) {
       return -1;
     } else if (a.imported.name > b.imported.name) {
+      return 1;
+    } else {
+      return 0;
+    }
+  });
+}
+
+function sortIdentifiers(identifiers: any[]) {
+  return identifiers.sort((a: any, b: any) => {
+    const aName = typeof a.name == 'string' ? a.name : 'Z';
+    const bName = typeof b.name == 'string' ? b.name : 'Z';
+    if (aName < bName) {
+      return -1;
+    } else if (aName > bName) {
       return 1;
     } else {
       return 0;

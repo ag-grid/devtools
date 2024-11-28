@@ -1,5 +1,5 @@
-import { ClientSideRowModelModule } from 'ag-grid-community';
-import { AllCommunityModule, createGrid } from 'ag-grid-community';
+import { AllCommunityModule, ClientSideRowModelModule } from 'ag-grid-community';
+import { createGrid } from 'ag-grid-community';
 import { IntegratedChartsModule } from 'ag-grid-enterprise';
 import { SparklinesModule } from 'ag-grid-enterprise';
 
@@ -18,7 +18,12 @@ const api = createGrid(document.body, gridOptions, {
   ],
 });
 
-const sharedModules = [ClientSideRowModelModule, IntegratedChartsModule.with(AgChartsEnterpriseModule), SparklinesModule.with(AgChartsEnterpriseModule)];
+const sharedModules = [
+  AllCommunityModule,
+  ClientSideRowModelModule,
+  IntegratedChartsModule.with(AgChartsEnterpriseModule),
+  SparklinesModule.with(AgChartsEnterpriseModule)
+];
 
 const api1 = createGrid(document.body, gridOptions, {
   modules: sharedModules,

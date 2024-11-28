@@ -1,0 +1,6 @@
+{
+  "scenario": {
+    "input": "input.component.ts",
+    "output": "output.component.ts"
+  }
+}

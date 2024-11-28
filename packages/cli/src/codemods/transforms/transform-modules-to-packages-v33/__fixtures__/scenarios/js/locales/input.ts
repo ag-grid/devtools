@@ -4,11 +4,7 @@ import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';
 
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
-import {
-  AlignedGrid,
-  GridOptions,
-  ModuleRegistry
-} from '@ag-grid-community/core';
+import { AlignedGrid, GridOptions, ModuleRegistry } from '@ag-grid-community/core';
 import { CsvExportModule } from '@ag-grid-community/csv-export';
 import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
 import { ColumnsToolPanelModule } from '@ag-grid-enterprise/column-tool-panel';

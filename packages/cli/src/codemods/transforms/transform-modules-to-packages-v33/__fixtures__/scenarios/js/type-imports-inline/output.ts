@@ -1,14 +1,8 @@
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
-import { ClientSideRowModelModule } from 'ag-grid-community';
-import {
-  AllCommunityModule,
-  type GridApi,
-  ModuleRegistry,
-  type GridOptions,
-  createGrid,
-} from 'ag-grid-community';
+import { AllCommunityModule, ClientSideRowModelModule } from 'ag-grid-community';
+import { type GridApi, ModuleRegistry, type GridOptions, createGrid } from 'ag-grid-community';
 
 import type { IOlympicData } from './interfaces';
 
