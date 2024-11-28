@@ -11,7 +11,6 @@ import {
 } from '@ag-grid-community/core';
 import { IOlympicData } from './interfaces';
 
-// deprecated format
 ModuleRegistry.register(ClientSideRowModelModule);
 
 const gridApi = createGrid(document.body, {
