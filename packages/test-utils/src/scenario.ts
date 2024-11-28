@@ -8,16 +8,23 @@ export type ScenarioRunner<I, O> = (input: I, expected: O, scenarioPath: string)
 export function loadScenarios<I, O>(
   scenariosPath: string,
   options: {
+    test?: (filename: string) => boolean;
     loader: ScenarioLoader<I, O>;
     runner: ScenarioRunner<I, O>;
     describe: (name: string | Function, fn: () => void) => void;
     manifest?: string;
   },
 ) {
-  const { loader, runner, describe, manifest: manifestFilename = 'scenario.json' } = options;
+  const {
+    loader,
+    runner,
+    describe,
+    manifest: manifestFilename = 'scenario.json',
+    test = () => true,
+  } = options;
   const scenarios = findInDirectorySync(
     scenariosPath,
-    (path, stats) => stats.isDirectory() || basename(path) === manifestFilename,
+    (path, stats) => (stats.isDirectory() || basename(path) === manifestFilename) && test(path),
   ).map((relativePath) => {
     const filePath = join(scenariosPath, relativePath);
     const pathSegments = relativePath.split(sep);
@@ -66,7 +73,7 @@ function findInDirectorySync(
   predicate: (path: string, stats: Stats) => boolean,
 ): Array<string> {
   const filenames = readdirSync(path);
-  return filenames.flatMap((filename) => {
+  const files = filenames.flatMap((filename) => {
     const stats = statSync(join(path, filename));
     const filePath = join(path, filename);
     if (!predicate(filePath, stats)) return [];
@@ -74,6 +81,8 @@ function findInDirectorySync(
     const children = findInDirectorySync(filePath, predicate);
     return children.map((childFilename) => join(filename, childFilename));
   });
+
+  return files;
 }
 
 type Tree<K, V> = {

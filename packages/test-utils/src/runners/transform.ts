@@ -30,6 +30,7 @@ export function loadAstTransformExampleScenarios<O extends object = object>(
   options: {
     runner: (input: AstTransformExampleScenarioInput<O>) => AstTransformExampleScenarioOutput;
     vitest: ExampleVitestHelpers;
+    test?: (filename: string) => boolean;
   },
 ): void {
   const { runner, vitest } = options;
@@ -40,6 +41,7 @@ export function loadAstTransformExampleScenarios<O extends object = object>(
     AstTransformExampleScenarioOutput
   >(scenariosPath, {
     vitest,
+    test: options.test,
     loader: (data, files, { getExampleFilePath, readExampleFile }) => {
       const { input, output, errors, warnings, options } = data;
       const lineEndings = options?.lineEndings;

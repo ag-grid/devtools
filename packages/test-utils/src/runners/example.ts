@@ -44,6 +44,7 @@ export interface ExampleScenarioHelpers {
 export function loadExampleScenarios<T, I, O>(
   scenariosPath: string,
   options: {
+    test?: (filename: string) => boolean;
     loader: (
       data: T,
       files: {
@@ -64,6 +65,7 @@ export function loadExampleScenarios<T, I, O>(
   const { describe, expect, test, onTestFinished } = vitest;
   loadScenarios<ExampleScenarioInput<I>, ExampleScenarioOutput<O>>(scenariosPath, {
     describe,
+    test: options.test,
     loader: (scenarioPath) => {
       const data = loadJsonFile<ExampleScenarioData<T>>(scenarioPath);
       const {
