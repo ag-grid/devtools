@@ -1,4 +1,4 @@
-import j from 'jscodeshift';
+import j, { Identifier, MemberExpression } from 'jscodeshift';
 import { JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
 
 // convert deprecated ModuleRegistry.register(SingleModule) to ModuleRegistry.registerModules([SingleModule])
@@ -13,7 +13,9 @@ export const registerModule: JSCodeShiftTransformer = (root) => {
     .forEach((path) => {
       const args = path.node.arguments;
       if (args.length === 1) {
-        path.node.callee.property.name = 'registerModules';
+        const callee = path.node.callee as MemberExpression;
+        const prop = callee.property as Identifier;
+        prop.name = 'registerModules';
         path.node.arguments = [j.arrayExpression([args[0]])];
       }
     });

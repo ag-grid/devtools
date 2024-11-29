@@ -1,5 +1,6 @@
 export const communityNpmPackage = 'ag-grid-community';
 export const enterpriseNpmPackage = 'ag-grid-enterprise';
+export const gridChartsEnterpriseNpmPackage = 'ag-grid-charts-enterprise';
 
 export const reactNpmModule = '@ag-grid-community/react';
 export const reactNpmPackage = 'ag-grid-react';

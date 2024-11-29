@@ -1,11 +1,19 @@
 import j from 'jscodeshift';
 
 import { JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
-import { AgChartsEnterpriseModule, AllEnterpriseModule, enterpriseNpmPackage } from './constants';
-import { addNewImportNextToGiven, getChartsImport } from './sharedUtils';
+import {
+  AgChartsEnterpriseModule,
+  AllEnterpriseModule,
+  enterpriseNpmPackage,
+  gridChartsEnterpriseNpmPackage,
+} from './constants';
+import {
+  addNewImportNextToGiven,
+  getChartsImport,
+  isUsingEnterpriseNpmPackage,
+} from './sharedUtils';
 
 const LicenseManager = 'LicenseManager';
-const gridChartsEnterprisePackage = 'ag-grid-charts-enterprise';
 
 const moduleRegistry = j.expressionStatement(
   j.callExpression(
@@ -27,7 +35,14 @@ const moduleRegistryCharts = j.expressionStatement(
 
 export const packageLicenseManager: JSCodeShiftTransformer = (root) => {
   // if using ag-grid-enterprise find the LicenseManager import and add the ModuleRegistry
-  addNewImportNextToGiven(root, LicenseManager, 'ModuleRegistry');
+
+  const alreadyExists = addNewImportNextToGiven(root, LicenseManager, 'ModuleRegistry');
+
+  if (alreadyExists) {
+    // This package file already has a ModuleRegistry import so looks like it has already been transformed
+    return root.toSource();
+  }
+
   addNewImportNextToGiven(root, LicenseManager, AllEnterpriseModule);
 
   let isEnterpriseCharts: boolean | null = null;
@@ -36,7 +51,7 @@ export const packageLicenseManager: JSCodeShiftTransformer = (root) => {
   root
     .find(j.ImportDeclaration)
     .filter((path) => {
-      return gridChartsEnterprisePackage == path?.node?.source?.value;
+      return gridChartsEnterpriseNpmPackage == path?.node?.source?.value;
     })
     .forEach((path) => {
       path.node.source.value = enterpriseNpmPackage;
@@ -60,4 +75,20 @@ export const packageLicenseManager: JSCodeShiftTransformer = (root) => {
     });
 
   return root.toSource();
+};
+
+export const removeEmptyPackageImports: JSCodeShiftTransformer = (root) => {
+  // remove empty import statements like
+  // import 'ag-grid-enterprise';
+  // import 'ag-grid-charts-enterprise';
+  root
+    .find(j.ImportDeclaration)
+    .filter((path) => {
+      return (
+        [enterpriseNpmPackage, gridChartsEnterpriseNpmPackage].includes(
+          path?.node?.source?.value?.toString() ?? '',
+        ) && path.node.specifiers?.length === 0
+      );
+    })
+    .remove();
 };

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AG_GRID_LOCALE_DE } from '@ag-grid-community/locale';
 
 import 'ag-grid-community/styles/ag-grid.css';

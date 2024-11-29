@@ -3,6 +3,8 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { createGrid } from 'ag-grid-community';
 import { LicenseManager } from 'ag-grid-enterprise';
 
+import 'ag-grid-enterprise';
+
 LicenseManager.setLicenseKey('your License Key');
 
 const gridApi = createGrid(document.body, {

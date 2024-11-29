@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AllCommunityModule, ClientSideRowModelModule } from 'ag-grid-community';
 import { ModuleRegistry, createGrid } from 'ag-grid-community';
 import { IntegratedChartsModule } from 'ag-grid-enterprise';

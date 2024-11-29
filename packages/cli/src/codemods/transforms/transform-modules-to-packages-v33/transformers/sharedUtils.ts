@@ -4,6 +4,10 @@ import {
   AgChartsEnterpriseModule,
   chartsCommunityPackage,
   chartsEnterprisePackage,
+  enterpriseNpmPackage,
+  gridChartsEnterpriseNpmModule,
+  gridChartsEnterpriseNpmPackage,
+  gridChartsNpmModule,
 } from './constants';
 
 export function sortImports(imports: any[]) {
@@ -41,11 +45,31 @@ export function isSorted(list: string[]): boolean {
   return true;
 }
 
+/**
+ *
+ * @param root
+ * @param targetImport
+ * @param newImport
+ * @returns True if newImport already exists, otherwise undefined
+ */
 export function addNewImportNextToGiven(
   root: j.Collection<any>,
   targetImport: string,
   newImport: string,
-) {
+): boolean | undefined {
+  // if newImport already exists then return
+  if (
+    root
+      .find(j.ImportDeclaration)
+      .filter(
+        (path) =>
+          !!path.node.specifiers &&
+          path.node.specifiers.some((s: any) => s.imported?.name === newImport),
+      ).length
+  ) {
+    return true;
+  }
+
   root
     .find(j.ImportDeclaration)
     .filter(
@@ -100,4 +124,17 @@ export function getChartsImport(isEnterpriseCharts: boolean): any {
     ],
     j.stringLiteral(isEnterpriseCharts ? chartsEnterprisePackage : chartsCommunityPackage),
   );
+}
+
+export function isUsingEnterpriseNpmPackage(root: j.Collection<any>): boolean {
+  return (
+    isUsingNpmPackage(root, enterpriseNpmPackage) ||
+    isUsingNpmPackage(root, gridChartsEnterpriseNpmPackage)
+  );
+}
+
+export function isUsingNpmPackage(root: j.Collection<any>, npmPackage: string): boolean {
+  return !!root.find(j.ImportDeclaration).filter((path) => {
+    return path?.node?.source?.value === npmPackage;
+  }).length;
 }
