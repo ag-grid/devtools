@@ -5,9 +5,7 @@ import {
   chartsCommunityPackage,
   chartsEnterprisePackage,
   enterpriseNpmPackage,
-  gridChartsEnterpriseNpmModule,
   gridChartsEnterpriseNpmPackage,
-  gridChartsNpmModule,
 } from './constants';
 
 export function sortImports(imports: any[]) {
