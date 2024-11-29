@@ -90,6 +90,10 @@ export interface MigrateCommandArgs {
    * The path of the user config to load
    */
   userConfigPath?: string;
+  /**
+   * Default to enterprise imports after migration.
+   */
+  enterprise?: boolean;
 }
 
 function usage(env: CliEnv): string {
@@ -109,6 +113,7 @@ Options:
     )})
     --allow-untracked, -u     Allow operating on files outside a git repository
     --allow-dirty, -d         Allow operating on repositories with uncommitted changes in the working tree
+    --prefer-enterprise, -p   Default to enterprise imports after migration
     --num-threads             Number of worker threads to spawn (defaults to the number of system cores)
     --dry-run                 Show a diff output of the changes that would be made
     --config=<file.cjs>       Loads a .cjs or .cts configuration file to customize the codemod behavior.
@@ -136,6 +141,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     help: false,
     input: [],
     userConfigPath: undefined,
+    enterprise: false,
   };
   let arg;
   while ((arg = args.shift())) {
@@ -156,6 +162,10 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
       case '--allow-dirty':
       case '-d':
         options.allowDirty = true;
+        break;
+      case '--enterprise':
+      case '-p':
+        options.enterprise = true;
         break;
       case '--no-allow-dirty':
         options.allowDirty = false;
@@ -304,6 +314,7 @@ async function migrate(
     verbose,
     userConfigPath,
     input,
+    enterprise,
   } = args;
   let { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
@@ -326,6 +337,10 @@ async function migrate(
   let skipFiles = new Set<string>();
   if (userConfigPath) {
     skipFiles.add(userConfigPath);
+  }
+
+  if (enterprise) {
+    process.env.AG_PREFER_ENTERPRISE_IMPORTS = 'true';
   }
 
   const inputFilePaths = await findSourceFiles(
