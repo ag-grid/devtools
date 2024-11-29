@@ -7,6 +7,14 @@ const column = {
         }
     }
 }
+const bar = {
+    cellRendererParams: {
+        sparklineOptions: {
+            type: 'bar',
+            direction: 'horizontal'
+        }
+    }
+}
 const shouldntChange0 = {
     sparklineOptions: {
         type: 'column'

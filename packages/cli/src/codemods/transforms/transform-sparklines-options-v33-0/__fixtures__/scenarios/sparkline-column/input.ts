@@ -6,6 +6,13 @@ const column = {
         }
     }
 }
+const bar = {
+    cellRendererParams: {
+        sparklineOptions: {
+            type: 'bar'
+        }
+    }
+}
 const shouldntChange0 = {
     sparklineOptions: {
         type: 'column'
