@@ -13,6 +13,8 @@ export const angularPackage = 'ag-grid-angular';
 export const AllCommunityModule = 'AllCommunityModule';
 export const communityCoreModule = '@ag-grid-community/core';
 
+export const AllEnterpriseModule = 'AllEnterpriseModule';
+
 export const communityModules = [
   '@ag-grid-community/core',
   '@ag-grid-community/client-side-row-model',

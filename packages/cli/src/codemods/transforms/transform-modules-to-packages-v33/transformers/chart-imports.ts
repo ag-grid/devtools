@@ -14,6 +14,7 @@ import {
   SparklinesModule,
   sparklinesModule,
 } from './constants';
+import { getChartsImport } from './sharedUtils';
 
 export const chartImports: JSCodeShiftTransformer = (root) => {
   // If using  GridChartsModule, update to IntegratedChartsModule and import the required charts package
@@ -98,15 +99,4 @@ function addChartsModuleToSparklinesModule(root: Collection, isEnterpriseCharts:
         ]),
       );
     });
-}
-
-function getChartsImport(isEnterpriseCharts: boolean): any {
-  return j.importDeclaration(
-    [
-      j.importSpecifier(
-        j.identifier(isEnterpriseCharts ? AgChartsEnterpriseModule : AgChartsCommunityModule),
-      ),
-    ],
-    j.stringLiteral(isEnterpriseCharts ? chartsEnterprisePackage : chartsCommunityPackage),
-  );
 }

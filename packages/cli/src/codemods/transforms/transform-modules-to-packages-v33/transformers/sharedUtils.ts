@@ -1,4 +1,10 @@
 import j from 'jscodeshift';
+import {
+  AgChartsCommunityModule,
+  AgChartsEnterpriseModule,
+  chartsCommunityPackage,
+  chartsEnterprisePackage,
+} from './constants';
 
 export function sortImports(imports: any[]) {
   return imports.sort((a: any, b: any) => {
@@ -83,4 +89,15 @@ export function addNewIdentifierNextToGiven(
         path.insertAfter(j.identifier(newName));
       }
     });
+}
+
+export function getChartsImport(isEnterpriseCharts: boolean): any {
+  return j.importDeclaration(
+    [
+      j.importSpecifier(
+        j.identifier(isEnterpriseCharts ? AgChartsEnterpriseModule : AgChartsCommunityModule),
+      ),
+    ],
+    j.stringLiteral(isEnterpriseCharts ? chartsEnterprisePackage : chartsCommunityPackage),
+  );
 }

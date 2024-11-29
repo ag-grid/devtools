@@ -7,6 +7,7 @@ import { updateDeprecatedModules } from './transformers/deprecated-modules';
 import { registerModule } from './transformers/register-module';
 import { updateImportPaths } from './transformers/update-import-paths';
 import { updateStyles } from './transformers/update-styles';
+import { packageLicenseManager } from './transformers/package-licenseManager';
 
 const transform: AstTransform<AstCliContext> = function transformModulesToPackagesV33(babel) {
   return jsCodeShiftTransform(
@@ -16,6 +17,7 @@ const transform: AstTransform<AstCliContext> = function transformModulesToPackag
     updateImportPaths,
     addAllCommunityModule,
     updateDeprecatedModules,
+    packageLicenseManager,
   )(babel);
 };
 
