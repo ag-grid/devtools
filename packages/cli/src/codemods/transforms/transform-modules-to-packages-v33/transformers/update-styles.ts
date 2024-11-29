@@ -1,7 +1,7 @@
 import j from 'jscodeshift';
 
 import { JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
-import { communityPackage } from './constants';
+import { communityNpmPackage } from './constants';
 
 // find imports from "@ag-grid-community/styles/*"; imports and convert to 'ag-grid-community/styles/*'
 export const updateStyles: JSCodeShiftTransformer = (root) => {
@@ -13,7 +13,7 @@ export const updateStyles: JSCodeShiftTransformer = (root) => {
     .forEach((path) => {
       path.node.source.value = path.node.source.value
         ?.toString()
-        .replace('@ag-grid-community', communityPackage);
+        .replace('@ag-grid-community', communityNpmPackage);
     });
 
   return root.toSource();

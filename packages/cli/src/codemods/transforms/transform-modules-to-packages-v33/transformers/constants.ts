@@ -1,31 +1,30 @@
-export const communityPackage = 'ag-grid-community';
-export const enterprisePackage = 'ag-grid-enterprise';
+export const communityNpmPackage = 'ag-grid-community';
+export const enterpriseNpmPackage = 'ag-grid-enterprise';
 
-export const reactModule = '@ag-grid-community/react';
-export const reactPackage = 'ag-grid-react';
+export const reactNpmModule = '@ag-grid-community/react';
+export const reactNpmPackage = 'ag-grid-react';
 
-export const vueModule = '@ag-grid-community/vue3';
-export const vuePackage = 'ag-grid-vue3';
+export const vueNpmModule = '@ag-grid-community/vue3';
+export const vueNpmPackage = 'ag-grid-vue3';
 
-export const angularModule = '@ag-grid-community/angular';
-export const angularPackage = 'ag-grid-angular';
+export const angularNpmModule = '@ag-grid-community/angular';
+export const angularNpmPackage = 'ag-grid-angular';
 
 export const AllCommunityModule = 'AllCommunityModule';
-export const communityCoreModule = '@ag-grid-community/core';
-
 export const AllEnterpriseModule = 'AllEnterpriseModule';
+export const communityCoreNpmModule = '@ag-grid-community/core';
 
-export const communityModules = [
+export const communityNpmModules = [
   '@ag-grid-community/core',
   '@ag-grid-community/client-side-row-model',
   '@ag-grid-community/infinite-row-model',
   '@ag-grid-community/csv-export',
 ];
 
-export const sparklinesModule = '@ag-grid-enterprise/sparklines';
+export const sparklinesNpmModule = '@ag-grid-enterprise/sparklines';
 export const SparklinesModule = 'SparklinesModule';
-export const gridChartsModule = '@ag-grid-enterprise/charts';
-export const gridChartsEnterpriseModule = '@ag-grid-enterprise/charts-enterprise';
+export const gridChartsNpmModule = '@ag-grid-enterprise/charts';
+export const gridChartsEnterpriseNpmModule = '@ag-grid-enterprise/charts-enterprise';
 export const GridChartsModule = 'GridChartsModule';
 export const IntegratedChartsModule = 'IntegratedChartsModule';
 
@@ -44,11 +43,11 @@ export const AgChartsEnterpriseModule = 'AgChartsEnterpriseModule';
 export const chartsCommunityPackage = 'ag-charts-community';
 export const chartsEnterprisePackage = 'ag-charts-enterprise';
 
-export const enterpriseModules = [
+export const enterpriseNpmModules = [
   '@ag-grid-enterprise/core',
-  gridChartsModule,
-  gridChartsEnterpriseModule,
-  sparklinesModule,
+  gridChartsNpmModule,
+  gridChartsEnterpriseNpmModule,
+  sparklinesNpmModule,
   '@ag-grid-enterprise/clipboard',
   '@ag-grid-enterprise/column-tool-panel',
   '@ag-grid-enterprise/excel-export',
@@ -66,38 +65,3 @@ export const enterpriseModules = [
   '@ag-grid-enterprise/status-bar',
   '@ag-grid-enterprise/viewport-row-model',
 ];
-
-export function sortImports(imports: any[]) {
-  return imports.sort((a: any, b: any) => {
-    if (a.imported.name < b.imported.name) {
-      return -1;
-    } else if (a.imported.name > b.imported.name) {
-      return 1;
-    } else {
-      return 0;
-    }
-  });
-}
-
-export function sortIdentifiers(identifiers: any[]) {
-  return identifiers.sort((a: any, b: any) => {
-    const aName = typeof a.name == 'string' ? a.name : 'Z';
-    const bName = typeof b.name == 'string' ? b.name : 'Z';
-    if (aName < bName) {
-      return -1;
-    } else if (aName > bName) {
-      return 1;
-    } else {
-      return 0;
-    }
-  });
-}
-
-export function isSorted(list: string[]): boolean {
-  for (let i = 0; i < list.length - 1; i++) {
-    if (list[i] > list[i + 1]) {
-      return false;
-    }
-  }
-  return true;
-}

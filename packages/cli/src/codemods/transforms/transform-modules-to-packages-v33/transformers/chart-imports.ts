@@ -4,15 +4,13 @@ import { JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
 import {
   AgChartsCommunityModule,
   AgChartsEnterpriseModule,
-  chartsCommunityPackage,
-  chartsEnterprisePackage,
-  enterprisePackage,
-  gridChartsEnterpriseModule,
-  gridChartsModule,
+  enterpriseNpmPackage,
+  gridChartsEnterpriseNpmModule,
+  gridChartsNpmModule,
   GridChartsModule,
   IntegratedChartsModule,
   SparklinesModule,
-  sparklinesModule,
+  sparklinesNpmModule,
 } from './constants';
 import { getChartsImport } from './sharedUtils';
 
@@ -24,13 +22,13 @@ export const chartImports: JSCodeShiftTransformer = (root) => {
   root
     .find(j.ImportDeclaration)
     .filter((path) => {
-      return [gridChartsModule, gridChartsEnterpriseModule, sparklinesModule].some(
+      return [gridChartsNpmModule, gridChartsEnterpriseNpmModule, sparklinesNpmModule].some(
         (m) => path?.node?.source?.value == m,
       );
     })
     .forEach((path) => {
       const importPath = path.node.source.value;
-      path.node.source.value = enterprisePackage;
+      path.node.source.value = enterpriseNpmPackage;
 
       // if GridChartsModule is imported, then rename this to IntegratedChartsModule
       // and add the required charts import
@@ -40,7 +38,7 @@ export const chartImports: JSCodeShiftTransformer = (root) => {
         .map((s: any) => {
           if (s.imported.name === GridChartsModule) {
             // See if the GridChartsModule is from the enterprise charts module
-            isEnterpriseCharts = importPath === gridChartsEnterpriseModule;
+            isEnterpriseCharts = importPath === gridChartsEnterpriseNpmModule;
             s.imported.name = IntegratedChartsModule;
           }
           lastGridOrSparklinesImportPath = path;

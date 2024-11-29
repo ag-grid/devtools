@@ -1,7 +1,7 @@
 import j from 'jscodeshift';
 
 import { JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
-import { AgChartsEnterpriseModule, AllEnterpriseModule, enterprisePackage } from './constants';
+import { AgChartsEnterpriseModule, AllEnterpriseModule, enterpriseNpmPackage } from './constants';
 import { addNewImportNextToGiven, getChartsImport } from './sharedUtils';
 
 const LicenseManager = 'LicenseManager';
@@ -39,7 +39,7 @@ export const packageLicenseManager: JSCodeShiftTransformer = (root) => {
       return gridChartsEnterprisePackage == path?.node?.source?.value;
     })
     .forEach((path) => {
-      path.node.source.value = enterprisePackage;
+      path.node.source.value = enterpriseNpmPackage;
       isEnterpriseCharts = true;
       lastGridOrSparklinesImportPath = path;
     });
