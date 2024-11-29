@@ -15,8 +15,6 @@ export const combinedTransform: JSCodeShiftTransformer = (root) => {
     // legacy package codebase
     removeEmptyPackageImports(root);
     packageLicenseManager(root);
-
-    // TODO remove import "ag-grid-enterprise";
   } else {
     // already using modules
     registerModule(root), updateStyles(root);

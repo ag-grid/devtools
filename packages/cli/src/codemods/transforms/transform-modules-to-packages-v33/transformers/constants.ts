@@ -66,3 +66,27 @@ export const enterpriseNpmModules = [
   '@ag-grid-enterprise/status-bar',
   '@ag-grid-enterprise/viewport-row-model',
 ];
+
+export const allAgGridNpmPaths = [
+  // old packages
+  communityNpmPackage,
+  enterpriseNpmPackage,
+  gridChartsEnterpriseNpmPackage,
+
+  // framework packages/modules
+  reactNpmModule,
+  reactNpmPackage,
+  vueNpmModule,
+  vueNpmPackage,
+  angularNpmModule,
+  angularNpmPackage,
+
+  // charts packages
+  chartsCommunityPackage,
+  chartsEnterprisePackage,
+
+  // we don't include the @ag-grid-community/locale package as it's not changing
+
+  ...communityNpmModules,
+  ...enterpriseNpmModules,
+];

@@ -7,11 +7,7 @@ import {
   enterpriseNpmPackage,
   gridChartsEnterpriseNpmPackage,
 } from './constants';
-import {
-  addNewImportNextToGiven,
-  getChartsImport,
-  isUsingEnterpriseNpmPackage,
-} from './sharedUtils';
+import { addNewImportNextToGiven, getChartsImport } from './sharedUtils';
 
 const LicenseManager = 'LicenseManager';
 
