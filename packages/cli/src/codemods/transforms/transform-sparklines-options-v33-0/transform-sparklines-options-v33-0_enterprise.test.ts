@@ -20,11 +20,11 @@ describe(transformSparklinesOptionsV33_0, () => {
   const scenariosPath = join(__dirname, './__fixtures__/scenarios');
 
   beforeEach(() => {
-    process.env.AG_PREFER_ENTERPRISE_IMPORTS = 'true';
+    process.env.AG_USING_CHARTS = 'enterprise';
   });
 
   afterEach(() => {
-    delete process.env.AG_PREFER_ENTERPRISE_IMPORTS;
+    delete process.env.AG_USING_CHARTS;
   });
 
   loadTransformScenarios(scenariosPath, {

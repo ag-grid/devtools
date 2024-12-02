@@ -91,9 +91,9 @@ export interface MigrateCommandArgs {
    */
   userConfigPath?: string;
   /**
-   * Default to enterprise imports after migration.
+   * Hint about which AG Chart features / package is required.
    */
-  enterprise?: boolean;
+  usingCharts?: 'community' | 'enterprise' | 'none';
 }
 
 function usage(env: CliEnv): string {
@@ -113,11 +113,13 @@ Options:
     )})
     --allow-untracked, -u     Allow operating on files outside a git repository
     --allow-dirty, -d         Allow operating on repositories with uncommitted changes in the working tree
-    --prefer-enterprise, -p   Default to enterprise imports after migration
     --num-threads             Number of worker threads to spawn (defaults to the number of system cores)
     --dry-run                 Show a diff output of the changes that would be made
     --config=<file.cjs>       Loads a .cjs or .cts configuration file to customize the codemod behavior.
                               See https://ag-grid.com/javascript-data-grid/codemods/#configuration-file
+
+  Version Specific Options:
+  --using-charts=<value>      v33 Which AG Charts bundle to used if it cannot be inferred automatically. One of: ['community' | 'enterprise' | 'none']
 
   Additional arguments:
     [<file>...<dir>...]       List of input files and directories to operate on.
@@ -141,7 +143,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     help: false,
     input: [],
     userConfigPath: undefined,
-    enterprise: false,
+    usingCharts: 'community',
   };
   let arg;
   while ((arg = args.shift())) {
@@ -163,9 +165,21 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
       case '-d':
         options.allowDirty = true;
         break;
-      case '--enterprise':
-      case '-p':
-        options.enterprise = true;
+      case '--using-charts':
+        {
+          let value = args.shift();
+          if (!value || value.startsWith('-')) {
+            throw new CliArgsError(`Missing value for ${arg}`, usage(env));
+          }
+          const validValues = ['community', 'enterprise', 'none'];
+          if (!validValues.includes(value)) {
+            throw new CliArgsError(
+              `Invalid value for ${arg}: ${value} (Pick one of: ${validValues.join()})`,
+              usage(env),
+            );
+          }
+          options.usingCharts = value as 'community' | 'enterprise' | 'none';
+        }
         break;
       case '--no-allow-dirty':
         options.allowDirty = false;
@@ -314,7 +328,7 @@ async function migrate(
     verbose,
     userConfigPath,
     input,
-    enterprise,
+    usingCharts,
   } = args;
   let { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
@@ -339,8 +353,8 @@ async function migrate(
     skipFiles.add(userConfigPath);
   }
 
-  if (enterprise) {
-    process.env.AG_PREFER_ENTERPRISE_IMPORTS = 'true';
+  if (usingCharts) {
+    process.env.AG_USING_CHARTS = usingCharts;
   }
 
   const inputFilePaths = await findSourceFiles(

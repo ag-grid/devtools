@@ -24,7 +24,7 @@ export function loadScenarios<I, O>(
   } = options;
   const scenarios = findInDirectorySync(
     scenariosPath,
-    (path, stats) => (stats.isDirectory() || basename(path) === manifestFilename) && test(path),
+    (path, stats) => stats.isDirectory() || (basename(path) === manifestFilename && test(path)),
   ).map((relativePath) => {
     const filePath = join(scenariosPath, relativePath);
     const pathSegments = relativePath.split(sep);
