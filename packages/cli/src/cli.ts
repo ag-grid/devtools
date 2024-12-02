@@ -49,7 +49,6 @@ Commands:
 
 Options:
   --version, -v   Print the version of the command-line tool
-  --prefer-enterprise, -p Prefer AG Grid enterprise imports
   --help, -h      Show usage instructions for the specified command
 
 See individual command help for more options

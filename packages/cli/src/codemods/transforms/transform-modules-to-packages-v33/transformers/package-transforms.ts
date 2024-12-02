@@ -2,13 +2,14 @@ import j from 'jscodeshift';
 
 import { JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
 import {
+  AgChartsCommunityModule,
   AgChartsEnterpriseModule,
   AllEnterpriseModule,
   enterpriseNpmPackage,
   gridChartsEnterpriseNpmPackage,
 } from './constants';
 import { addNewImportNextToGiven, getChartsImport } from './sharedUtils';
-
+type UsingCharts = 'community' | 'enterprise' | 'none';
 const LicenseManager = 'LicenseManager';
 
 const moduleRegistry = j.expressionStatement(
@@ -18,16 +19,26 @@ const moduleRegistry = j.expressionStatement(
   ),
 );
 
-const allEnterpriseWithCharts = j.callExpression(
-  j.memberExpression(j.identifier(AllEnterpriseModule), j.identifier('with')),
-  [j.identifier(AgChartsEnterpriseModule)],
-);
-const moduleRegistryCharts = j.expressionStatement(
-  j.callExpression(
-    j.memberExpression(j.identifier('ModuleRegistry'), j.identifier('registerModules')),
-    [j.arrayExpression([allEnterpriseWithCharts])],
-  ),
-);
+const allEnterpriseWithCharts = (isEnterpriseCharts: boolean) =>
+  j.callExpression(j.memberExpression(j.identifier(AllEnterpriseModule), j.identifier('with')), [
+    j.identifier(isEnterpriseCharts ? AgChartsEnterpriseModule : AgChartsCommunityModule),
+  ]);
+const moduleRegistryCharts = (isEnterpriseCharts: boolean) =>
+  j.expressionStatement(
+    j.callExpression(
+      j.memberExpression(j.identifier('ModuleRegistry'), j.identifier('registerModules')),
+      [j.arrayExpression([allEnterpriseWithCharts(isEnterpriseCharts)])],
+    ),
+  );
+
+function getModuleRegistryCallExpression(
+  isEnterpriseCharts: boolean | null,
+  usingCharts: UsingCharts,
+) {
+  return usingCharts === 'none'
+    ? moduleRegistry
+    : moduleRegistryCharts(usingCharts === 'enterprise' || (isEnterpriseCharts ?? false));
+}
 
 export const packageLicenseManager: JSCodeShiftTransformer = (root) => {
   // if using ag-grid-enterprise find the LicenseManager import and add the ModuleRegistry
@@ -39,6 +50,8 @@ export const packageLicenseManager: JSCodeShiftTransformer = (root) => {
     return root.toSource();
   }
 
+  const usingCharts: UsingCharts = process.env.AG_USING_CHARTS as any;
+
   addNewImportNextToGiven(root, LicenseManager, AllEnterpriseModule);
 
   let isEnterpriseCharts: boolean | null = null;
@@ -47,16 +60,19 @@ export const packageLicenseManager: JSCodeShiftTransformer = (root) => {
   root
     .find(j.ImportDeclaration)
     .filter((path) => {
-      return gridChartsEnterpriseNpmPackage == path?.node?.source?.value;
+      const source = path?.node?.source?.value?.toString();
+      return gridChartsEnterpriseNpmPackage == source || enterpriseNpmPackage == source;
     })
     .forEach((path) => {
+      isEnterpriseCharts = gridChartsEnterpriseNpmPackage == path?.node?.source?.value?.toString();
       path.node.source.value = enterpriseNpmPackage;
-      isEnterpriseCharts = true;
       lastGridOrSparklinesImportPath = path;
     });
 
-  if (lastGridOrSparklinesImportPath) {
-    lastGridOrSparklinesImportPath.insertAfter(getChartsImport(isEnterpriseCharts ?? false));
+  if (lastGridOrSparklinesImportPath && usingCharts !== 'none') {
+    lastGridOrSparklinesImportPath.insertAfter(
+      getChartsImport(usingCharts === 'enterprise' || (isEnterpriseCharts ?? false)),
+    );
   }
   // add ModuleRegistry.registerModules([AllEnterpriseModule]); before the LicenseManager.setLicenseKey
   root
@@ -67,7 +83,9 @@ export const packageLicenseManager: JSCodeShiftTransformer = (root) => {
     .forEach((path) => {
       // find the parent CallExpression
       const parentCallExpression = j(path).closest(j.ExpressionStatement);
-      parentCallExpression.insertBefore(isEnterpriseCharts ? moduleRegistryCharts : moduleRegistry);
+      parentCallExpression.insertBefore(
+        getModuleRegistryCallExpression(isEnterpriseCharts, usingCharts),
+      );
     });
 
   return root.toSource();
