@@ -1,0 +1,6 @@
+{
+  "scenario": {
+    "input": "input.jsx",
+    "output": "output.jsx"
+  }
+}
