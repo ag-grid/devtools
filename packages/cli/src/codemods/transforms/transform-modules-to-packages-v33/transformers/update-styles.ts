@@ -15,6 +15,4 @@ export const updateStyles: JSCodeShiftTransformer = (root) => {
         ?.toString()
         .replace('@ag-grid-community', communityNpmPackage);
     });
-
-  return root.toSource();
 };

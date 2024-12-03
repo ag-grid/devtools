@@ -8,8 +8,6 @@ import { addNewIdentifierNextToGiven, addNewImportNextToGiven } from './sharedUt
 export const updateDeprecatedModules: JSCodeShiftTransformer = (root) => {
   swapRangeSelectionForCellSelectionModule(root);
   swapMenuModuleForColumnAndContextModule(root);
-
-  return root.toSource();
 };
 
 function swapRangeSelectionForCellSelectionModule(root: Collection) {

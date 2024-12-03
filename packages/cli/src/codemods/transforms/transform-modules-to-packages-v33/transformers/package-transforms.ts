@@ -87,8 +87,6 @@ export const packageLicenseManager: JSCodeShiftTransformer = (root) => {
         getModuleRegistryCallExpression(isEnterpriseCharts, usingCharts),
       );
     });
-
-  return root.toSource();
 };
 
 export const removeEmptyPackageImports: JSCodeShiftTransformer = (root) => {

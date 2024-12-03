@@ -8,6 +8,4 @@ export const addAllCommunityModule: JSCodeShiftTransformer = (root) => {
     addNewImportNextToGiven(root, module, AllCommunityModule);
     addNewIdentifierNextToGiven(root, module, AllCommunityModule);
   });
-
-  return root.toSource();
 };

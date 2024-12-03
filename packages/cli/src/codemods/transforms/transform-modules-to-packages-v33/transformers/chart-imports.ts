@@ -51,8 +51,6 @@ export const chartImports: JSCodeShiftTransformer = (root) => {
 
   swapGridChartsModuleForIntegratedChartsModule(root, isEnterpriseCharts ?? false);
   addChartsModuleToSparklinesModule(root, isEnterpriseCharts ?? false);
-
-  return root.toSource();
 };
 
 // Wherever GridChartsModule is used outside of an import statement, replace it with IntegratedChartsModule.with(AgChartsModule)

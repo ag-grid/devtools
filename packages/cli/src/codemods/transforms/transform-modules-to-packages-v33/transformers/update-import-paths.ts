@@ -22,8 +22,6 @@ export const updateImportPaths: JSCodeShiftTransformer = (root) => {
   convertModuleImportsToPackages(root, [reactNpmModule], reactNpmPackage);
   convertModuleImportsToPackages(root, [angularNpmModule], angularNpmPackage);
   convertModuleImportsToPackages(root, [vueNpmModule], vueNpmPackage);
-
-  return root.toSource();
 };
 
 function convertModuleImportsToPackages(
