@@ -1,7 +1,8 @@
 {
   "scenario": {
     "input": "input.ts",
-    "output": "output.ts"
+    "output": "output.ts",
+    "warnings": "output.warnings.cjs"
   }
 }
 
