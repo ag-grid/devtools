@@ -55,6 +55,7 @@ export function applyBabelTransform<S, T extends object = object>(
         quote: quoteStyle,
       }).code
     : null;
+
   return transformedSource;
 }
 

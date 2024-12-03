@@ -12,9 +12,7 @@ import { newImport, oldImports } from './transformers/constants';
 
 const transform: AstTransform<AstCliContext> = function migrateSparklinesOptions(_babel) {
   const newPackage =
-    process.env.AG_PREFER_ENTERPRISE_IMPORTS === 'true'
-      ? 'ag-charts-enterprise'
-      : 'ag-charts-community';
+    process.env.AG_USING_CHARTS === 'enterprise' ? 'ag-charts-enterprise' : 'ag-charts-community';
 
   const plugin = jsCodeShiftTransform(
     columnToVerticalBarTransform,
