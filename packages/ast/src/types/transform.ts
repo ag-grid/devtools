@@ -46,9 +46,13 @@ export interface FsContext extends TransformContext {
   fs: FsUtils;
 }
 
+export interface LogOptions {
+  forceOutput?: boolean;
+}
+
 export interface AstCliContext extends FsContext {
-  warn(node: NodePath<AstNode> | null, message: string): void;
-  fail(node: NodePath<AstNode> | null, message: string): void;
+  warn(node: NodePath<AstNode> | null, message: string | Error, options?: LogOptions): void;
+  fail(node: NodePath<AstNode> | null, message: string | Error, options?: LogOptions): void;
 }
 
 export type AstTransformResult = {

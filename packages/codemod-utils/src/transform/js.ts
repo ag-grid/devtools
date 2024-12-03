@@ -65,13 +65,15 @@ function transformJsFile<S>(
   const transformContext: AstTransformContext<AstCliContext> = {
     filename,
     opts: {
-      warn(node: NodePath<AstNode> | null, message: string) {
+      warn(node: NodePath<AstNode> | null, message: string | Error, options) {
         const error = createSourceCodeError(node, message);
-        uniqueErrors.set(error.message, { error, fatal: false });
+        const messageKey = `${error.message}${options?.forceOutput ? Math.random() : ''}`;
+        uniqueErrors.set(messageKey, { error, fatal: false });
       },
-      fail(node: NodePath<AstNode> | null, message: string) {
+      fail(node: NodePath<AstNode> | null, message: string | Error, options) {
         const error = createSourceCodeError(node, message);
-        uniqueErrors.set(error.message, { error, fatal: true });
+        const messageKey = `${error.message}${options?.forceOutput ? Math.random() : ''}`;
+        uniqueErrors.set(messageKey, { error, fatal: true });
       },
       fs,
       userConfig,
@@ -99,6 +101,9 @@ function transformJsFile<S>(
   };
 }
 
-function createSourceCodeError(node: NodePath<AstNode> | null, message: string): Error {
-  return node ? node.buildCodeFrameError(message) : new SyntaxError(message);
+function createSourceCodeError(node: NodePath<AstNode> | null, message: string | Error): Error {
+  if (typeof message === 'string') {
+    return node ? node.buildCodeFrameError(message) : new SyntaxError(message);
+  }
+  return message;
 }

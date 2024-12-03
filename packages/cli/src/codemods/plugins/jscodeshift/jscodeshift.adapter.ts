@@ -1,7 +1,10 @@
 import j, { Collection } from 'jscodeshift';
-import { AstCliContext, AstTransform, NodePath } from '@ag-grid-devtools/ast';
+import { AstCliContext, AstTransform, AstTransformContext, NodePath } from '@ag-grid-devtools/ast';
 
-export type JSCodeShiftTransformer = (root: Collection) => void | any;
+export type JSCodeShiftTransformer = (
+  root: Collection,
+  state?: AstTransformContext<AstCliContext>,
+) => void | any;
 
 // Use https://astexplorer.net/ to iterate on your transformer
 // Parser: Typescript
@@ -18,7 +21,7 @@ export const jsCodeShiftTransform = (
   return (_babel) => ({
     visitor: {
       Program: {
-        exit(path: NodePath) {
+        exit(path: NodePath, state: AstTransformContext<AstCliContext>) {
           const root: Collection<any> = j((path.hub as any).file.ast);
           const getFirstNode = () => root.find(j.Program).get('body', 0).node;
 
@@ -28,7 +31,7 @@ export const jsCodeShiftTransform = (
 
           // transform
           for (const transform of transforms) {
-            transform(root);
+            transform(root, state);
           }
 
           // restore initial comment if any
