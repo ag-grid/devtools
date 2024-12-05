@@ -9,7 +9,7 @@ createGrid(document.body, {
 createGrid(document.body, {
   columnDefs: [],
   rowData: [],
-  groupHideParentOfSingleChild: false,
+
 });
 
 const opt1 = true;
@@ -34,7 +34,7 @@ createGrid(document.body, {
 createGrid(document.body, {
   columnDefs: [],
   rowData: [],
-  groupHideParentOfSingleChild: false,
+
 });
 
 const opt2 = true;
