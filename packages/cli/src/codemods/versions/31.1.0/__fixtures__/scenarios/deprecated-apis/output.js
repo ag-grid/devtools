@@ -60,7 +60,7 @@ gridApi.addAggFunc({
   foo: () => {}
 });
 gridApi.addAggFunc({
-  "foo bar": () => {}
+  'foo bar': () => {}
 });
 gridApi.addAggFunc({
   [(() => 'foo')()]: () => {}

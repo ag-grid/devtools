@@ -1,6 +1,7 @@
 import {
   parseAst,
   transformAst,
+  traverse,
   type BabelPlugin,
   type BabelPluginWithOptions,
   type FileMetadata,
@@ -40,8 +41,10 @@ export function applyBabelTransform<S, T extends object = object>(
   const crlfLineEndings = source.includes('\r\n');
   const lfLineEndings = !crlfLineEndings && source.includes('\n');
   const lineTerminator = crlfLineEndings ? '\r\n' : lfLineEndings ? '\n' : undefined;
+
   // Parse the source AST
-  const ast = parseBabelAst(source, parserContext);
+  const { ast, quoteStyle } = parseBabelAst(source, parserContext);
+
   // Transform the AST
   const transformedAst = transformAst(ast, plugins, parserContext, { source });
   // Print the transformed AST
@@ -49,8 +52,10 @@ export function applyBabelTransform<S, T extends object = object>(
     ? print(transformedAst, {
         lineTerminator,
         ...printOptions,
+        quote: quoteStyle,
       }).code
     : null;
+
   return transformedSource;
 }
 
@@ -60,22 +65,54 @@ export function parseBabelAst<S, T extends object = object>(
     BabelTransformJsOptions &
     BabelTransformJsxOptions &
     Required<Pick<ParserOptions, 'sourceType'>>,
-): ReturnType<typeof parseAst> {
+): {
+  quoteStyle: 'single' | 'double' | 'auto';
+  ast: ReturnType<typeof parseAst>;
+} {
+  let singleQuoteCount = 0;
+  let doubleQuoteCount = 0;
+
   const { filename, jsx, sourceType, js: parserOptions = {} } = context;
   const defaultPlugins = jsx ? JSX_PARSER_PLUGINS : JS_PARSER_PLUGINS;
-  return parse(source, {
+  const result = parse(source, {
     parser: {
       sourceFilename: filename,
       parse(source: string): ReturnType<typeof parseAst> {
         const { plugins } = parserOptions;
-        return parseAst(source, {
+        const babelResult = parseAst(source, {
           ...parserOptions,
           sourceType,
           sourceFilename: filename,
           plugins: plugins ? [...defaultPlugins, ...plugins] : defaultPlugins,
           tokens: true,
         });
+
+        // Count single quotes strings and double quote strings from the ast using babel traverse
+        traverse(babelResult, {
+          StringLiteral(path) {
+            const rawString = path.node.extra?.raw;
+            if (typeof rawString === 'string') {
+              if (rawString.startsWith?.('"')) {
+                doubleQuoteCount++;
+              } else {
+                singleQuoteCount++;
+              }
+            }
+          },
+        });
+
+        return babelResult;
       },
     },
   }) as ReturnType<typeof parseAst>;
+
+  return {
+    quoteStyle:
+      singleQuoteCount === doubleQuoteCount
+        ? 'auto'
+        : singleQuoteCount > doubleQuoteCount
+          ? 'single'
+          : 'double',
+    ast: result,
+  };
 }

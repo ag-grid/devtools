@@ -17,12 +17,14 @@ export function loadTransformScenarios(
   options: {
     transforms: Array<AstTransform<AstCliContext> | AstTransformWithOptions<AstCliContext>>;
     vitest: ExampleVitestHelpers;
+    test?: (filename: string) => boolean;
     userConfig?: UserConfig;
   },
 ): void {
   const { transforms, vitest, userConfig } = options;
   return loadAstTransformExampleScenarios(scenariosPath, {
     vitest,
+    test: options.test,
     runner: (input) => {
       const { source, errors, warnings } = transformFileAst(input.source, transforms, {
         filename: input.path,

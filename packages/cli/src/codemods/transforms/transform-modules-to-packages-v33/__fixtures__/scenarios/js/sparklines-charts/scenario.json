@@ -1,0 +1,7 @@
+{
+  "scenario": {
+    "input": "input.js",
+    "output": "output.js"
+  }
+}
+

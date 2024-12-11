@@ -1,0 +1,14 @@
+{
+  "scenario": {
+    "input": "input.component.ts",
+    "output": "output.component.ts"
+  },
+  "files": {
+    "input": {
+      "component.html": "input.component.html"
+    },
+    "expected": {
+      "component.html": "output.component.html"
+    }
+  }
+}

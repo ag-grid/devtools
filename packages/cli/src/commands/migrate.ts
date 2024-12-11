@@ -90,6 +90,10 @@ export interface MigrateCommandArgs {
    * The path of the user config to load
    */
   userConfigPath?: string;
+  /**
+   * Hint about which AG Chart features / package is required.
+   */
+  usingCharts?: 'community' | 'enterprise' | 'none';
 }
 
 function usage(env: CliEnv): string {
@@ -114,6 +118,9 @@ Options:
     --config=<file.cjs>       Loads a .cjs or .cts configuration file to customize the codemod behavior.
                               See https://ag-grid.com/javascript-data-grid/codemods/#configuration-file
 
+  Version Specific Options:
+  --using-charts=<value>      v33 Which AG Charts bundle to used if it cannot be inferred automatically. One of: ['community' | 'enterprise' | 'none']
+
   Additional arguments:
     [<file>...<dir>...]       List of input files and directories to operate on.
                               Defaults to all source files in the current working directory excluding patterns in .gitignore
@@ -136,6 +143,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     help: false,
     input: [],
     userConfigPath: undefined,
+    usingCharts: 'community',
   };
   let arg;
   while ((arg = args.shift())) {
@@ -156,6 +164,22 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
       case '--allow-dirty':
       case '-d':
         options.allowDirty = true;
+        break;
+      case '--using-charts':
+        {
+          let value = args.shift();
+          if (!value || value.startsWith('-')) {
+            throw new CliArgsError(`Missing value for ${arg}`, usage(env));
+          }
+          const validValues = ['community', 'enterprise', 'none'];
+          if (!validValues.includes(value)) {
+            throw new CliArgsError(
+              `Invalid value for ${arg}: ${value} (Pick one of: ${validValues.join()})`,
+              usage(env),
+            );
+          }
+          options.usingCharts = value as 'community' | 'enterprise' | 'none';
+        }
         break;
       case '--no-allow-dirty':
         options.allowDirty = false;
@@ -304,6 +328,7 @@ async function migrate(
     verbose,
     userConfigPath,
     input,
+    usingCharts,
   } = args;
   let { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
@@ -326,6 +351,10 @@ async function migrate(
   let skipFiles = new Set<string>();
   if (userConfigPath) {
     skipFiles.add(userConfigPath);
+  }
+
+  if (usingCharts) {
+    process.env.AG_USING_CHARTS = usingCharts;
   }
 
   const inputFilePaths = await findSourceFiles(

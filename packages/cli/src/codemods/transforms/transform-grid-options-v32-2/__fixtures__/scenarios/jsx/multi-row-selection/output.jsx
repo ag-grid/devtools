@@ -1,12 +1,12 @@
 import { AgGridReact } from '@ag-grid-community/react';
 
-function MyComponent(props) {  
+function MyComponent(props) {
   return (
     (<AgGridReact
       columnDefs={[]}
       rowData={[]}
       rowSelection={{
-        mode: "multiRow",
+        mode: 'multiRow',
         isRowSelectable: (params) => params.data.year < 2007,
         enableSelectionWithoutKeys: true
       }}

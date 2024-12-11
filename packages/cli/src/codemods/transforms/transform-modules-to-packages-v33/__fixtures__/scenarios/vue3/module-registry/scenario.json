@@ -1,0 +1,6 @@
+{
+  "scenario": {
+    "input": "input.vue",
+    "output": "output.vue"
+  }
+}

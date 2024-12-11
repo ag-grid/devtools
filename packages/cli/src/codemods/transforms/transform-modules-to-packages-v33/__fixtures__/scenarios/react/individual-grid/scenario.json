@@ -1,0 +1,6 @@
+{
+  "scenario": {
+    "input": "input.tsx",
+    "output": "output.tsx"
+  }
+}
