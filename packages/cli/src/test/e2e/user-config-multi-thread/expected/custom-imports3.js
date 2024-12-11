@@ -1,5 +1,5 @@
 import { myCreateGrid } from '@hello/world';
-import { createGrid } from '@ag-grid-community/core';
+import { createGrid } from 'ag-grid-community';
 
 (() => {
   const gridOptions = { foo: 'bar' };
