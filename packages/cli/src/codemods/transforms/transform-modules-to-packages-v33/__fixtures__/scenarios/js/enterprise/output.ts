@@ -13,7 +13,13 @@ import { FiltersToolPanelModule } from 'ag-grid-enterprise';
 import { ColumnMenuModule, ContextMenuModule } from 'ag-grid-enterprise';
 import { MultiFilterModule } from 'ag-grid-enterprise';
 import { CellSelectionModule } from 'ag-grid-enterprise';
-import { RowGroupingModule } from 'ag-grid-enterprise';
+import {
+  GroupFilterModule,
+  PivotModule,
+  RowGroupingModule,
+  RowGroupingPanelModule,
+  TreeDataModule,
+} from 'ag-grid-enterprise';
 import { SetFilterModule } from 'ag-grid-enterprise';
 import { SideBarModule } from 'ag-grid-enterprise';
 import { StatusBarModule } from 'ag-grid-enterprise';
@@ -31,6 +37,10 @@ ModuleRegistry.registerModules([
   MultiFilterModule,
   CellSelectionModule,
   RowGroupingModule,
+  RowGroupingPanelModule,
+  GroupFilterModule,
+  TreeDataModule,
+  PivotModule,
   SetFilterModule,
   SideBarModule,
   StatusBarModule
