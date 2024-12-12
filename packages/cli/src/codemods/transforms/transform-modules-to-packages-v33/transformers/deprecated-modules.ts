@@ -8,6 +8,8 @@ import { addNewIdentifierNextToGiven, addNewImportNextToGiven } from './sharedUt
 export const updateDeprecatedModules: JSCodeShiftTransformer = (root) => {
   swapRangeSelectionForCellSelectionModule(root);
   swapMenuModuleForColumnAndContextModule(root);
+  addPivotTreeDataModulesForRowGroupingModule(root);
+  addCsvToExcelExport(root);
 };
 
 function swapRangeSelectionForCellSelectionModule(root: Collection) {
@@ -26,4 +28,25 @@ function swapMenuModuleForColumnAndContextModule(root: Collection) {
   // add ContextMenuModule next to ColumnMenuModule
   addNewImportNextToGiven(root, 'ColumnMenuModule', 'ContextMenuModule');
   addNewIdentifierNextToGiven(root, 'ColumnMenuModule', 'ContextMenuModule');
+}
+
+function addPivotTreeDataModulesForRowGroupingModule(root: Collection) {
+  const oldDepsAsNewModules = [
+    'PivotModule',
+    'TreeDataModule',
+    'GroupFilterModule',
+    'RowGroupingPanelModule',
+  ];
+
+  for (const dep of oldDepsAsNewModules) {
+    addNewImportNextToGiven(root, 'RowGroupingModule', dep);
+    addNewIdentifierNextToGiven(root, 'RowGroupingModule', dep);
+  }
+}
+
+function addCsvToExcelExport(root: Collection) {
+  if (root.find(j.Identifier, { name: 'ExcelExportModule' }).length > 0) {
+    addNewImportNextToGiven(root, 'ModuleRegistry', 'CsvExportModule');
+    addNewIdentifierNextToGiven(root, 'ExcelExportModule', 'CsvExportModule');
+  }
 }
