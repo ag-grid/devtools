@@ -10,7 +10,6 @@ import {
   TaskRunnerEnvironment,
   type VersionManifest,
 } from '@ag-grid-devtools/types';
-import { checkbox, Separator } from '@inquirer/prompts';
 import codemods from '../codemods/lib';
 
 import { nonNull } from '@ag-grid-devtools/utils';
@@ -92,10 +91,6 @@ export interface MigrateCommandArgs {
    * The path of the user config to load
    */
   userConfigPath?: string;
-  /**
-   * Hint about which AG Chart features / package is required.
-   */
-  usingCharts?: 'community' | 'enterprise' | 'none';
 }
 
 function usage(env: CliEnv): string {
@@ -145,7 +140,6 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     help: false,
     input: [],
     userConfigPath: undefined,
-    usingCharts: 'community',
   };
   let arg;
   while ((arg = args.shift())) {
@@ -166,22 +160,6 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
       case '--allow-dirty':
       case '-d':
         options.allowDirty = true;
-        break;
-      case '--using-charts':
-        {
-          let value = args.shift();
-          if (!value || value.startsWith('-')) {
-            throw new CliArgsError(`Missing value for ${arg}`, usage(env));
-          }
-          const validValues = ['community', 'enterprise', 'none'];
-          if (!validValues.includes(value)) {
-            throw new CliArgsError(
-              `Invalid value for ${arg}: ${value} (Pick one of: ${validValues.join()})`,
-              usage(env),
-            );
-          }
-          options.usingCharts = value as 'community' | 'enterprise' | 'none';
-        }
         break;
       case '--no-allow-dirty':
         options.allowDirty = false;
@@ -330,7 +308,6 @@ async function migrate(
     verbose,
     userConfigPath,
     input,
-    usingCharts,
   } = args;
   let { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
@@ -353,10 +330,6 @@ async function migrate(
   let skipFiles = new Set<string>();
   if (userConfigPath) {
     skipFiles.add(userConfigPath);
-  }
-
-  if (usingCharts) {
-    process.env.AG_USING_CHARTS = usingCharts;
   }
 
   const inputFilePaths = await findSourceFiles(
@@ -458,19 +431,22 @@ async function migrate(
   // Process the tasks either in-process or via a worker pool
   const isSingleThreaded = numThreads === 0;
 
-  const answer = await checkbox({
-    message: 'Select a package manager',
-    choices: codemodVersions
-      .flatMap((c) => c.transforms)
-      .map((t) => {
-        return { name: t.name, value: t, description: t.description };
-      }),
-  });
+  // See if any of the codemods have choices that need to be made by the user
+  for (let i = 0; i < codemodVersions.length; i++) {
+    const codemod = codemodVersions[i];
+    const choices = codemod.choices;
+    if (!choices) continue;
 
-  console.log(
-    { answer },
-    codemodVersions.map((c) => c.codemodPath),
-  );
+    for (let key of Object.keys(choices)) {
+      const choice = choices[key];
+      console.log({ choice });
+      if (choice) {
+        const answer = await choice();
+        const setAnswers = codemod.setAnswers?.[key] ?? (() => {});
+        setAnswers(answer);
+      }
+    }
+  }
 
   const codemodPaths = codemodVersions.map(({ codemodPath }) =>
     join(CODEMODS_FOLDER, codemodPath, 'codemod'),
