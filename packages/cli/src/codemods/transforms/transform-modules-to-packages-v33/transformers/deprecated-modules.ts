@@ -35,12 +35,17 @@ function addPivotTreeDataModulesForRowGroupingModule(root: Collection) {
     'PivotModule',
     'TreeDataModule',
     'GroupFilterModule',
+    'RowGroupingModule',
     'RowGroupingPanelModule',
   ];
 
   for (const dep of oldDepsAsNewModules) {
     addNewImportNextToGiven(root, 'RowGroupingModule', dep);
     addNewIdentifierNextToGiven(root, 'RowGroupingModule', dep);
+  }
+  for (const dep of oldDepsAsNewModules) {
+    addNewImportNextToGiven(root, 'ColumnsToolPanelModule', dep);
+    addNewIdentifierNextToGiven(root, 'ColumnsToolPanelModule', dep);
   }
 }
 
