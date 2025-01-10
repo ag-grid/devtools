@@ -14,9 +14,8 @@ const transforms: Array<TransformManifest> = [
 ];
 
 type Choices33 = {
-  fromFormat: string;
+  usingCharts: boolean;
   chartType: string;
-  communityAllModules: string;
 };
 
 const manifest: VersionManifest<Choices33> = {
@@ -24,99 +23,57 @@ const manifest: VersionManifest<Choices33> = {
   codemodPath: 'versions/33.0.0',
   transforms,
   choices: {
-    fromFormat: () =>
-      // are they using packages / modules and community or enterprise
-      select({
-        message: 'In versions <= v32 are you using AG Modules or AG Packages?',
-        default: 'packages',
+    usingCharts: () => {
+      return select({
+        message:
+          'Are you using chart based features in any of your grids, i.e Sparklines / Integrated Charts?',
+        default: false,
         choices: [
           {
-            value: 'packages',
-            name: 'Community AG Grid Package (ag-grid-community)',
-            description:
-              'Examples of AG Community Packages: ag-grid-community / ag-grid-react / ag-grid-angular / ag-grid-vue3',
+            value: true,
+            name: 'Yes',
+            description: 'Some grid has Sparklines in cells or is using Integrated Charts.',
           },
           {
-            value: 'enterprisePackages',
-            name: 'Enterprise AG Grid Package (ag-grid-enterprise / ag-grid-charts-enterprise)',
-            description:
-              'Examples of AG Enterprise Package: ag-grid-enterprise / ag-grid-charts-enterprise',
-          },
-          {
-            value: 'modules',
-            name: 'Community AG Modules (@ag-grid-community/**)',
-            description:
-              'Using AG Modules, i.e @ag-grid-community/core / @ag-grid-community/react / @ag-grid-community/angular / @ag-grid-community/vue3',
-          },
-          {
-            value: 'enterpriseModules',
-            name: 'Enterprise AG Modules (@ag-grid-enterprise/**)',
-            description: 'Using AG Modules, i.e @ag-grid-enterprise/set-filter',
+            value: false,
+            name: 'No',
+            description: 'No charting based features used in any of the grids.',
           },
         ],
-      }),
-
+      });
+    },
     chartType: () => {
-      if (process.env.AG_PREVIOUS_FORMAT === 'packages') {
+      if (process.env.AG_IS_USING_CHARTS == 'false') {
         // If they are using community packages, they are not using AG Charts
         return Promise.resolve('none');
       }
 
       return select({
-        message: 'Are you using AG Charts features? If so Community or Enterprise?',
+        message: 'Are you using AG Charts Community or Enterprise?',
         default: 'community',
         choices: [
           {
-            value: 'none',
-            name: 'Not using Integrated Charts / Sparklines',
-            description:
-              'No charting based features used in the grids, i.e no sparklines or Integrated Charts.',
-          },
-          {
             value: 'community',
-            name: 'Using Community Charts via one of: ag-grid-enterprise / @ag-grid-enterprise/charts',
-            description: 'Using the Community version of AG Charts',
+            name: 'Community',
+            description:
+              'Using the Community version of AG Charts via one of: ag-grid-enterprise / @ag-grid-enterprise/charts',
           },
           {
             value: 'enterprise',
-            name: 'Using Enterprise Charts via one of: ag-grid-charts-enterprise / @ag-grid-enterprise/charts-enterprise',
-            description: 'Using the Enterprise version of AG Charts',
+            name: 'Enterprise',
+            description:
+              'Using the Enterprise version of AG Charts via one of: ag-grid-charts-enterprise / @ag-grid-enterprise/charts-enterprise',
           },
         ],
       });
     },
-    communityAllModules: () => {
-      if (process.env.AG_PREVIOUS_FORMAT === 'packages') {
-        // If they are using community packages, they are not using AG Charts
-        return checkbox({
-          message: 'Do you want to include all Community modules?',
-          choices: [
-            {
-              value: true,
-              name: 'All Community modules',
-              description: 'Include all Community modules in your project',
-            },
-          ],
-        });
-      }
-
-      return Promise.resolve(false);
-    },
   },
   setAnswers: {
-    fromFormat: (answer) => {
-      process.env.AG_PREVIOUS_FORMAT = answer;
-      console.log(`AG_PREVIOUS_FORMAT set to ${process.env.AG_PREVIOUS_FORMAT}`);
+    usingCharts: (answer) => {
+      process.env.AG_IS_USING_CHARTS = answer;
     },
     chartType: (answers) => {
       process.env.AG_USING_CHARTS = answers;
-      console.log(`AG_USING_CHARTS set to ${process.env.AG_USING_CHARTS}`);
-    },
-    communityAllModules: (answer) => {
-      process.env.AG_ADD_ALL_COMMUNITY_MODULES = answer;
-      console.log(
-        `AG_ADD_ALL_COMMUNITY_MODULES set to ${process.env.AG_ADD_ALL_COMMUNITY_MODULES}`,
-      );
     },
   },
 };

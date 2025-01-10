@@ -450,6 +450,13 @@ async function migrate(
       const choices = codemod.choices;
       if (!choices) continue;
 
+      log(
+        stderr,
+        ['', `Codemod for version  ${green(codemod.version, env)} requires user input:`, ''].join(
+          '\n',
+        ),
+      );
+
       for (let key of Object.keys(choices)) {
         const choice = choices[key];
         if (choice) {
