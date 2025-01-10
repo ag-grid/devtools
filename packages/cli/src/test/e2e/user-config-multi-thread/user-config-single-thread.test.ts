@@ -11,6 +11,7 @@ test(
     await cli(
       [
         'migrate',
+        '--non-interactive',
         '--num-threads=4',
         '--allow-untracked',
         '--from=30.0.0',
