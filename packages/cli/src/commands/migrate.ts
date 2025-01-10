@@ -91,6 +91,11 @@ export interface MigrateCommandArgs {
    * The path of the user config to load
    */
   userConfigPath?: string;
+
+  /**
+   * INTERNAL: Disable interactive prompts for testing
+   */
+  nonInteractive?: boolean;
 }
 
 function usage(env: CliEnv): string {
@@ -115,9 +120,6 @@ Options:
     --config=<file.cjs>       Loads a .cjs or .cts configuration file to customize the codemod behavior.
                               See https://ag-grid.com/javascript-data-grid/codemods/#configuration-file
 
-  Version Specific Options:
-  --using-charts=<value>      v33 Which AG Charts bundle to used if it cannot be inferred automatically. One of: ['community' | 'enterprise' | 'none']
-
   Additional arguments:
     [<file>...<dir>...]       List of input files and directories to operate on.
                               Defaults to all source files in the current working directory excluding patterns in .gitignore
@@ -140,6 +142,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     help: false,
     input: [],
     userConfigPath: undefined,
+    nonInteractive: false,
   };
   let arg;
   while ((arg = args.shift())) {
@@ -250,6 +253,14 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         }
         break;
       }
+      case '--non-interactive': {
+        // private option to disable interactive prompts for testing
+        options.nonInteractive = true;
+        console.warn(
+          'The --non-interactive option is deprecated and will be removed in a future release',
+        );
+        break;
+      }
 
       case '--help':
       case '-h':
@@ -308,6 +319,7 @@ async function migrate(
     verbose,
     userConfigPath,
     input,
+    nonInteractive,
   } = args;
   let { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
@@ -431,19 +443,20 @@ async function migrate(
   // Process the tasks either in-process or via a worker pool
   const isSingleThreaded = numThreads === 0;
 
-  // See if any of the codemods have choices that need to be made by the user
-  for (let i = 0; i < codemodVersions.length; i++) {
-    const codemod = codemodVersions[i];
-    const choices = codemod.choices;
-    if (!choices) continue;
+  if (!nonInteractive) {
+    // See if any of the codemods have choices that need to be made by the user
+    for (let i = 0; i < codemodVersions.length; i++) {
+      const codemod = codemodVersions[i];
+      const choices = codemod.choices;
+      if (!choices) continue;
 
-    for (let key of Object.keys(choices)) {
-      const choice = choices[key];
-      console.log({ choice });
-      if (choice) {
-        const answer = await choice();
-        const setAnswers = codemod.setAnswers?.[key] ?? (() => {});
-        setAnswers(answer);
+      for (let key of Object.keys(choices)) {
+        const choice = choices[key];
+        if (choice) {
+          const answer = await choice();
+          const setAnswers = codemod.setAnswers?.[key] ?? (() => {});
+          setAnswers(answer);
+        }
       }
     }
   }

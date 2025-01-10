@@ -8,7 +8,10 @@ test(
   'cli e2e - gitignore simple',
   async () => {
     await env.init();
-    await cli(['migrate', '--allow-untracked', '--from=30.0.0'], env.cliOptions);
+    await cli(
+      ['migrate', '--allow-untracked', '--from=30.0.0', '--to=33', '--non-interactive'],
+      env.cliOptions,
+    );
 
     // changed files
 

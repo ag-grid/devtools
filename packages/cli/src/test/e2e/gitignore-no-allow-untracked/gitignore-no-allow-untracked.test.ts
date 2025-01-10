@@ -9,7 +9,7 @@ test(
   async () => {
     try {
       await env.init({ gitInit: true });
-      await cli(['migrate', '--from=30.0.0'], env.cliOptions);
+      await cli(['migrate', '--non-interactive', '--from=30.0.0'], env.cliOptions);
     } finally {
       await env.removeGitFolder();
     }

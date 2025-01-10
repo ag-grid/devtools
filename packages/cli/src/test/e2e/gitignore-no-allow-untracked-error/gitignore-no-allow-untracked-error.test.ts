@@ -13,7 +13,7 @@ test(
 
       await env.writeTempSrc('untracked.js', '// untracked');
 
-      await cli(['migrate', '--from=30.0.0'], env.cliOptions);
+      await cli(['migrate', '--non-interactive', '--from=30.0.0'], env.cliOptions);
     } catch (e) {
       error = e as Error;
     } finally {
