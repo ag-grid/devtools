@@ -1,20 +1,15 @@
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { createGrid } from 'ag-grid-community';
-import {
-  AllEnterpriseModule,
-  LicenseManager,
-  ModuleRegistry,
-  provideGlobalGridOptions,
-} from 'ag-grid-enterprise';
+import { LicenseManager } from 'ag-grid-enterprise';
 
-ModuleRegistry.registerModules([AllEnterpriseModule]);
+import 'ag-grid-enterprise';
+
+LicenseManager.setLicenseKey('your License Key');
 
 provideGlobalGridOptions({
   theme: 'legacy'
 });
-
-LicenseManager.setLicenseKey('your License Key');
 
 const gridApi = createGrid(document.body, {
   columnDefs: [],

@@ -8,7 +8,7 @@ import {
   enterpriseNpmPackage,
   gridChartsEnterpriseNpmPackage,
 } from './constants';
-import { addNewImportNextToGiven, getChartsImport } from './sharedUtils';
+import { addNewImportNextToGiven, getChartsImport, globalLegacyTheme } from './sharedUtils';
 type UsingCharts = 'community' | 'enterprise' | 'none';
 const LicenseManager = 'LicenseManager';
 
@@ -51,8 +51,12 @@ export const packageLicenseManager: JSCodeShiftTransformer = (root) => {
   }
 
   const usingCharts: UsingCharts = process.env.AG_USING_CHARTS as any;
+  const usingThemeBuilder: boolean = process.env.AG_USING_THEME_BUILDER === 'true';
 
   addNewImportNextToGiven(root, LicenseManager, AllEnterpriseModule);
+  if (!usingThemeBuilder) {
+    addNewImportNextToGiven(root, LicenseManager, 'provideGlobalGridOptions');
+  }
 
   let isEnterpriseCharts: boolean | null = null;
   let lastGridOrSparklinesImportPath: any | null = null;
@@ -86,6 +90,12 @@ export const packageLicenseManager: JSCodeShiftTransformer = (root) => {
       parentCallExpression.insertBefore(
         getModuleRegistryCallExpression(isEnterpriseCharts, usingCharts),
       );
+      if (!usingThemeBuilder) {
+        //   provideGlobalGridOptions({
+        //     theme: "legacy",
+        // });
+        parentCallExpression.insertBefore(globalLegacyTheme());
+      }
     });
 };
 

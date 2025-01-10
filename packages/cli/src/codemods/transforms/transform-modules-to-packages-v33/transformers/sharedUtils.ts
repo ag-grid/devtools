@@ -136,3 +136,11 @@ export function isUsingNpmPackage(root: j.Collection<any>, npmPackage: string): 
     return path?.node?.source?.value === npmPackage;
   }).length;
 }
+
+export function globalLegacyTheme(): any {
+  return j.expressionStatement(
+    j.callExpression(j.identifier('provideGlobalGridOptions'), [
+      j.objectExpression([j.property('init', j.identifier('theme'), j.literal('legacy'))]),
+    ]),
+  );
+}

@@ -3,6 +3,7 @@ import { addAllCommunityModule } from './add-all-bundle';
 import { chartImports } from './chart-imports';
 import { communityNpmPackage } from './constants';
 import { updateDeprecatedModules } from './deprecated-modules';
+import { legacyGlobalTheme } from './legacy-theme';
 import { packageLicenseManager, removeEmptyPackageImports } from './package-transforms';
 import { registerModule } from './register-module';
 import { isUsingEnterpriseNpmPackage, isUsingNpmPackage } from './sharedUtils';
@@ -17,10 +18,13 @@ export const combinedTransform: JSCodeShiftTransformer = (root) => {
     packageLicenseManager(root);
   } else {
     // already using modules
-    registerModule(root), updateStyles(root);
+    registerModule(root);
+    updateStyles(root);
     addAllCommunityModule(root);
     chartImports(root);
     updateImportPaths(root);
     updateDeprecatedModules(root);
   }
+  // Add legacy global theme if not using theme builder
+  legacyGlobalTheme(root);
 };
