@@ -5,7 +5,7 @@ import transformGridApiMethodsV33_0 from '../../transforms/transform-grid-api-me
 import transformSparklinesOptionsV33_0 from '../../transforms/transform-sparklines-options-v33-0/manifest.ts';
 
 import transformModulesToPackagesV33 from '../../transforms/transform-modules-to-packages-v33/manifest.ts';
-import { checkbox, select } from '@inquirer/prompts';
+import { select } from '@inquirer/prompts';
 
 const transforms: Array<TransformManifest> = [
   transformGridApiMethodsV33_0,
