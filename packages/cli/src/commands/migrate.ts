@@ -1,4 +1,3 @@
-import codemods from '../codemods/lib';
 import {
   composeCodemods,
   createCodemodTask,
@@ -11,24 +10,26 @@ import {
   TaskRunnerEnvironment,
   type VersionManifest,
 } from '@ag-grid-devtools/types';
-import { createFsHelpers } from '@ag-grid-devtools/worker-utils';
+import codemods from '../codemods/lib';
+
 import { nonNull } from '@ag-grid-devtools/utils';
+import { createFsHelpers } from '@ag-grid-devtools/worker-utils';
 import { createTwoFilesPatch } from 'diff';
-import { dirname, join, resolve as pathResolve } from 'node:path';
 import { cpus } from 'node:os';
+import { dirname, join, resolve as pathResolve } from 'node:path';
 import semver from 'semver';
 
+import { dynamicRequire } from '@ag-grid-devtools/utils';
+import { relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { type CliEnv, type CliOptions } from '../types/cli';
 import { type WritableStream } from '../types/io';
 import { CliArgsError, CliError } from '../utils/cli';
-import { findSourceFiles, findGitRoot } from '../utils/fs';
+import { findGitRoot, findSourceFiles } from '../utils/fs';
 import { findInGitRepository, getUncommittedGitFiles } from '../utils/git';
-import { resolve, relative } from 'node:path';
 import { getCliCommand, getCliPackageVersion } from '../utils/pkg';
 import { green, indentErrorMessage, log } from '../utils/stdio';
 import { Worker, WorkerTaskQueue, type WorkerOptions } from '../utils/worker';
-import { dynamicRequire } from '@ag-grid-devtools/utils';
-import { fileURLToPath } from 'node:url';
 
 const { versions } = codemods;
 
@@ -90,10 +91,11 @@ export interface MigrateCommandArgs {
    * The path of the user config to load
    */
   userConfigPath?: string;
+
   /**
-   * Hint about which AG Chart features / package is required.
+   * INTERNAL: Disable interactive prompts for testing
    */
-  usingCharts?: 'community' | 'enterprise' | 'none';
+  nonInteractive?: boolean;
 }
 
 function usage(env: CliEnv): string {
@@ -118,9 +120,6 @@ Options:
     --config=<file.cjs>       Loads a .cjs or .cts configuration file to customize the codemod behavior.
                               See https://ag-grid.com/javascript-data-grid/codemods/#configuration-file
 
-  Version Specific Options:
-  --using-charts=<value>      v33 Which AG Charts bundle to used if it cannot be inferred automatically. One of: ['community' | 'enterprise' | 'none']
-
   Additional arguments:
     [<file>...<dir>...]       List of input files and directories to operate on.
                               Defaults to all source files in the current working directory excluding patterns in .gitignore
@@ -143,7 +142,7 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
     help: false,
     input: [],
     userConfigPath: undefined,
-    usingCharts: 'community',
+    nonInteractive: false,
   };
   let arg;
   while ((arg = args.shift())) {
@@ -164,22 +163,6 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
       case '--allow-dirty':
       case '-d':
         options.allowDirty = true;
-        break;
-      case '--using-charts':
-        {
-          let value = args.shift();
-          if (!value || value.startsWith('-')) {
-            throw new CliArgsError(`Missing value for ${arg}`, usage(env));
-          }
-          const validValues = ['community', 'enterprise', 'none'];
-          if (!validValues.includes(value)) {
-            throw new CliArgsError(
-              `Invalid value for ${arg}: ${value} (Pick one of: ${validValues.join()})`,
-              usage(env),
-            );
-          }
-          options.usingCharts = value as 'community' | 'enterprise' | 'none';
-        }
         break;
       case '--no-allow-dirty':
         options.allowDirty = false;
@@ -270,6 +253,14 @@ export function parseArgs(args: string[], env: CliEnv): MigrateCommandArgs {
         }
         break;
       }
+      case '--non-interactive': {
+        // private option to disable interactive prompts for testing
+        options.nonInteractive = true;
+        console.warn(
+          'The --non-interactive option is deprecated and will be removed in a future release',
+        );
+        break;
+      }
 
       case '--help':
       case '-h':
@@ -328,7 +319,7 @@ async function migrate(
     verbose,
     userConfigPath,
     input,
-    usingCharts,
+    nonInteractive,
   } = args;
   let { cwd, env, stdio } = options;
   const { stdout, stderr } = stdio;
@@ -351,10 +342,6 @@ async function migrate(
   let skipFiles = new Set<string>();
   if (userConfigPath) {
     skipFiles.add(userConfigPath);
-  }
-
-  if (usingCharts) {
-    process.env.AG_USING_CHARTS = usingCharts;
   }
 
   const inputFilePaths = await findSourceFiles(
@@ -455,6 +442,31 @@ async function migrate(
 
   // Process the tasks either in-process or via a worker pool
   const isSingleThreaded = numThreads === 0;
+
+  if (!nonInteractive) {
+    // See if any of the codemods have choices that need to be made by the user
+    for (let i = 0; i < codemodVersions.length; i++) {
+      const codemod = codemodVersions[i];
+      const choices = codemod.choices;
+      if (!choices) continue;
+
+      log(
+        stderr,
+        ['', `Codemod for version  ${green(codemod.version, env)} requires user input:`, ''].join(
+          '\n',
+        ),
+      );
+
+      for (let key of Object.keys(choices)) {
+        const choice = choices[key];
+        if (choice) {
+          const answer = await choice();
+          const setAnswers = codemod.setAnswers?.[key] ?? (() => {});
+          setAnswers(answer);
+        }
+      }
+    }
+  }
 
   const codemodPaths = codemodVersions.map(({ codemodPath }) =>
     join(CODEMODS_FOLDER, codemodPath, 'codemod'),

@@ -9,7 +9,15 @@ test(
   async () => {
     await env.init();
     await cli(
-      ['migrate', '--num-threads=3', '--allow-untracked', '--from=30.0.0', 'file1.js', 'dir'],
+      [
+        'migrate',
+        '--non-interactive',
+        '--num-threads=3',
+        '--allow-untracked',
+        '--from=30.0.0',
+        'file1.js',
+        'dir',
+      ],
       env.cliOptions,
     );
     expect(await env.loadExpectedSrc('file1.js')).toEqual(await env.loadTempSrc('file1.js'));
