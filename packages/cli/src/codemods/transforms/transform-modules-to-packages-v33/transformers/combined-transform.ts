@@ -17,7 +17,8 @@ export const combinedTransform: JSCodeShiftTransformer = (root) => {
     packageLicenseManager(root);
   } else {
     // already using modules
-    registerModule(root), updateStyles(root);
+    registerModule(root);
+    updateStyles(root);
     addAllCommunityModule(root);
     chartImports(root);
     updateImportPaths(root);

@@ -28,7 +28,7 @@ import { CliArgsError, CliError } from '../utils/cli';
 import { findGitRoot, findSourceFiles } from '../utils/fs';
 import { findInGitRepository, getUncommittedGitFiles } from '../utils/git';
 import { getCliCommand, getCliPackageVersion } from '../utils/pkg';
-import { green, indentErrorMessage, log } from '../utils/stdio';
+import { green, indentErrorMessage, log, red } from '../utils/stdio';
 import { Worker, WorkerTaskQueue, type WorkerOptions } from '../utils/worker';
 
 const { versions } = codemods;
@@ -332,6 +332,13 @@ async function migrate(
     throw new CliError(
       'No git repository found',
       'To run this command outside a git repository, use the --allow-untracked option',
+    );
+  }
+
+  if (from && semver.lt(from, '30.0.0')) {
+    await log(
+      stderr,
+      `\nCodemods are only supported from v30. You have specified from version ${red(from, env)}.\nThe codemods will still run but we recommend that you manually check the migration guide for any breaking changes up until v30.\n`,
     );
   }
 

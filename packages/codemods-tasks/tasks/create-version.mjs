@@ -25,7 +25,7 @@ const CODEMOD_TEMPLATE_DIR = join(TEMPLATE_DIR, 'codemod');
 
 const PROJECT_VERSIONS_DIR = './versions';
 const MANIFEST_FILENAME = 'manifest.ts';
-const MANIFEST_TEST_PATH = './lib.test.ts';
+const MANIFEST_TEST_PATH = './lib.ts';
 
 const VARIABLES = [
   {
@@ -115,7 +115,7 @@ export default async function task(...args) {
     versionManifestPath: stripFileExtension(versionManifestPath),
     versionIdentifier: `v${versionIdentifier}`,
   });
-  await addReleaseToVersionsManifestTests({ manifestTestPath: versionsManifestTestPath, version });
+  // await addReleaseToVersionsManifestTests({ manifestTestPath: versionsManifestTestPath, version });
   process.stderr.write(`\nCreated codemod version ${green(version)} in ${outputPath}\n`);
 }
 
