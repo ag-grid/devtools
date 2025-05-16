@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@ag-grid-devtools/cli",
-  "version": "33.0.1",
+  "version": "33.3.0",
   "license": "MIT",
   "description": "AG Grid developer toolkit",
   "author": "AG Grid <info@ag-grid.com>",
@@ -78,19 +78,20 @@
   },
   "types": "./index.d.ts",
   "dependencies": {
+    "@inquirer/prompts": "^7.1.0",
     "@types/jscodeshift": "0.12.0",
-    "jscodeshift": "17.1.1",
     "@typescript-eslint/parser": "7.18.0",
     "eslint": "8.57.0",
+    "jscodeshift": "17.1.1",
     "tsx": "4.19.1"
   },
   "devDependencies": {
     "@ag-grid-devtools/ast": "workspace:*",
+    "@ag-grid-devtools/build-config": "workspace:*",
     "@ag-grid-devtools/build-tools": "workspace:*",
+    "@ag-grid-devtools/codemod-task-utils": "workspace:*",
     "@ag-grid-devtools/codemod-utils": "workspace:*",
     "@ag-grid-devtools/test-utils": "workspace:*",
-    "@ag-grid-devtools/build-config": "workspace:*",
-    "@ag-grid-devtools/codemod-task-utils": "workspace:*",
     "@ag-grid-devtools/types": "workspace:*",
     "@ag-grid-devtools/utils": "workspace:*",
     "@ag-grid-devtools/worker-utils": "workspace:*",

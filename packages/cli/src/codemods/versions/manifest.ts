@@ -14,6 +14,12 @@ import v32_2_0 from './32.2.0/manifest';
 
 import v33_0_0 from './33.0.0/manifest';
 
+import v33_1_0 from './33.1.0/manifest';
+
+import v33_2_0 from './33.2.0/manifest';
+
+import v33_3_0 from './33.3.0/manifest';
+
 const versions: Array<VersionManifest> = [
   v31_0_0,
   v31_1_0,
@@ -22,6 +28,9 @@ const versions: Array<VersionManifest> = [
   v32_0_0,
   v32_2_0,
   v33_0_0,
+  v33_1_0,
+  v33_2_0,
+  v33_3_0,
 ];
 
 export default versions;
