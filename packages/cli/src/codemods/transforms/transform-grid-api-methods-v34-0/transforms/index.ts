@@ -1,5 +1,5 @@
 import j from 'jscodeshift';
-import { JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
+import { JSCodeShiftTransformer } from '../jscodeshift.adapter';
 
 export const transformAutoSizeColumnsArguments: JSCodeShiftTransformer = (root) =>
   root
