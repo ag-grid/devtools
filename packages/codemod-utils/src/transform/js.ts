@@ -65,11 +65,11 @@ function transformJsFile<S>(
   const transformContext: AstTransformContext<AstCliContext> = {
     filename,
     opts: {
-      warn(node: NodePath<AstNode> | null, message: string) {
+      warn(node, message) {
         const error = createSourceCodeError(node, message);
         uniqueErrors.set(error.message, { error, fatal: false });
       },
-      fail(node: NodePath<AstNode> | null, message: string) {
+      fail(node, message) {
         const error = createSourceCodeError(node, message);
         uniqueErrors.set(error.message, { error, fatal: true });
       },
@@ -99,6 +99,14 @@ function transformJsFile<S>(
   };
 }
 
-function createSourceCodeError(node: NodePath<AstNode> | null, message: string): Error {
-  return node ? node.buildCodeFrameError(message) : new SyntaxError(message);
+function createSourceCodeError(node: NodePath<AstNode> | Error | null, message: string): Error {
+  if (!node) {
+    return new SyntaxError(message);
+  }
+
+  if ('hub' in node) {
+    return node.buildCodeFrameError(message);
+  }
+
+  return node;
 }

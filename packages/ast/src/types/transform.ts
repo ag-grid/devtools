@@ -47,8 +47,8 @@ export interface FsContext extends TransformContext {
 }
 
 export interface AstCliContext extends FsContext {
-  warn(node: NodePath<AstNode> | null, message: string): void;
-  fail(node: NodePath<AstNode> | null, message: string): void;
+  warn(node: NodePath<AstNode> | Error | null, message: string): void;
+  fail(node: NodePath<AstNode> | Error | null, message: string): void;
 }
 
 export type AstTransformResult = {

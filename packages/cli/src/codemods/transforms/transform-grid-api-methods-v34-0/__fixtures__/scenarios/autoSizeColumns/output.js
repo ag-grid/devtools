@@ -7,6 +7,7 @@ const gridApi = createGrid(document.body, {
 
 const array = ['bar'];
 const flag = true;
+const allArgs = [['baz'], false];
 
 gridApi.autoSizeColumns({
   colIds: ['foo'],
@@ -23,3 +24,4 @@ gridApi.autoSizeColumns({
 gridApi.autoSizeColumns({
   colIds: array
 });
+gridApi.autoSizeColumns(...allArgs);

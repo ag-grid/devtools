@@ -1,7 +1,10 @@
 import j from 'jscodeshift';
-import { JSCodeShiftTransformer } from '../jscodeshift.adapter';
+import { ErrorSpec, JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
 
-export const transformAutoSizeColumnsArguments: JSCodeShiftTransformer = (root) =>
+export const transformAutoSizeColumnsArguments: JSCodeShiftTransformer = (root) => {
+  const errors: ErrorSpec[] = [];
+  const warnings: ErrorSpec[] = [];
+
   root
     .find(j.CallExpression, {
       callee: {
@@ -14,7 +17,7 @@ export const transformAutoSizeColumnsArguments: JSCodeShiftTransformer = (root) 
       const args = path.node.arguments;
 
       if (args.some((a) => j.SpreadElement.check(a))) {
-        // can't support spread arguments
+        errors.push({ path, message: 'Cannot support spread arguments' });
         return;
       }
 
@@ -31,7 +34,13 @@ export const transformAutoSizeColumnsArguments: JSCodeShiftTransformer = (root) 
       path.node.arguments = [j.objectExpression(properties)];
     });
 
-export const transformAutoSizeAllColumnsArguments: JSCodeShiftTransformer = (root) =>
+  return { errors, warnings };
+};
+
+export const transformAutoSizeAllColumnsArguments: JSCodeShiftTransformer = (root) => {
+  const errors: ErrorSpec[] = [];
+  const warnings: ErrorSpec[] = [];
+
   root
     .find(j.CallExpression, {
       callee: {
@@ -48,7 +57,7 @@ export const transformAutoSizeAllColumnsArguments: JSCodeShiftTransformer = (roo
       }
 
       if (args.some((a) => j.SpreadElement.check(a))) {
-        // can't support spread arguments
+        errors.push({ path, message: 'Cannot support spread arguments' });
         return;
       }
 
@@ -59,3 +68,6 @@ export const transformAutoSizeAllColumnsArguments: JSCodeShiftTransformer = (roo
 
       path.node.arguments = [j.objectExpression(properties)];
     });
+
+  return { errors, warnings };
+};
