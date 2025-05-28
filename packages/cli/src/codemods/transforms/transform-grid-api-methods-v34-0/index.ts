@@ -1,5 +1,3 @@
-export * from './jscodeshift.adapter';
-
 import { type AstCliContext, type AstTransform } from '@ag-grid-devtools/ast';
 import {
   transformAutoSizeColumnsArguments,
