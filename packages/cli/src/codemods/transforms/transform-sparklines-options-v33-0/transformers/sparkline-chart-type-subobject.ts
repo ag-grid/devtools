@@ -4,7 +4,7 @@ import { JSCodeShiftTransformer } from '../../../plugins/jscodeshift';
 const chartTypeKeys = ['area', 'bar', 'column', 'line'];
 
 // find [chart-type] keys, and merge their contents into the parent object
-export const chartTypeSubobject: JSCodeShiftTransformer = (root) =>
+export const chartTypeSubobject: JSCodeShiftTransformer = (root) => {
   root
     .find(j.ObjectProperty, { key: { name: 'cellRendererParams' } })
     .find(j.ObjectProperty, { key: { name: 'sparklineOptions' } })
@@ -17,3 +17,4 @@ export const chartTypeSubobject: JSCodeShiftTransformer = (root) =>
       });
       path.replace();
     });
+};

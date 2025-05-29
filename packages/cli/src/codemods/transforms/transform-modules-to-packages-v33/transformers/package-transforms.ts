@@ -47,7 +47,7 @@ export const packageLicenseManager: JSCodeShiftTransformer = (root) => {
 
   if (alreadyExists) {
     // This package file already has a ModuleRegistry import so looks like it has already been transformed
-    return root.toSource();
+    return;
   }
 
   const usingCharts: UsingCharts = process.env.AG_USING_CHARTS as any;

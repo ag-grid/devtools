@@ -1,7 +1,12 @@
 import j, { Collection } from 'jscodeshift';
-import { AstCliContext, AstTransform, NodePath } from '@ag-grid-devtools/ast';
+import { AstCliContext, AstTransform, NodePath, Node } from '@ag-grid-devtools/ast';
 
-export type JSCodeShiftTransformer = (root: Collection) => void | any;
+export type ErrorSpec = { path: j.ASTPath<j.Node>; message: string };
+
+export type JSCodeShiftTransformer = (root: Collection) => void | {
+  errors: ErrorSpec[];
+  warnings: ErrorSpec[];
+};
 
 // Use https://astexplorer.net/ to iterate on your transformer
 // Parser: Typescript
@@ -15,11 +20,16 @@ export type JSCodeShiftTransformer = (root: Collection) => void | any;
 export const jsCodeShiftTransform = (
   ...transforms: JSCodeShiftTransformer[]
 ): AstTransform<AstCliContext> => {
+  const errors: Error[] = [];
+  const warnings: Error[] = [];
+  let source: any;
+
   return (_babel) => ({
     visitor: {
       Program: {
         exit(path: NodePath) {
-          const root: Collection<any> = j((path.hub as any).file.ast);
+          source = (path.hub as any).file.ast;
+          const root: Collection<any> = j(source);
           const getFirstNode = () => root.find(j.Program).get('body', 0).node;
 
           // save initial comment if any
@@ -28,7 +38,21 @@ export const jsCodeShiftTransform = (
 
           // transform
           for (const transform of transforms) {
-            transform(root);
+            const result = transform(root);
+            if (result?.errors) {
+              errors.push(
+                ...result.errors.map((error) =>
+                  path.hub.buildError(error.path.node as Node, error.message),
+                ),
+              );
+            }
+            if (result?.warnings) {
+              warnings.push(
+                ...result.warnings.map((warning) =>
+                  path.hub.buildError(warning.path.node as Node, warning.message),
+                ),
+              );
+            }
           }
 
           // restore initial comment if any
@@ -42,6 +66,15 @@ export const jsCodeShiftTransform = (
           path.replaceWith(program);
         },
       },
+    },
+    post(_file) {
+      for (const warning of warnings) {
+        this.opts.warn(warning, warning.message);
+      }
+
+      for (const error of errors) {
+        this.opts.fail(error, error.message);
+      }
     },
   });
 };
