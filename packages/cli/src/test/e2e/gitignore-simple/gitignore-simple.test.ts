@@ -9,7 +9,7 @@ test(
   async () => {
     await env.init();
     await cli(
-      ['migrate', '--allow-untracked', '--from=30.0.0', '--to=33', '--non-interactive'],
+      ['migrate', '--allow-untracked', '--from=30.0.0', '--to=34', '--non-interactive'],
       env.cliOptions,
     );
 
