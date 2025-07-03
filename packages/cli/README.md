@@ -9,10 +9,10 @@ The AG Grid developer toolkit is distributed as a command-line tool that assists
 Run the following command to list available commands:
 
 ```
-npx @ag-grid-devtools/cli --help
+npx @ag-grid-devtools/cli@latest --help
 ```
 
-> _Note that it is recommended to run a specific version of the developer toolkit, e.g._ `@ag-grid-devtools/cli@31.0`
+> _Note that it is recommended to run the latest version of the developer toolkit, e.g._ `@ag-grid-devtools/cli@latest` as this will contain all previous migrations as well as the latest bug fixes.
 
 ### Available commands
 
@@ -20,4 +20,4 @@ The CLI tool contains the following commands:
 
 - `migrate`: Migrate an existing codebase to use a newer version of AG grid
 
-See the command-line help for more details.
+See the command-line help for more details or the [AG Grid Docs](https://ag-grid.com/javascript-data-grid/codemods/).
