@@ -1,4 +1,4 @@
-import { name, version } from '../../package.json' assert { type: 'json' };
+import { name, version } from '../../package.json' with { type: 'json' };
 
 export function getCliPackageName(): string {
   return name;
