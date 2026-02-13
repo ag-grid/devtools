@@ -6,7 +6,7 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 import base from '../build-config/templates/vite/cli.vite.config';
 
-import pkg from './package.json' assert { type: 'json' };
+import pkg from './package.json' with { type: 'json' };
 
 const CODEMODS_VERSIONS_PATH = 'src/codemods/versions';
 const CODEMOD_FILENAME = 'codemod.ts';
