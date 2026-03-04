@@ -51,7 +51,7 @@ jobs:
       - name: Build release artifact
         run: |
           cd packages/cli
-          npm run publish
+          npm run build
 
       - name: Get package version
         id: version
