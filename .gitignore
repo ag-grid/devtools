@@ -5,3 +5,4 @@
 /coverage/
 /docs/
 **/_temp/**/*
+.idea
