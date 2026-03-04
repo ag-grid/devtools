@@ -19,7 +19,7 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    environment: production
+    environment: production # will be develop
     if: github.event.pull_request.merged
     steps:
       - name: Authenticate with GitHub App
