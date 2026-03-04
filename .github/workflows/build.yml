@@ -6,7 +6,12 @@ on:
       - main
     types: [closed]
 
+env:
+  CI: true
+  DEPLOYMENT_APP_ID: 957224
+
 permissions:
+  id-token: write  # Required for OIDC
   contents: read
 
 jobs:
@@ -16,6 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged
     steps:
+      - name: Authenticate with GitHub App
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ env.DEPLOYMENT_APP_ID }}
+          private-key: ${{ secrets.DEPLOYMENT_APP_PRIVATE_KEY }}
       - name: Checkout Git repository
         uses: actions/checkout@v4
       - name: Install pnpm
@@ -40,14 +51,17 @@ jobs:
         id: create_release
         uses: actions/create-release@latest
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
           commitish: ${{ github.ref }}
           tag_name: ${{ steps.version.outputs.VERSION }}
           release_name: ${{ steps.version.outputs.VERSION }}
           draft: false
           prerelease: false
+      # Ensure npm 11.5.1 or later is installed - required for OIDC
+      - name: Update npm
+        run: npm install -g npm@latest
       - name: Publish package
-        run: pnpm run publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd packages/cli
+          npm run publish
